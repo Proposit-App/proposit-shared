@@ -33,8 +33,9 @@ Sub-entry exports only — no flat root import. `package.json` `exports`:
 - `./api-client/argument` → `src/api-client/argument/index.ts`
 - `./api-client/argument/logic` → `src/api-client/argument/logic/index.ts`
 - `./api-client/*` → `src/api-client/**` (file-flavored sub-paths)
-
-Future (PR 4): `./engine`.
+- `./engine/mutations` → `src/engine/mutations/index.ts`
+- `./engine/optimistic` → `src/engine/optimistic/index.ts`
+- `./engine/*` → `src/engine/**` (file-flavored sub-paths)
 
 ## Key design rules
 
