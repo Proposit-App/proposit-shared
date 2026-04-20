@@ -13,6 +13,18 @@
         "node": ">=22.3.0"
     },
     "exports": {
+        "./api-client/argument": {
+            "types": "./dist/api-client/argument/index.d.ts",
+            "import": "./dist/api-client/argument/index.js"
+        },
+        "./api-client/argument/logic": {
+            "types": "./dist/api-client/argument/logic/index.d.ts",
+            "import": "./dist/api-client/argument/logic/index.js"
+        },
+        "./api-client/*": {
+            "types": "./dist/api-client/*.d.ts",
+            "import": "./dist/api-client/*.js"
+        },
         "./schemas": {
             "types": "./dist/schemas/index.d.ts",
             "import": "./dist/schemas/index.js"

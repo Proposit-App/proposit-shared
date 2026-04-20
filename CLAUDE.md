@@ -30,8 +30,11 @@ Sub-entry exports only — no flat root import. `package.json` `exports`:
 - `./errors` → `src/errors.ts`
 - `./checksum` → `src/checksum.ts`
 - `./utils` → `src/utils/index.ts`
+- `./api-client/argument` → `src/api-client/argument/index.ts`
+- `./api-client/argument/logic` → `src/api-client/argument/logic/index.ts`
+- `./api-client/*` → `src/api-client/**` (file-flavored sub-paths)
 
-Future (PR 3, PR 4): `./api-client`, `./engine`.
+Future (PR 4): `./engine`.
 
 ## Key design rules
 
