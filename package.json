@@ -17,6 +17,26 @@
             "types": "./dist/schemas/index.d.ts",
             "import": "./dist/schemas/index.js"
         },
+        "./schemas/integrations": {
+            "types": "./dist/schemas/integrations/index.d.ts",
+            "import": "./dist/schemas/integrations/index.js"
+        },
+        "./schemas/api/argument": {
+            "types": "./dist/schemas/api/argument/index.d.ts",
+            "import": "./dist/schemas/api/argument/index.js"
+        },
+        "./schemas/api/reaction": {
+            "types": "./dist/schemas/api/reaction/index.d.ts",
+            "import": "./dist/schemas/api/reaction/index.js"
+        },
+        "./schemas/api/review": {
+            "types": "./dist/schemas/api/review/index.d.ts",
+            "import": "./dist/schemas/api/review/index.js"
+        },
+        "./schemas/api/user": {
+            "types": "./dist/schemas/api/user/index.d.ts",
+            "import": "./dist/schemas/api/user/index.js"
+        },
         "./schemas/*": {
             "types": "./dist/schemas/*.d.ts",
             "import": "./dist/schemas/*.js"
