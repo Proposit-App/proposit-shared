@@ -53,7 +53,7 @@
         "access": "public"
     },
     "scripts": {
-        "build": "rm -rf dist && pnpm exec tsc -p tsconfig.build.json",
+        "build": "rm -rf dist *.tsbuildinfo && pnpm exec tsc -p tsconfig.build.json",
         "typecheck": "pnpm exec tsc --noEmit",
         "lint": "pnpm run prettify:check && pnpm exec eslint .",
         "prettify": "pnpm exec prettier -w .",
