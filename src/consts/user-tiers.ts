@@ -1,3 +1,8 @@
+// Inherited from proposit-server where legacy type names (UserTierKeys,
+// UserTierValues) predate the brain-style T-prefix convention. Renaming
+// them cascades through every server consumer; tracked as tech debt to
+// address in a dedicated follow-up.
+/* eslint-disable @typescript-eslint/naming-convention */
 import { UserTiers } from "../schemas/model/index.js"
 import type { TUserTierLimits, TUserTiers } from "../schemas/model/users.js"
 

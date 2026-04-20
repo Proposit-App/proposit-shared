@@ -1,3 +1,8 @@
+// Inherited from proposit-server. Legacy names (DateType, ParsedSuccess,
+// ParsedError, ParsedReply, JsonPrimitive, JsonValue, JsonObject, JsonArray,
+// UUID) predate the brain-style naming rules; renaming cascades through every
+// server consumer. Tracked as tech debt for a dedicated follow-up.
+/* eslint-disable @typescript-eslint/naming-convention */
 import { type Static, type TSchema } from "typebox"
 import { Type } from "typebox"
 

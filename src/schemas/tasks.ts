@@ -133,6 +133,7 @@ export const TaskSchemaMap = {
 const TaskMapSchema = Type.Object({
     ...TaskSchemaMap,
 })
+// eslint-disable-next-line @typescript-eslint/naming-convention -- inherited name; _T prefix predates brain-style convention
 type _TTaskMap = Static<typeof TaskMapSchema>
 
 export const TaskSchema = Type.Union([

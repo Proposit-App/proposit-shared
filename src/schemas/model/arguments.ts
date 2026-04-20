@@ -1,6 +1,9 @@
 import Type, { type Static } from "typebox"
 import { CoreArgumentSchema } from "@proposit/proposit-core"
-import { ArgumentImportOrigin, ArgumentPlatformData } from "../integrations/index.js"
+import {
+    ArgumentImportOrigin,
+    ArgumentPlatformData,
+} from "../integrations/index.js"
 import { EncodableDate, Nullable, UUID } from "../common.js"
 import { UserPublicFieldsSchema } from "./users.js"
 import { ClaimSchema } from "./claims.js"
