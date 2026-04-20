@@ -1,0 +1,83 @@
+{
+    "name": "@proposit/shared",
+    "version": "0.0.0",
+    "description": "Runtime-agnostic TypeScript shared between proposit-server and proposit-mobile. Schemas, engine, api-client, and utilities.",
+    "license": "MIT",
+    "homepage": "https://github.com/Proposit-App/proposit-shared",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Proposit-App/proposit-shared.git"
+    },
+    "type": "module",
+    "engines": {
+        "node": ">=22.3.0"
+    },
+    "exports": {
+        "./schemas": {
+            "types": "./dist/schemas/index.d.ts",
+            "import": "./dist/schemas/index.js"
+        },
+        "./schemas/*": {
+            "types": "./dist/schemas/*.d.ts",
+            "import": "./dist/schemas/*.js"
+        },
+        "./consts": {
+            "types": "./dist/consts/index.d.ts",
+            "import": "./dist/consts/index.js"
+        },
+        "./consts/*": {
+            "types": "./dist/consts/*.d.ts",
+            "import": "./dist/consts/*.js"
+        },
+        "./errors": {
+            "types": "./dist/errors.d.ts",
+            "import": "./dist/errors.js"
+        },
+        "./checksum": {
+            "types": "./dist/checksum.d.ts",
+            "import": "./dist/checksum.js"
+        },
+        "./utils": {
+            "types": "./dist/utils/index.d.ts",
+            "import": "./dist/utils/index.js"
+        },
+        "./utils/*": {
+            "types": "./dist/utils/*.d.ts",
+            "import": "./dist/utils/*.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build": "rm -rf dist && pnpm exec tsc -p tsconfig.build.json",
+        "typecheck": "pnpm exec tsc --noEmit",
+        "lint": "pnpm run prettify:check && pnpm exec eslint .",
+        "prettify": "pnpm exec prettier -w .",
+        "prettify:check": "pnpm exec prettier --check .",
+        "test": "pnpm exec vitest run",
+        "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build"
+    },
+    "peerDependencies": {
+        "@proposit/proposit-core": "^0.9.0"
+    },
+    "dependencies": {
+        "typebox": "^1.1.14"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.4",
+        "@proposit/proposit-core": "^0.9.0",
+        "@types/node": "^25.5.2",
+        "eslint": "^9.39.4",
+        "eslint-plugin-check-file": "^3.3.1",
+        "globals": "^17.4.0",
+        "prettier": "^3.8.1",
+        "typescript": "^6.0.2",
+        "typescript-eslint": "^8.58.0",
+        "vitest": "^4.1.2"
+    },
+    "packageManager": "pnpm@10.23.0"
+}
