@@ -140,10 +140,18 @@ export type TApiClient = {
 }
 
 export function createApiClient(config: TApiClientConfig): TApiClient {
+    // Rebind fetchImpl to globalThis so browser `fetch` doesn't throw
+    // "Illegal invocation" when called as `config.fetchImpl(...)` — the DOM
+    // fetch checks `this === window`. Harmless for arrow-wrapped fetches
+    // (their lexical `this` can't be rebound) and for Node fetch.
+    const boundConfig: TApiClientConfig = {
+        ...config,
+        fetchImpl: config.fetchImpl.bind(globalThis),
+    }
     const client = {} as Record<string, unknown>
     for (const [name, impl] of Object.entries(impls)) {
         client[name] = (...args: unknown[]): unknown =>
-            (impl as (...a: unknown[]) => unknown)(config, ...args)
+            (impl as (...a: unknown[]) => unknown)(boundConfig, ...args)
     }
     return client as TApiClient
 }
