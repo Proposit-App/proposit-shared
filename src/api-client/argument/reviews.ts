@@ -10,102 +10,104 @@ import {
     type TReviewUpdateRequest,
 } from "../../schemas/api/review/index.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
+import type { TApiClientConfig } from "../config.js"
+import { resolveBaseUrl } from "../internal.js"
 
-export async function getMyReview(
+export async function getMyReviewImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reviews`,
-            { method: "GET" }
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews`,
+            { method: "GET" },
         ),
-        ReviewGetResponse
+        ReviewGetResponse,
     )
 }
 
-export async function createReviewRemote(
+export async function createReviewRemoteImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reviews`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews`,
         { method: "POST" },
         {},
         ReviewCreateRequest,
         ReviewCreateResponse,
-        fetchFn
+        config.fetchImpl,
     )
 }
 
-export async function getReviewByIdRemote(
+export async function getReviewByIdRemoteImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     reviewId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
-            { method: "GET" }
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
+            { method: "GET" },
         ),
-        ReviewGetResponse
+        ReviewGetResponse,
     )
 }
 
-export async function patchReviewRemote(
+export async function patchReviewRemoteImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     reviewId: string,
     data: TReviewUpdateRequest,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
         { method: "PATCH" },
         data,
         ReviewUpdateRequest,
         ReviewUpdateResponse,
-        fetchFn
+        config.fetchImpl,
     )
 }
 
-export async function deleteReviewRemote(
+export async function deleteReviewRemoteImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     reviewId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
-            { method: "DELETE" }
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
+            { method: "DELETE" },
         ),
-        ReviewDeleteResponse
+        ReviewDeleteResponse,
     )
 }
 
-export async function setReviewVisibility(
+export async function setReviewVisibilityImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     reviewId: string,
     isPublic: boolean,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}/visibility`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}/visibility`,
         { method: "PATCH" },
         { public: isPublic },
         ReviewVisibilityRequest,
         ReviewVisibilityResponse,
-        fetchFn
+        config.fetchImpl,
     )
 }
