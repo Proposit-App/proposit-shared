@@ -5,36 +5,38 @@ import {
     type TReactionCreateRequest,
 } from "../../schemas/api/reaction/index.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
+import type { TApiClientConfig } from "../config.js"
+import { resolveBaseUrl } from "../internal.js"
 
-export async function createReaction(
+export async function createReactionImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     data: TReactionCreateRequest,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reactions`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/reactions`,
         { method: "POST" },
         data,
         ReactionCreateRequest,
         ReactionCreateResponse,
-        fetchFn
+        config.fetchImpl,
     )
 }
 
-export async function deleteReaction(
+export async function deleteReactionImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     reactionId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${urlPrefix}/api/v1/argument/${argumentId}/${version}/reactions/${reactionId}`,
-            { method: "DELETE" }
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/reactions/${reactionId}`,
+            { method: "DELETE" },
         ),
-        ReactionDeleteResponse
+        ReactionDeleteResponse,
     )
 }
