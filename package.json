@@ -1,6 +1,6 @@
 {
     "name": "@proposit/shared",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Runtime-agnostic TypeScript shared between proposit-server and proposit-mobile. Schemas, engine, api-client, and utilities.",
     "license": "MIT",
     "homepage": "https://github.com/Proposit-App/proposit-shared",
@@ -15,71 +15,88 @@
     "exports": {
         "./api-client": {
             "types": "./dist/api-client/index.d.ts",
-            "import": "./dist/api-client/index.js"
+            "import": "./dist/api-client/index.js",
+            "default": "./dist/api-client/index.js"
         },
         "./schemas": {
             "types": "./dist/schemas/index.d.ts",
-            "import": "./dist/schemas/index.js"
+            "import": "./dist/schemas/index.js",
+            "default": "./dist/schemas/index.js"
         },
         "./schemas/integrations": {
             "types": "./dist/schemas/integrations/index.d.ts",
-            "import": "./dist/schemas/integrations/index.js"
+            "import": "./dist/schemas/integrations/index.js",
+            "default": "./dist/schemas/integrations/index.js"
         },
         "./schemas/api/argument": {
             "types": "./dist/schemas/api/argument/index.d.ts",
-            "import": "./dist/schemas/api/argument/index.js"
+            "import": "./dist/schemas/api/argument/index.js",
+            "default": "./dist/schemas/api/argument/index.js"
         },
         "./schemas/api/reaction": {
             "types": "./dist/schemas/api/reaction/index.d.ts",
-            "import": "./dist/schemas/api/reaction/index.js"
+            "import": "./dist/schemas/api/reaction/index.js",
+            "default": "./dist/schemas/api/reaction/index.js"
         },
         "./schemas/api/review": {
             "types": "./dist/schemas/api/review/index.d.ts",
-            "import": "./dist/schemas/api/review/index.js"
+            "import": "./dist/schemas/api/review/index.js",
+            "default": "./dist/schemas/api/review/index.js"
         },
         "./schemas/api/user": {
             "types": "./dist/schemas/api/user/index.d.ts",
-            "import": "./dist/schemas/api/user/index.js"
+            "import": "./dist/schemas/api/user/index.js",
+            "default": "./dist/schemas/api/user/index.js"
         },
         "./schemas/*": {
             "types": "./dist/schemas/*.d.ts",
-            "import": "./dist/schemas/*.js"
+            "import": "./dist/schemas/*.js",
+            "default": "./dist/schemas/*.js"
         },
         "./consts": {
             "types": "./dist/consts/index.d.ts",
-            "import": "./dist/consts/index.js"
+            "import": "./dist/consts/index.js",
+            "default": "./dist/consts/index.js"
         },
         "./consts/*": {
             "types": "./dist/consts/*.d.ts",
-            "import": "./dist/consts/*.js"
+            "import": "./dist/consts/*.js",
+            "default": "./dist/consts/*.js"
         },
         "./errors": {
             "types": "./dist/errors.d.ts",
-            "import": "./dist/errors.js"
+            "import": "./dist/errors.js",
+            "default": "./dist/errors.js"
         },
         "./checksum": {
             "types": "./dist/checksum.d.ts",
-            "import": "./dist/checksum.js"
+            "import": "./dist/checksum.js",
+            "default": "./dist/checksum.js"
         },
         "./utils": {
             "types": "./dist/utils/index.d.ts",
-            "import": "./dist/utils/index.js"
+            "import": "./dist/utils/index.js",
+            "default": "./dist/utils/index.js"
         },
         "./utils/*": {
             "types": "./dist/utils/*.d.ts",
-            "import": "./dist/utils/*.js"
+            "import": "./dist/utils/*.js",
+            "default": "./dist/utils/*.js"
         },
         "./engine/mutations": {
             "types": "./dist/engine/mutations/index.d.ts",
-            "import": "./dist/engine/mutations/index.js"
+            "import": "./dist/engine/mutations/index.js",
+            "default": "./dist/engine/mutations/index.js"
         },
         "./engine/optimistic": {
             "types": "./dist/engine/optimistic/index.d.ts",
-            "import": "./dist/engine/optimistic/index.js"
+            "import": "./dist/engine/optimistic/index.js",
+            "default": "./dist/engine/optimistic/index.js"
         },
         "./engine/*": {
             "types": "./dist/engine/*.d.ts",
-            "import": "./dist/engine/*.js"
+            "import": "./dist/engine/*.js",
+            "default": "./dist/engine/*.js"
         }
     },
     "files": [
