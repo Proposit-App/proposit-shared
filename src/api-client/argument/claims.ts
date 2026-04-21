@@ -15,89 +15,91 @@ import {
     type TIEEEReference,
 } from "../../schemas/model/references.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
+import type { TApiClientConfig } from "../config.js"
+import { resolveBaseUrl } from "../internal.js"
 
-export async function createClaim(
+export async function createClaimImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     claimData: TMutableClaimFields,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/claims`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims`,
         { method: "POST" },
         { claimData },
         ClaimCreationRequestSchema,
         ClaimCreationResponseSchema,
-        fetchFn
+        config.fetchImpl,
     )
 }
 
-export async function deleteClaim(
+export async function deleteClaimImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     claimId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${urlPrefix}/api/v1/argument/${argumentId}/${version}/claims/${claimId}`,
-            { method: "DELETE" }
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}`,
+            { method: "DELETE" },
         ),
-        ClaimDeletionResponseSchema
+        ClaimDeletionResponseSchema,
     )
 }
 
-export async function updateClaim(
+export async function updateClaimImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     claimId: string,
     data: TClaimUpdateFields,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/claims/${claimId}`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}`,
         { method: "PUT" },
         { ...data },
         ClaimUpdateRequestSchema,
         ClaimSchema,
-        fetchFn
+        config.fetchImpl,
     )
 }
 
-export async function createClaimSource(
+export async function createClaimSourceImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     claimId: string,
     citation: TIEEEReference,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${urlPrefix}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source`,
         { method: "POST" },
         citation,
         IEEEReferenceSchemaMap[citation.type],
         SourceCreationSchema,
-        fetchFn
+        config.fetchImpl,
     )
 }
 
-export async function deleteClaimSource(
+export async function deleteClaimSourceImpl(
+    config: TApiClientConfig,
     argumentId: string,
     version: number,
     claimId: string,
     sourceId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${urlPrefix}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source/${sourceId}`,
-            { method: "DELETE" }
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source/${sourceId}`,
+            { method: "DELETE" },
         ),
-        ClaimSourceDeleteResponseSchema
+        ClaimSourceDeleteResponseSchema,
     )
 }
