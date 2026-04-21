@@ -24,46 +24,48 @@ import {
 import { ArgumentEngineSnapshotSchema } from "../../../schemas/snapshot.js"
 import { parseResponse, strictFetch } from "../../../utils/utils.js"
 import { Type } from "typebox"
+import type { TApiClientConfig } from "../../config.js"
+import { resolveBaseUrl } from "../../internal.js"
 
 const DeletedResponseSchema = Type.Object({ deleted: Type.Boolean() })
 
 function logicUrl(
     argumentId: string,
     argumentVersion: number,
-    urlPrefix: string
+    baseUrl: string
 ) {
-    return `${urlPrefix}/api/v1/argument/${argumentId}/${argumentVersion}/logic`
+    return `${baseUrl}/api/v1/argument/${argumentId}/${argumentVersion}/logic`
 }
 
 // ── Combined logic data ─────────────────────────────────────────────────────
 
-export async function getLogicData(
+export async function getLogicDataImpl(
+    config: TApiClientConfig,
     argumentId: string,
-    argumentVersion: number,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    argumentVersion: number
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        logicUrl(argumentId, argumentVersion, urlPrefix),
+        logicUrl(argumentId, argumentVersion, baseUrl),
         { method: "GET" },
         undefined,
         undefined,
         ArgumentEngineSnapshotSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
 // ── Premise operations ──────────────────────────────────────────────────────
 
-export async function getPremises(
+export async function getPremisesImpl(
+    config: TApiClientConfig,
     argumentId: string,
-    argumentVersion: number,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    argumentVersion: number
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/premises`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/premises`,
             {
                 method: "GET",
             }
@@ -72,68 +74,68 @@ export async function getPremises(
     )
 }
 
-export async function createPremise(
+export async function createPremiseImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    data: TPremiseCreation,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    data: TPremiseCreation
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/premises`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/premises`,
         { method: "POST" },
         data,
         PremiseCreationSchema,
         CreatePremiseResponseSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
-export async function updatePremise(
+export async function updatePremiseImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
     premiseId: string,
-    data: TPremiseUpdate,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    data: TPremiseUpdate
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/premises/${premiseId}`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/premises/${premiseId}`,
         { method: "PUT" },
         data,
         PremiseUpdateSchema,
         PropositionalPremiseSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
-export async function deletePremise(
+export async function deletePremiseImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
     premiseId: string,
-    checksum: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    checksum: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/premises/${premiseId}?checksum=${encodeURIComponent(checksum)}`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/premises/${premiseId}?checksum=${encodeURIComponent(checksum)}`,
             { method: "DELETE" }
         ),
         DeletedResponseSchema
     )
 }
 
-export async function getPremise(
+export async function getPremiseImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    premiseId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    premiseId: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/premises/${premiseId}`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/premises/${premiseId}`,
             { method: "GET" }
         ),
         PropositionalPremiseSchema
@@ -142,102 +144,102 @@ export async function getPremise(
 
 // ── Expression operations ───────────────────────────────────────────────────
 
-export async function getExpressions(
+export async function getExpressionsImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    premiseId?: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    premiseId?: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     const url = new URL(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/expressions`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions`,
         "http://localhost"
     )
     if (premiseId) url.searchParams.set("premiseId", premiseId)
     return await parseResponse(
-        await fetchFn(url.pathname + url.search, { method: "GET" }),
+        await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
         Type.Array(PropositionalExpressionSchema)
     )
 }
 
-export async function createExpression(
+export async function createExpressionImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    data: TExpressionCreation,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    data: TExpressionCreation
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/expressions`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions`,
         { method: "POST" },
         data,
         ExpressionCreationSchema,
         CreateExpressionResponseSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
-export async function updateExpression(
+export async function updateExpressionImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
     expressionId: string,
-    data: TExpressionUpdate,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    data: TExpressionUpdate
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/expressions/${expressionId}`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions/${expressionId}`,
         { method: "PUT" },
         data,
         ExpressionUpdateSchema,
         PropositionalExpressionSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
-export async function deleteExpression(
+export async function deleteExpressionImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
     expressionId: string,
-    checksum: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    checksum: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/expressions/${expressionId}?checksum=${encodeURIComponent(checksum)}`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions/${expressionId}?checksum=${encodeURIComponent(checksum)}`,
             { method: "DELETE" }
         ),
         DeletedResponseSchema
     )
 }
 
-export async function getExpression(
+export async function getExpressionImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    expressionId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    expressionId: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/expressions/${expressionId}`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions/${expressionId}`,
             { method: "GET" }
         ),
         PropositionalExpressionSchema
     )
 }
 
-export async function toggleNegation(
+export async function toggleNegationImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    expressionId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    expressionId: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/expressions/${expressionId}/toggle-negation`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions/${expressionId}/toggle-negation`,
             { method: "POST" }
         ),
         ArgumentEngineSnapshotSchema
@@ -246,15 +248,15 @@ export async function toggleNegation(
 
 // ── Variable operations ─────────────────────────────────────────────────────
 
-export async function getVariables(
+export async function getVariablesImpl(
+    config: TApiClientConfig,
     argumentId: string,
-    argumentVersion: number,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    argumentVersion: number
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/variables`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/variables`,
             {
                 method: "GET",
             }
@@ -263,72 +265,72 @@ export async function getVariables(
     )
 }
 
-export async function createVariable(
+export async function createVariableImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    data: TVariableCreation,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    data: TVariableCreation
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/variables`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/variables`,
         { method: "POST" },
         data,
         VariableCreationSchema,
         PropositionalVariableSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
-export async function updateVariable(
+export async function updateVariableImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
     variableId: string,
-    data: TVariableUpdate,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    data: TVariableUpdate
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${logicUrl(argumentId, argumentVersion, urlPrefix)}/variables/${variableId}`,
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/variables/${variableId}`,
         { method: "PUT" },
         data,
         VariableUpdateSchema,
         PropositionalVariableSchema,
-        fetchFn
+        config.fetchImpl
     )
 }
 
-export async function deleteVariable(
+export async function deleteVariableImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
     variableId: string,
-    checksum: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    checksum: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/variables/${variableId}?checksum=${encodeURIComponent(checksum)}`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/variables/${variableId}?checksum=${encodeURIComponent(checksum)}`,
             { method: "DELETE" }
         ),
         DeletedResponseSchema
     )
 }
 
-export async function getVariable(
+export async function getVariableImpl(
+    config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    variableId: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+    variableId: string
 ) {
+    const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
-        await fetchFn(
-            `${logicUrl(argumentId, argumentVersion, urlPrefix)}/variables/${variableId}`,
+        await config.fetchImpl(
+            `${logicUrl(argumentId, argumentVersion, baseUrl)}/variables/${variableId}`,
             { method: "GET" }
         ),
         PropositionalVariableSchema
     )
 }
 
-export { repairArgument } from "./repair.js"
+export { repairArgumentImpl } from "./repair.js"

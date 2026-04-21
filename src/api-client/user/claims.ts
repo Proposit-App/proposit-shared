@@ -1,18 +1,20 @@
 import { UserClaimsResponseSchema } from "../../schemas/api/claims.js"
 import { parseResponse } from "../../utils/utils.js"
+import type { TApiClientConfig } from "../config.js"
+import { resolveBaseUrl } from "../internal.js"
 
-export async function getUserClaims(
-    argumentId?: string,
-    fetchFn: typeof fetch = fetch,
-    urlPrefix = ""
+export async function getUserClaimsImpl(
+    config: TApiClientConfig,
+    argumentId?: string
 ) {
-    const url = new URL(`${urlPrefix}/api/v1/user/claims`, "http://localhost")
+    const baseUrl = resolveBaseUrl(config)
+    const url = new URL(`${baseUrl}/api/v1/user/claims`, "http://localhost")
     if (argumentId) {
         url.searchParams.set("argumentId", argumentId)
     }
 
     return await parseResponse(
-        await fetchFn(url.pathname + url.search, { method: "GET" }),
+        await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
         UserClaimsResponseSchema
     )
 }

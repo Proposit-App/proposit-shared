@@ -7,6 +7,7 @@
 - ESM import requirements: all relative imports in `src/` must end in `.js`. Directory imports must use the explicit index path (e.g. `./schemas/index.js`).
 - `lib: ["ES2022"]` is enforced — no `window`, `document`, `Buffer`, `process`, or other platform-specific globals in source. Dev/test code (not in `dist/`) may use Node via `@types/node`.
 - After a major set of changes, offer `pnpm version patch|minor|major`. First published version will be `0.1.0` (at Phase 0 PR 5).
+- Pre-1.0 versioning policy: minor bumps may include breaking changes (per semver §4). Consumers should pin with caret (`^0.x.y`) knowing that any `0.x+1.0` could break them.
 
 ## Commands
 
@@ -30,9 +31,7 @@ Sub-entry exports only — no flat root import. `package.json` `exports`:
 - `./errors` → `src/errors.ts`
 - `./checksum` → `src/checksum.ts`
 - `./utils` → `src/utils/index.ts`
-- `./api-client/argument` → `src/api-client/argument/index.ts`
-- `./api-client/argument/logic` → `src/api-client/argument/logic/index.ts`
-- `./api-client/*` → `src/api-client/**` (file-flavored sub-paths)
+- `./api-client` → `src/api-client/index.ts` (factory: `createApiClient`, types `TApiClient`, `TApiClientConfig`)
 - `./engine/mutations` → `src/engine/mutations/index.ts`
 - `./engine/optimistic` → `src/engine/optimistic/index.ts`
 - `./engine/*` → `src/engine/**` (file-flavored sub-paths)
