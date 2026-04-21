@@ -11,7 +11,7 @@ export async function searchUserClaimsImpl(
     config: TApiClientConfig,
     query: string,
     limit = 20,
-    argumentId?: string,
+    argumentId?: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     const params = new URLSearchParams({ q: query, limit: String(limit) })
@@ -23,14 +23,14 @@ export async function searchUserClaimsImpl(
         undefined,
         undefined,
         ClaimSearchResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
 export async function searchUserSourcesImpl(
     config: TApiClientConfig,
     query: string,
-    limit = 20,
+    limit = 20
 ) {
     const baseUrl = resolveBaseUrl(config)
     const params = new URLSearchParams({ q: query, limit: String(limit) })
@@ -41,7 +41,7 @@ export async function searchUserSourcesImpl(
         undefined,
         undefined,
         SourceSearchResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -49,7 +49,7 @@ export async function searchUserEntitiesImpl(
     config: TApiClientConfig,
     query: string,
     types?: string[],
-    limit = 10,
+    limit = 10
 ) {
     const baseUrl = resolveBaseUrl(config)
     const params = new URLSearchParams({ q: query, limit: String(limit) })
@@ -61,6 +61,6 @@ export async function searchUserEntitiesImpl(
         undefined,
         undefined,
         EntitySearchResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }

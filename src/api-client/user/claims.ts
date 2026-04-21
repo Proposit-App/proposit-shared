@@ -5,7 +5,7 @@ import { resolveBaseUrl } from "../internal.js"
 
 export async function getUserClaimsImpl(
     config: TApiClientConfig,
-    argumentId?: string,
+    argumentId?: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     const url = new URL(`${baseUrl}/api/v1/user/claims`, "http://localhost")
@@ -15,6 +15,6 @@ export async function getUserClaimsImpl(
 
     return await parseResponse(
         await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
-        UserClaimsResponseSchema,
+        UserClaimsResponseSchema
     )
 }

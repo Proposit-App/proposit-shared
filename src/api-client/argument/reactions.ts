@@ -12,7 +12,7 @@ export async function createReactionImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    data: TReactionCreateRequest,
+    data: TReactionCreateRequest
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -21,7 +21,7 @@ export async function createReactionImpl(
         data,
         ReactionCreateRequest,
         ReactionCreateResponse,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -29,14 +29,14 @@ export async function deleteReactionImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    reactionId: string,
+    reactionId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/reactions/${reactionId}`,
-            { method: "DELETE" },
+            { method: "DELETE" }
         ),
-        ReactionDeleteResponse,
+        ReactionDeleteResponse
     )
 }

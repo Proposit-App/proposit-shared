@@ -16,7 +16,7 @@ import { resolveBaseUrl } from "../internal.js"
 export async function provisionArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    argumentVersion: number,
+    argumentVersion: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -25,7 +25,7 @@ export async function provisionArgumentImpl(
         undefined,
         undefined,
         ProvisionResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -33,7 +33,7 @@ export async function createExpressionWithOperatorImpl(
     config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    data: TCreateExpressionWithOperatorRequest,
+    data: TCreateExpressionWithOperatorRequest
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -42,7 +42,7 @@ export async function createExpressionWithOperatorImpl(
         data,
         CreateExpressionWithOperatorRequestSchema,
         CreateExpressionWithOperatorResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -50,7 +50,7 @@ export async function changeEdgeOperatorImpl(
     config: TApiClientConfig,
     argumentId: string,
     argumentVersion: number,
-    data: TChangeEdgeOperatorRequest,
+    data: TChangeEdgeOperatorRequest
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -59,6 +59,6 @@ export async function changeEdgeOperatorImpl(
         data,
         ChangeEdgeOperatorRequestSchema,
         ChangeEdgeOperatorResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }

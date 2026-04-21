@@ -24,7 +24,7 @@ import { resolveBaseUrl } from "../internal.js"
 export async function getArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     const resp = await strictFetch(
@@ -35,7 +35,7 @@ export async function getArgumentImpl(
         undefined,
         undefined,
         ArgumentSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 
     return resp
@@ -44,45 +44,45 @@ export async function getArgumentImpl(
 export async function publishArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/publish`,
-            { method: "POST" },
+            { method: "POST" }
         ),
-        PublishResponseSchema,
+        PublishResponseSchema
     )
 }
 
 export async function resetArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/reset`,
-            { method: "POST" },
+            { method: "POST" }
         ),
-        ArgumentSchema,
+        ArgumentSchema
     )
 }
 
 export async function forkArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/fork`,
-            { method: "POST" },
+            { method: "POST" }
         ),
-        ArgumentSchema,
+        ArgumentSchema
     )
 }
 
@@ -91,7 +91,7 @@ export async function getArgumentDiffImpl(
     argumentId: string,
     version: number,
     otherArgId: string,
-    otherArgVersion: number,
+    otherArgVersion: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -100,34 +100,34 @@ export async function getArgumentDiffImpl(
         undefined,
         undefined,
         ArgumentDiffSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
 export async function getArgumentForksImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/forks`,
-            { method: "GET" },
+            { method: "GET" }
         ),
-        GetForksOfArgumentResponseSchema,
+        GetForksOfArgumentResponseSchema
     )
 }
 
 export async function claimUnownedArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     await config.fetchImpl(
         `${baseUrl}/api/v1/argument/unowned/${argumentId}/${version}/take`,
-        { method: "POST" },
+        { method: "POST" }
     )
 }
 
@@ -141,7 +141,7 @@ export type GetAllArgumentsParams = {
 
 export async function getAllArgumentsImpl(
     config: TApiClientConfig,
-    params: GetAllArgumentsParams = {},
+    params: GetAllArgumentsParams = {}
 ) {
     const baseUrl = resolveBaseUrl(config)
     const url = new URL(`${baseUrl}/api/v1/argument`, "http://localhost")
@@ -152,13 +152,13 @@ export async function getAllArgumentsImpl(
     }
     return await parseResponse(
         await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
-        Type.Array(ArgumentWithMetadataSchema),
+        Type.Array(ArgumentWithMetadataSchema)
     )
 }
 
 export async function createArgumentImpl(
     config: TApiClientConfig,
-    data: TCreateArgument,
+    data: TCreateArgument
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -167,13 +167,13 @@ export async function createArgumentImpl(
         data,
         CreateArgumentSchema,
         ArgumentSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
 export async function getLatestArgumentImpl(
     config: TApiClientConfig,
-    argumentId: string,
+    argumentId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -182,7 +182,7 @@ export async function getLatestArgumentImpl(
         undefined,
         undefined,
         ArgumentSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -190,7 +190,7 @@ export async function updateArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    data: TUpdateArgumentRequest,
+    data: TUpdateArgumentRequest
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -199,14 +199,14 @@ export async function updateArgumentImpl(
         data,
         UpdateArgumentRequestSchema,
         ArgumentSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
 export async function archiveArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
@@ -214,31 +214,31 @@ export async function archiveArgumentImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}`,
             {
                 method: "DELETE",
-            },
+            }
         ),
-        Type.Boolean(),
+        Type.Boolean()
     )
 }
 
 export async function deleteArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}?delete=true`,
-            { method: "DELETE" },
+            { method: "DELETE" }
         ),
-        Type.Boolean(),
+        Type.Boolean()
     )
 }
 
 export async function getEntireArgumentImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -247,6 +247,6 @@ export async function getEntireArgumentImpl(
         undefined,
         undefined,
         FullArgumentSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }

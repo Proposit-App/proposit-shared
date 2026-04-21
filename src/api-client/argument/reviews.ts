@@ -16,22 +16,22 @@ import { resolveBaseUrl } from "../internal.js"
 export async function getMyReviewImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews`,
-            { method: "GET" },
+            { method: "GET" }
         ),
-        ReviewGetResponse,
+        ReviewGetResponse
     )
 }
 
 export async function createReviewRemoteImpl(
     config: TApiClientConfig,
     argumentId: string,
-    version: number,
+    version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -40,7 +40,7 @@ export async function createReviewRemoteImpl(
         {},
         ReviewCreateRequest,
         ReviewCreateResponse,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -48,15 +48,15 @@ export async function getReviewByIdRemoteImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    reviewId: string,
+    reviewId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
-            { method: "GET" },
+            { method: "GET" }
         ),
-        ReviewGetResponse,
+        ReviewGetResponse
     )
 }
 
@@ -65,7 +65,7 @@ export async function patchReviewRemoteImpl(
     argumentId: string,
     version: number,
     reviewId: string,
-    data: TReviewUpdateRequest,
+    data: TReviewUpdateRequest
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -74,7 +74,7 @@ export async function patchReviewRemoteImpl(
         data,
         ReviewUpdateRequest,
         ReviewUpdateResponse,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -82,15 +82,15 @@ export async function deleteReviewRemoteImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    reviewId: string,
+    reviewId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/reviews/${reviewId}`,
-            { method: "DELETE" },
+            { method: "DELETE" }
         ),
-        ReviewDeleteResponse,
+        ReviewDeleteResponse
     )
 }
 
@@ -99,7 +99,7 @@ export async function setReviewVisibilityImpl(
     argumentId: string,
     version: number,
     reviewId: string,
-    isPublic: boolean,
+    isPublic: boolean
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -108,6 +108,6 @@ export async function setReviewVisibilityImpl(
         { public: isPublic },
         ReviewVisibilityRequest,
         ReviewVisibilityResponse,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }

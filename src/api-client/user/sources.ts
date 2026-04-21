@@ -9,6 +9,6 @@ export async function getUserSourcesImpl(config: TApiClientConfig) {
 
     return await parseResponse(
         await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
-        UserSourcesResponseSchema,
+        UserSourcesResponseSchema
     )
 }

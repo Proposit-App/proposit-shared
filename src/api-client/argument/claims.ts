@@ -22,7 +22,7 @@ export async function createClaimImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    claimData: TMutableClaimFields,
+    claimData: TMutableClaimFields
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -31,7 +31,7 @@ export async function createClaimImpl(
         { claimData },
         ClaimCreationRequestSchema,
         ClaimCreationResponseSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -39,15 +39,15 @@ export async function deleteClaimImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    claimId: string,
+    claimId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}`,
-            { method: "DELETE" },
+            { method: "DELETE" }
         ),
-        ClaimDeletionResponseSchema,
+        ClaimDeletionResponseSchema
     )
 }
 
@@ -56,7 +56,7 @@ export async function updateClaimImpl(
     argumentId: string,
     version: number,
     claimId: string,
-    data: TClaimUpdateFields,
+    data: TClaimUpdateFields
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -65,7 +65,7 @@ export async function updateClaimImpl(
         { ...data },
         ClaimUpdateRequestSchema,
         ClaimSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -74,7 +74,7 @@ export async function createClaimSourceImpl(
     argumentId: string,
     version: number,
     claimId: string,
-    citation: TIEEEReference,
+    citation: TIEEEReference
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
@@ -83,7 +83,7 @@ export async function createClaimSourceImpl(
         citation,
         IEEEReferenceSchemaMap[citation.type],
         SourceCreationSchema,
-        config.fetchImpl,
+        config.fetchImpl
     )
 }
 
@@ -92,14 +92,14 @@ export async function deleteClaimSourceImpl(
     argumentId: string,
     version: number,
     claimId: string,
-    sourceId: string,
+    sourceId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
             `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source/${sourceId}`,
-            { method: "DELETE" },
+            { method: "DELETE" }
         ),
-        ClaimSourceDeleteResponseSchema,
+        ClaimSourceDeleteResponseSchema
     )
 }
