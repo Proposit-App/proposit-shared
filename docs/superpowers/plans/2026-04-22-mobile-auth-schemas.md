@@ -15,6 +15,7 @@
 ## Task 1: Scaffold barrel + test file
 
 **Files:**
+
 - Create: `src/schemas/api/auth/index.ts`
 - Create: `src/schemas/api/auth/__tests__/index.test.ts`
 
@@ -85,6 +86,7 @@ git commit -m "chore(schemas): scaffold src/schemas/api/auth barrel + test file"
 ## Task 2: MobileSessionRequest
 
 **Files:**
+
 - Modify: `src/schemas/api/auth/index.ts`
 - Modify: `src/schemas/api/auth/__tests__/index.test.ts`
 
@@ -97,7 +99,11 @@ import { MobileSessionRequest } from "../index.js"
 
 describe("MobileSessionRequest", () => {
     it("accepts a valid google request with nonce", () => {
-        const input = { provider: "google", idToken: "eyJ.xxx.yyy", nonce: "n-abc" }
+        const input = {
+            provider: "google",
+            idToken: "eyJ.xxx.yyy",
+            nonce: "n-abc",
+        }
         expect(Value.Check(MobileSessionRequest, input)).toBe(true)
     })
 
@@ -153,6 +159,7 @@ git commit -m "feat(schemas/api/auth): add MobileSessionRequest"
 ## Task 3: MobileSessionResponse
 
 **Files:**
+
 - Modify: `src/schemas/api/auth/index.ts`
 - Modify: `src/schemas/api/auth/__tests__/index.test.ts`
 
@@ -182,7 +189,12 @@ describe("MobileSessionResponse", () => {
     })
 
     it("rejects a non-UUID userId", () => {
-        expect(Value.Check(MobileSessionResponse, { ...valid, userId: "not-a-uuid" })).toBe(false)
+        expect(
+            Value.Check(MobileSessionResponse, {
+                ...valid,
+                userId: "not-a-uuid",
+            })
+        ).toBe(false)
     })
 
     it("rejects a missing accessTokenExpiresAt", () => {
@@ -238,6 +250,7 @@ git commit -m "feat(schemas/api/auth): add MobileSessionResponse"
 ## Task 4: MobileRefreshRequest
 
 **Files:**
+
 - Modify: `src/schemas/api/auth/index.ts`
 - Modify: `src/schemas/api/auth/__tests__/index.test.ts`
 
@@ -250,7 +263,11 @@ import { MobileRefreshRequest } from "../index.js"
 
 describe("MobileRefreshRequest", () => {
     it("accepts a valid refresh request", () => {
-        expect(Value.Check(MobileRefreshRequest, { refreshToken: "refresh-opaque-token" })).toBe(true)
+        expect(
+            Value.Check(MobileRefreshRequest, {
+                refreshToken: "refresh-opaque-token",
+            })
+        ).toBe(true)
     })
 
     it("rejects a missing refreshToken", () => {
@@ -258,7 +275,9 @@ describe("MobileRefreshRequest", () => {
     })
 
     it("rejects a non-string refreshToken", () => {
-        expect(Value.Check(MobileRefreshRequest, { refreshToken: 42 })).toBe(false)
+        expect(Value.Check(MobileRefreshRequest, { refreshToken: 42 })).toBe(
+            false
+        )
     })
 })
 ```
@@ -296,6 +315,7 @@ git commit -m "feat(schemas/api/auth): add MobileRefreshRequest"
 ## Task 5: MobileRefreshResponse
 
 **Files:**
+
 - Modify: `src/schemas/api/auth/index.ts`
 - Modify: `src/schemas/api/auth/__tests__/index.test.ts`
 
@@ -402,6 +422,7 @@ git commit -m "feat(schemas/api/auth): add MobileRefreshResponse"
 ## Task 6: Exports map + CLAUDE.md Package structure
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `CLAUDE.md`
 
@@ -457,6 +478,7 @@ Expected: typecheck + lint + test + build all green. Test count should be 170 (p
 - [ ] **Step 2: If anything fails, fix it in-place before proceeding**
 
 Common failures to anticipate:
+
 - Lint: unused imports, line-length, file-naming — address per lint output.
 - TypeScript: missing `.js` extensions on relative imports; `UUID` not exported from `common.ts` under a different name; `Static` vs. `static` casing.
 - Build: `dist/` stale. `pnpm run build` wipes `dist/` + `.tsbuildinfo` — safe to re-run.
@@ -479,6 +501,7 @@ Per repo policy, `pnpm publish --access public` requires OTP from the human oper
 - [ ] **Step 1: Surface a summary for human review**
 
 Report to the human:
+
 - Branch: `phase-1/pr-1c-mobile-auth-shared`
 - Commits: list of commits ahead of `main`
 - Final schema shape (reference the spec doc)
@@ -486,6 +509,7 @@ Report to the human:
 - Proposed next steps (version bump, publish, push, PR, READY signal)
 
 Ask the human to confirm before proceeding with any of:
+
 1. `pnpm version minor` (bumps 0.2.1 → 0.3.0, creates a `v0.3.0` tag).
 2. `pnpm publish --access public` (OTP prompted in-terminal; human types it).
 3. `git push -u origin phase-1/pr-1c-mobile-auth-shared` and `git push origin v0.3.0`.

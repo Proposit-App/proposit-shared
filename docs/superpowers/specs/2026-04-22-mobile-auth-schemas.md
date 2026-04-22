@@ -21,38 +21,38 @@ All four live under `src/schemas/api/auth/` and are re-exported via that directo
 
 ### `MobileSessionRequest`
 
-| Field       | Type                                    | Notes |
-|-------------|-----------------------------------------|-------|
-| `provider`  | `Type.Union([Literal("google"), Literal("apple")])` | Twitter explicitly dropped for v1. |
-| `idToken`   | `Type.String()`                         | Provider OAuth ID token (JWT). |
-| `nonce`     | `Type.Optional(Type.String())`          | Required for Apple at verify-time (server-side conditional); optional in the wire schema per server's Option A sign-off. |
+| Field      | Type                                                | Notes                                                                                                                    |
+| ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `provider` | `Type.Union([Literal("google"), Literal("apple")])` | Twitter explicitly dropped for v1.                                                                                       |
+| `idToken`  | `Type.String()`                                     | Provider OAuth ID token (JWT).                                                                                           |
+| `nonce`    | `Type.Optional(Type.String())`                      | Required for Apple at verify-time (server-side conditional); optional in the wire schema per server's Option A sign-off. |
 
 ### `MobileSessionResponse`
 
-| Field                      | Type                                         | Notes |
-|----------------------------|----------------------------------------------|-------|
-| `accessToken`              | `Type.String()`                              | Short-lived (server decides lifetime). |
-| `accessTokenExpiresAt`     | `Type.String({ format: "date-time" })`       | ISO 8601. Renamed from `expiresAt` to disambiguate against refresh expiry. |
-| `refreshToken`             | `Type.String()`                              | Long-lived, rotating (each rotation invalidates prior). |
-| `refreshTokenExpiresAt`    | `Type.String({ format: "date-time" })`       | ISO 8601. Lets mobile decide rotate-vs-force-re-auth without a blind 401-retry loop. |
-| `userId`                   | `UUID` (from `src/schemas/common.ts`)        | Consuming this package's existing UUID helper. |
+| Field                   | Type                                   | Notes                                                                                |
+| ----------------------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
+| `accessToken`           | `Type.String()`                        | Short-lived (server decides lifetime).                                               |
+| `accessTokenExpiresAt`  | `Type.String({ format: "date-time" })` | ISO 8601. Renamed from `expiresAt` to disambiguate against refresh expiry.           |
+| `refreshToken`          | `Type.String()`                        | Long-lived, rotating (each rotation invalidates prior).                              |
+| `refreshTokenExpiresAt` | `Type.String({ format: "date-time" })` | ISO 8601. Lets mobile decide rotate-vs-force-re-auth without a blind 401-retry loop. |
+| `userId`                | `UUID` (from `src/schemas/common.ts`)  | Consuming this package's existing UUID helper.                                       |
 
 ### `MobileRefreshRequest`
 
-| Field          | Type            | Notes |
-|----------------|-----------------|-------|
+| Field          | Type            | Notes                                                       |
+| -------------- | --------------- | ----------------------------------------------------------- |
 | `refreshToken` | `Type.String()` | Prior refresh token. Server validates + invalidates on use. |
 
 ### `MobileRefreshResponse`
 
 Same shape as `MobileSessionResponse` **minus `userId`** (the refresh flow doesn't re-introduce identity; the rotated tokens already prove it).
 
-| Field                   | Type                                         |
-|-------------------------|----------------------------------------------|
-| `accessToken`           | `Type.String()`                              |
-| `accessTokenExpiresAt`  | `Type.String({ format: "date-time" })`       |
-| `refreshToken`          | `Type.String()`                              |
-| `refreshTokenExpiresAt` | `Type.String({ format: "date-time" })`       |
+| Field                   | Type                                   |
+| ----------------------- | -------------------------------------- |
+| `accessToken`           | `Type.String()`                        |
+| `accessTokenExpiresAt`  | `Type.String({ format: "date-time" })` |
+| `refreshToken`          | `Type.String()`                        |
+| `refreshTokenExpiresAt` | `Type.String({ format: "date-time" })` |
 
 The new `refreshToken` invalidates the one that was submitted in the request. If a prior (invalidated) refresh token is ever presented, the server treats it as a leak signal and revokes the entire refresh family (OWASP rotating-refresh + reuse-detection pattern). That behavior is server-side; the schema just models the wire shape.
 
