@@ -20,3 +20,8 @@ export const MobileSessionResponse = Type.Object({
     userId: UUID,
 })
 export type TMobileSessionResponse = Static<typeof MobileSessionResponse>
+
+export const MobileRefreshRequest = Type.Object({
+    refreshToken: Type.String(),
+})
+export type TMobileRefreshRequest = Static<typeof MobileRefreshRequest>

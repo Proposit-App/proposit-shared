@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest"
 import { Value } from "typebox/value"
 import { MobileSessionRequest } from "../index.js"
 import { MobileSessionResponse } from "../index.js"
+import { MobileRefreshRequest } from "../index.js"
 
 describe("MobileSessionRequest", () => {
     it("accepts a valid google request with nonce", () => {
@@ -50,5 +51,19 @@ describe("MobileSessionResponse", () => {
 
     it("rejects a wrong-type userId", () => {
         expect(Value.Check(MobileSessionResponse, { ...valid, userId: 123 })).toBe(false)
+    })
+})
+
+describe("MobileRefreshRequest", () => {
+    it("accepts a valid refresh request", () => {
+        expect(Value.Check(MobileRefreshRequest, { refreshToken: "refresh-opaque-token" })).toBe(true)
+    })
+
+    it("rejects a missing refreshToken", () => {
+        expect(Value.Check(MobileRefreshRequest, {})).toBe(false)
+    })
+
+    it("rejects a non-string refreshToken", () => {
+        expect(Value.Check(MobileRefreshRequest, { refreshToken: 42 })).toBe(false)
     })
 })
