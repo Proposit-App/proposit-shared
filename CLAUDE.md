@@ -51,6 +51,7 @@ During development, consumers that reference this package via `file:../proposit-
 Sub-entry exports only — no flat root import. `package.json` `exports`:
 
 - `./schemas` → `src/schemas/index.ts`
+- `./schemas/api/auth` → `src/schemas/api/auth/index.ts`
 - `./consts` → `src/consts/index.ts`
 - `./errors` → `src/errors.ts`
 - `./checksum` → `src/checksum.ts`
