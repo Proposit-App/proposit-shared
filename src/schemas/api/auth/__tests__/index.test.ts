@@ -1,13 +1,19 @@
 import { describe, it, expect } from "vitest"
 import { Value } from "typebox/value"
-import { MobileSessionRequest } from "../index.js"
-import { MobileSessionResponse } from "../index.js"
-import { MobileRefreshRequest } from "../index.js"
-import { MobileRefreshResponse } from "../index.js"
+import {
+    MobileRefreshRequest,
+    MobileRefreshResponse,
+    MobileSessionRequest,
+    MobileSessionResponse,
+} from "../index.js"
 
 describe("MobileSessionRequest", () => {
     it("accepts a valid google request with nonce", () => {
-        const input = { provider: "google", idToken: "eyJ.xxx.yyy", nonce: "n-abc" }
+        const input = {
+            provider: "google",
+            idToken: "eyJ.xxx.yyy",
+            nonce: "n-abc",
+        }
         expect(Value.Check(MobileSessionRequest, input)).toBe(true)
     })
 
@@ -51,13 +57,19 @@ describe("MobileSessionResponse", () => {
     })
 
     it("rejects a wrong-type userId", () => {
-        expect(Value.Check(MobileSessionResponse, { ...valid, userId: 123 })).toBe(false)
+        expect(
+            Value.Check(MobileSessionResponse, { ...valid, userId: 123 })
+        ).toBe(false)
     })
 })
 
 describe("MobileRefreshRequest", () => {
     it("accepts a valid refresh request", () => {
-        expect(Value.Check(MobileRefreshRequest, { refreshToken: "refresh-opaque-token" })).toBe(true)
+        expect(
+            Value.Check(MobileRefreshRequest, {
+                refreshToken: "refresh-opaque-token",
+            })
+        ).toBe(true)
     })
 
     it("rejects a missing refreshToken", () => {
@@ -65,7 +77,9 @@ describe("MobileRefreshRequest", () => {
     })
 
     it("rejects a non-string refreshToken", () => {
-        expect(Value.Check(MobileRefreshRequest, { refreshToken: 42 })).toBe(false)
+        expect(Value.Check(MobileRefreshRequest, { refreshToken: 42 })).toBe(
+            false
+        )
     })
 })
 
