@@ -1,6 +1,6 @@
 {
     "name": "@proposit/shared",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "description": "Runtime-agnostic TypeScript shared between proposit-server and proposit-mobile. Schemas, engine, api-client, and utilities.",
     "license": "MIT",
     "homepage": "https://github.com/Proposit-App/proposit-shared",
@@ -32,6 +32,11 @@
             "types": "./dist/schemas/api/argument/index.d.ts",
             "import": "./dist/schemas/api/argument/index.js",
             "default": "./dist/schemas/api/argument/index.js"
+        },
+        "./schemas/api/auth": {
+            "types": "./dist/schemas/api/auth/index.d.ts",
+            "import": "./dist/schemas/api/auth/index.js",
+            "default": "./dist/schemas/api/auth/index.js"
         },
         "./schemas/api/reaction": {
             "types": "./dist/schemas/api/reaction/index.d.ts",
