@@ -3,6 +3,7 @@ import { Value } from "typebox/value"
 import { MobileSessionRequest } from "../index.js"
 import { MobileSessionResponse } from "../index.js"
 import { MobileRefreshRequest } from "../index.js"
+import { MobileRefreshResponse } from "../index.js"
 
 describe("MobileSessionRequest", () => {
     it("accepts a valid google request with nonce", () => {
@@ -65,5 +66,28 @@ describe("MobileRefreshRequest", () => {
 
     it("rejects a non-string refreshToken", () => {
         expect(Value.Check(MobileRefreshRequest, { refreshToken: 42 })).toBe(false)
+    })
+})
+
+describe("MobileRefreshResponse", () => {
+    const valid = {
+        accessToken: "new-access.jwt",
+        accessTokenExpiresAt: "2026-04-22T00:15:00.000Z",
+        refreshToken: "new-refresh-opaque-token",
+        refreshTokenExpiresAt: "2026-05-22T00:00:00.000Z",
+    }
+
+    it("accepts a valid refresh response", () => {
+        expect(Value.Check(MobileRefreshResponse, valid)).toBe(true)
+    })
+
+    it("rejects a missing refreshToken", () => {
+        const { refreshToken: _omitted, ...rest } = valid
+        expect(Value.Check(MobileRefreshResponse, rest)).toBe(false)
+    })
+
+    it("rejects a missing accessToken", () => {
+        const { accessToken: _omitted, ...rest } = valid
+        expect(Value.Check(MobileRefreshResponse, rest)).toBe(false)
     })
 })

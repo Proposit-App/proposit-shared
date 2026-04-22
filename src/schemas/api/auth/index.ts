@@ -25,3 +25,11 @@ export const MobileRefreshRequest = Type.Object({
     refreshToken: Type.String(),
 })
 export type TMobileRefreshRequest = Static<typeof MobileRefreshRequest>
+
+export const MobileRefreshResponse = Type.Object({
+    accessToken: Type.String(),
+    accessTokenExpiresAt: Type.String({ format: "date-time" }),
+    refreshToken: Type.String(),
+    refreshTokenExpiresAt: Type.String({ format: "date-time" }),
+})
+export type TMobileRefreshResponse = Static<typeof MobileRefreshResponse>
