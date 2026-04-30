@@ -11,27 +11,11 @@
 
 ## Broker coordination
 
-This repo's Claude Code agent coordinates with sibling repos (and the workspace orchestrator at `/Users/brian/Projects/Proposit-App/`) via the `skill-cefailures:broker` skill over a shared Unix socket.
+This repo's agent coordinates with sibling repos and the workspace orchestrator at `/Users/brian/Projects/Proposit-App/` via the `skill-cefailures:broker` skill — see the skill for identity rules, signal prefixes, and CLI patterns.
 
-- **Durable DM room:** topic `shared`, current conversation ID `0c7d35` (verify via `broker list --identity shared --status all`; recreate if missing). This is your always-on mailbox for cross-repo coordination, sub-project kickoffs, and orchestrator messages. It persists across phases.
-- **Broker identity:** `shared`.
-- **Session startup:** at the start of any multi-repo work, launch a persistent background follow on your durable DM room so incoming messages stream live:
-
-    ```bash
-    broker follow --identity shared 0c7d35
-    ```
-
-    Run it via `Bash(run_in_background: true)` so it streams without blocking your main loop.
-
-- **Sub-project rooms coexist.** When a cross-repo initiative starts (e.g. Phase 1 sub-project 1C), the orchestrator creates sub-project-scoped rooms (e.g. `phase-1-1c-shared`) and pings you here with the ID. Join and follow those for scoped signals; the durable DM room stays the always-on channel.
-
-- **Signal prefixes** for coordination messages so the orchestrator can route them:
-    - `READY: <what>` — a milestone landed that unblocks downstream work.
-    - `BLOCKED: <on-whom> <what>` — stuck waiting on someone.
-    - `DECISION: <topic> → <choice>` — a coordination question resolved.
-    - `QUESTION: <target> <what>` — open question needing input.
-
-- **Do not poll.** Never write a `while true; broker read; sleep N` loop — use `broker follow` for blocking waits. See the `/skill-cefailures:broker` skill docs for full CLI reference and canonical patterns.
+- **This repo's identity:** `@proposit/shared` (auto-derived from `package.json`).
+- **Likely sibling identities:** `@proposit/proposit-core`, `proposit-server`, `proposit-mobile`.
+- **Session startup:** at the start of any multi-repo work, launch `broker follow` via `Bash(run_in_background: true)` so incoming DMs stream live without blocking the main loop.
 
 ## Commands
 
