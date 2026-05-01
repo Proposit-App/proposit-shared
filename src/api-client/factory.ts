@@ -63,6 +63,7 @@ import {
     searchUserEntitiesImpl,
 } from "./search.js"
 import { getUserClaimsImpl } from "./user/claims.js"
+import { deleteUserImpl } from "./user/delete-user.js"
 import { getUserSourcesImpl } from "./user/sources.js"
 
 /**
@@ -123,6 +124,7 @@ const impls = {
     searchUserEntities: searchUserEntitiesImpl,
     getUserClaims: getUserClaimsImpl,
     getUserSources: getUserSourcesImpl,
+    deleteUser: deleteUserImpl,
 } as const
 
 /**

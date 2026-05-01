@@ -1,6 +1,7 @@
 node_modules
 dist
 .worktrees
+.broker
 .DS_Store
 *.tsbuildinfo
 .env
