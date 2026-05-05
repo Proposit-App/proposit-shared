@@ -37,9 +37,11 @@ import { spacing } from "../spacing.js"
 
 describe("spacing", () => {
     test("includes the documented Tailwind v4 4px-scale keys", () => {
-        expect(Object.keys(spacing).map(Number).sort((a, b) => a - b)).toEqual([
-            0, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24,
-        ])
+        expect(
+            Object.keys(spacing)
+                .map(Number)
+                .sort((a, b) => a - b)
+        ).toEqual([0, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24])
     })
 
     test("each value is a non-negative integer in px", () => {
@@ -118,7 +120,11 @@ import { radius } from "../radii.js"
 describe("radius", () => {
     test("includes sm/md/lg/xl/full keys", () => {
         expect(Object.keys(radius).sort()).toEqual([
-            "full", "lg", "md", "sm", "xl",
+            "full",
+            "lg",
+            "md",
+            "sm",
+            "xl",
         ])
     })
 
@@ -381,7 +387,7 @@ git commit -m "feat(ui): add sizing tokens"
 - Create: `src/ui/__tests__/motion.test.ts`
 - Create: `src/ui/motion.ts`
 
-Note: `easing.brand` is intentionally a *mutable* tuple `[number, number, number, number]` (no `as const`). `motion/react`'s `BezierDefinition` and RN's `Easing.bezier(...)` both expect mutable; a `readonly` tuple from `as const` would not satisfy `BezierDefinition`.
+Note: `easing.brand` is intentionally a _mutable_ tuple `[number, number, number, number]` (no `as const`). `motion/react`'s `BezierDefinition` and RN's `Easing.bezier(...)` both expect mutable; a `readonly` tuple from `as const` would not satisfy `BezierDefinition`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -497,7 +503,15 @@ describe("fontWeight", () => {
 describe("textStyle", () => {
     test("includes the nine documented styles", () => {
         expect(Object.keys(textStyle).sort()).toEqual([
-            "body", "caption", "code", "h1", "h2", "h3", "h4", "lead", "small",
+            "body",
+            "caption",
+            "code",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "lead",
+            "small",
         ])
     })
 
@@ -561,15 +575,15 @@ export type TTextStyleKey =
     | "code"
 
 export const textStyle: Record<TTextStyleKey, TTextStyle> = {
-    h1:      { fontSize: 36, lineHeight: 40, letterSpacing: -0.6 },
-    h2:      { fontSize: 30, lineHeight: 36, letterSpacing: -0.45 },
-    h3:      { fontSize: 24, lineHeight: 32, letterSpacing: -0.24 },
-    h4:      { fontSize: 20, lineHeight: 28, letterSpacing: -0.1 },
-    lead:    { fontSize: 18, lineHeight: 28, letterSpacing: 0 },
-    body:    { fontSize: 16, lineHeight: 24, letterSpacing: 0 },
-    small:   { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+    h1: { fontSize: 36, lineHeight: 40, letterSpacing: -0.6 },
+    h2: { fontSize: 30, lineHeight: 36, letterSpacing: -0.45 },
+    h3: { fontSize: 24, lineHeight: 32, letterSpacing: -0.24 },
+    h4: { fontSize: 20, lineHeight: 28, letterSpacing: -0.1 },
+    lead: { fontSize: 18, lineHeight: 28, letterSpacing: 0 },
+    body: { fontSize: 16, lineHeight: 24, letterSpacing: 0 },
+    small: { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
     caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.12 },
-    code:    { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+    code: { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
 }
 ```
 
@@ -682,7 +696,7 @@ export const shadow: Record<TShadowKey, TShadow> = {
         native: {
             shadowColor: "#000000",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.10,
+            shadowOpacity: 0.1,
             shadowRadius: 6,
             elevation: 3,
         },
@@ -692,7 +706,7 @@ export const shadow: Record<TShadowKey, TShadow> = {
         native: {
             shadowColor: "#000000",
             shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.10,
+            shadowOpacity: 0.1,
             shadowRadius: 15,
             elevation: 6,
         },
@@ -742,7 +756,7 @@ describe("colors", () => {
         for (const palette of [colors.light, colors.dark]) {
             for (const [key, value] of Object.entries(palette)) {
                 expect(value, `colors.<scheme>.${key} = ${value}`).toMatch(
-                    HEX_RE,
+                    HEX_RE
                 )
             }
         }
@@ -976,7 +990,8 @@ import {
 } from "../assets/index.js"
 import type { TBrandAsset } from "../assets/index.js"
 
-const VIEWBOX_RE = /^-?\d+(?:\.\d+)? -?\d+(?:\.\d+)? \d+(?:\.\d+)? \d+(?:\.\d+)?$/
+const VIEWBOX_RE =
+    /^-?\d+(?:\.\d+)? -?\d+(?:\.\d+)? \d+(?:\.\d+)? \d+(?:\.\d+)?$/
 
 const allAssets: ReadonlyArray<readonly [string, TBrandAsset]> = [
     ["propositLogoBlack", propositLogoBlack],

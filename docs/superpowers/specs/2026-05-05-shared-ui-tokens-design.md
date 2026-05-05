@@ -11,7 +11,7 @@
 
 Establish a single source of truth for design tokens (colors, typography, spacing, radii, shadows, motion, z-index, breakpoints, sizing) and brand assets (Proposit logos as inline SVG strings) shared between the Next.js web app (`proposit-server`) and the React Native / Expo mobile app (`proposit-mobile`). Both apps will support light and dark color schemes from these tokens.
 
-The shared package owns the *values*. Each app owns its own *consumption* (CSS generation on web, runtime hook on mobile). This spec covers only the source-of-truth package; downstream consumption is documented as a recommendation in §7 but is out of scope for the implementing agent.
+The shared package owns the _values_. Each app owns its own _consumption_ (CSS generation on web, runtime hook on mobile). This spec covers only the source-of-truth package; downstream consumption is documented as a recommendation in §7 but is out of scope for the implementing agent.
 
 ## 2. Source-of-truth relationship
 
@@ -70,7 +70,7 @@ Add to the `exports` map:
 
 ### 3.3 Import constraints
 
-- **Both umbrella and sub-path imports work.** The umbrella `@proposit/shared/ui` is safe here because every file under `src/ui/` is pure data with no `typebox` dependency, so the typebox-via-babel-preset-expo bug (documented in `proposit-mobile/CLAUDE.md`, which only triggers for barrels that transitively pull in typebox) does not apply. Sub-path imports remain available for tree-shaking and as a forward-compatibility hedge: if a future `ui/` addition ever needs typebox, do *not* re-export it through `ui/index.ts` without first sub-pathing the consumer. v0 has no such modules.
+- **Both umbrella and sub-path imports work.** The umbrella `@proposit/shared/ui` is safe here because every file under `src/ui/` is pure data with no `typebox` dependency, so the typebox-via-babel-preset-expo bug (documented in `proposit-mobile/CLAUDE.md`, which only triggers for barrels that transitively pull in typebox) does not apply. Sub-path imports remain available for tree-shaking and as a forward-compatibility hedge: if a future `ui/` addition ever needs typebox, do _not_ re-export it through `ui/index.ts` without first sub-pathing the consumer. v0 has no such modules.
 - **No DOM, no Node-only APIs.** Enforced by `proposit-shared`'s `tsconfig.json` `lib: ["ES2022"]`. All exports are pure data plus tiny pure helpers.
 - **No new dependencies in `proposit-shared`.** This work uses only TypeScript primitives.
 
@@ -220,13 +220,14 @@ export const colorSchemeFor = (scheme: TColorScheme): TColorPalette =>
     colors[scheme]
 ```
 
-**Naming convention note.** Token *keys* in TS use camelCase (`mutedForeground`, `argumentPublished`) per the project's brain-style TypeScript conventions. The downstream CSS emitter on the server will translate these to kebab-case CSS custom properties (`--color-muted-foreground`, `--color-argument-published`) to match the conventions in `proposit-server/docs/design-system.md` §1. The shared package itself does not emit CSS; the translation is purely a server-side concern.
+**Naming convention note.** Token _keys_ in TS use camelCase (`mutedForeground`, `argumentPublished`) per the project's brain-style TypeScript conventions. The downstream CSS emitter on the server will translate these to kebab-case CSS custom properties (`--color-muted-foreground`, `--color-argument-published`) to match the conventions in `proposit-server/docs/design-system.md` §1. The shared package itself does not emit CSS; the translation is purely a server-side concern.
 
 **Why `reactionUpvote` is teal, not blue.** Decoupled from `primary` so a future brand recolor doesn't silently re-tint upvotes. The chosen teal (`#0d9488` / `#2dd4bf`) is positive without colliding with `success`/`verdictAgree` (green) or `info` (blue).
 
 ### 4.2 Typography (`src/ui/typography.ts`)
 
-**Font-family handoff contract.** `fontFamily.sans = "Roboto"` and `fontFamily.mono = "Fira Code"` are *logical* names. Each consumer adapts:
+**Font-family handoff contract.** `fontFamily.sans = "Roboto"` and `fontFamily.mono = "Fira Code"` are _logical_ names. Each consumer adapts:
+
 - **Web (`proposit-server`):** the existing `next/font/google` loader exposes Roboto and Fira Code as CSS variables (`var(--font-roboto)`, `var(--font-fira-code)`). The token-CSS emitter writes `--font-sans: var(--font-roboto)` so call sites read the logical name.
 - **Mobile (`@proposit/proposit-mobile`):** when fonts are wired up, `expo-font` registers the family name verbatim — `Font.loadAsync({ Roboto: require(...), "Fira Code": require(...) })` — so `fontFamily.sans` works as a direct RN `style={{ fontFamily }}` value.
 
@@ -244,24 +245,24 @@ export const fontWeight = {
 } as const
 
 export interface TTextStyle {
-    fontSize: number       // unitless; web emitter appends "px", RN uses raw
-    lineHeight: number     // same convention
-    letterSpacing: number  // same convention; matches RN semantics directly
+    fontSize: number // unitless; web emitter appends "px", RN uses raw
+    lineHeight: number // same convention
+    letterSpacing: number // same convention; matches RN semantics directly
 }
 
 export const textStyle: Record<
     "h1" | "h2" | "h3" | "h4" | "lead" | "body" | "small" | "caption" | "code",
     TTextStyle
 > = {
-    h1:      { fontSize: 36, lineHeight: 40, letterSpacing: -0.6 },
-    h2:      { fontSize: 30, lineHeight: 36, letterSpacing: -0.45 },
-    h3:      { fontSize: 24, lineHeight: 32, letterSpacing: -0.24 },
-    h4:      { fontSize: 20, lineHeight: 28, letterSpacing: -0.1 },
-    lead:    { fontSize: 18, lineHeight: 28, letterSpacing: 0 },
-    body:    { fontSize: 16, lineHeight: 24, letterSpacing: 0 },
-    small:   { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+    h1: { fontSize: 36, lineHeight: 40, letterSpacing: -0.6 },
+    h2: { fontSize: 30, lineHeight: 36, letterSpacing: -0.45 },
+    h3: { fontSize: 24, lineHeight: 32, letterSpacing: -0.24 },
+    h4: { fontSize: 20, lineHeight: 28, letterSpacing: -0.1 },
+    lead: { fontSize: 18, lineHeight: 28, letterSpacing: 0 },
+    body: { fontSize: 16, lineHeight: 24, letterSpacing: 0 },
+    small: { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
     caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.12 },
-    code:    { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
+    code: { fontSize: 14, lineHeight: 20, letterSpacing: 0 },
 }
 ```
 
@@ -294,7 +295,7 @@ export const spacing = {
 export type TSpacingKey = keyof typeof spacing
 ```
 
-(Note: numeric-literal keys produce a numeric-literal-union type — `keyof typeof spacing` is `0 | 0.5 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 16 | 20 | 24` — *not* a string union. Index with numeric literals: `spacing[0.5]`, `spacing[4]`. The implementing agent should verify with `tsc` that the inferred `TSpacingKey` looks right before locking in.)
+(Note: numeric-literal keys produce a numeric-literal-union type — `keyof typeof spacing` is `0 | 0.5 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 16 | 20 | 24` — _not_ a string union. Index with numeric literals: `spacing[0.5]`, `spacing[4]`. The implementing agent should verify with `tsc` that the inferred `TSpacingKey` looks right before locking in.)
 
 ### 4.4 Radii (`src/ui/radii.ts`)
 
@@ -314,7 +315,7 @@ Dual-shape because CSS `box-shadow` and React Native's shadow props are differen
 
 ```ts
 export interface TShadow {
-    css: string  // also valid as React Native's `boxShadow` style prop on RN 0.76+
+    css: string // also valid as React Native's `boxShadow` style prop on RN 0.76+
     native: {
         // iOS-style legacy shadow props; Android uses `elevation`.
         // For RN 0.76+, prefer the `css` field assigned to `style.boxShadow`
@@ -324,7 +325,7 @@ export interface TShadow {
         shadowOffset: { width: number; height: number }
         shadowOpacity: number
         shadowRadius: number
-        elevation: number  // Android
+        elevation: number // Android
     }
 }
 
@@ -344,7 +345,7 @@ export const shadow: Record<"sm" | "md" | "lg", TShadow> = {
         native: {
             shadowColor: "#000000",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.10,
+            shadowOpacity: 0.1,
             shadowRadius: 6,
             elevation: 3,
         },
@@ -354,7 +355,7 @@ export const shadow: Record<"sm" | "md" | "lg", TShadow> = {
         native: {
             shadowColor: "#000000",
             shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.10,
+            shadowOpacity: 0.1,
             shadowRadius: 15,
             elevation: 6,
         },
@@ -382,7 +383,7 @@ export const easing: {
 }
 ```
 
-(Note: `easing.brand` is intentionally a mutable tuple, *not* `as const`. `motion/react`'s `BezierDefinition` and RN's `Easing.bezier(...arr)` both expect a mutable `[number, number, number, number]`; a `readonly` tuple from `as const` would not satisfy `BezierDefinition`. Don't add `as const` here.)
+(Note: `easing.brand` is intentionally a mutable tuple, _not_ `as const`. `motion/react`'s `BezierDefinition` and RN's `Easing.bezier(...arr)` both expect a mutable `[number, number, number, number]`; a `readonly` tuple from `as const` would not satisfy `BezierDefinition`. Don't add `as const` here.)
 
 ### 4.7 Z-index (`src/ui/z-index.ts`)
 
@@ -423,7 +424,7 @@ export const sizing = {
     fieldSm: 32,
     fieldMd: 40,
     fieldLg: 48,
-    targetMin: 40,  // a11y minimum tap target
+    targetMin: 40, // a11y minimum tap target
 } as const
 ```
 
@@ -433,9 +434,9 @@ export const sizing = {
 
 ```ts
 export interface TBrandAsset {
-    svg: string             // raw SVG markup, e.g. `<svg ...>...</svg>`
-    viewBox: string         // e.g. "0 0 800 330"
-    intrinsicWidth: number  // numeric width from the source SVG
+    svg: string // raw SVG markup, e.g. `<svg ...>...</svg>`
+    viewBox: string // e.g. "0 0 800 330"
+    intrinsicWidth: number // numeric width from the source SVG
     intrinsicHeight: number
 }
 ```
@@ -458,7 +459,7 @@ import type { TBrandAsset } from "./types.js"
 // Source: proposit-server/public/Proposit_Logo-black.svg
 // viewBox/dimensions extracted at implementation time; values below are placeholders.
 export const propositLogoBlack: TBrandAsset = {
-    svg: `<svg ...>...</svg>`,  // exact contents of source SVG, XML decl stripped
+    svg: `<svg ...>...</svg>`, // exact contents of source SVG, XML decl stripped
     viewBox: "0 0 800 330",
     intrinsicWidth: 800,
     intrinsicHeight: 330,
@@ -469,7 +470,7 @@ export const propositLogoBlack: TBrandAsset = {
 
 ### Consumption shape (informational; consumers implement, not this spec)
 
-- **Web (`proposit-server`):** wrap the SVG string in a small component using `dangerouslySetInnerHTML`, *or* parse to JSX once at build time. Either is fine; the shared package is consumption-agnostic.
+- **Web (`proposit-server`):** wrap the SVG string in a small component using `dangerouslySetInnerHTML`, _or_ parse to JSX once at build time. Either is fine; the shared package is consumption-agnostic.
 - **Mobile (`@proposit/proposit-mobile`):** use `react-native-svg`'s `SvgXml` component, which accepts a raw SVG markup string directly — `<SvgXml xml={asset.svg} width={w} height={h} />`. This is the standard supported path; do not attempt to render arbitrary SVG strings without `react-native-svg`. Mobile adds `react-native-svg` as a dep when the first logo renders (per §7.2).
 
 ### 5.2 Re-exports + helper
@@ -477,24 +478,16 @@ export const propositLogoBlack: TBrandAsset = {
 `src/ui/assets/index.ts`:
 
 ```ts
-export {
-    propositLogoBlack,
-} from "./proposit-logo-black.js"
-export {
-    propositLogoWhite,
-} from "./proposit-logo-white.js"
-export {
-    propositLetterLogoBlack,
-} from "./proposit-letter-logo-black.js"
+export { propositLogoBlack } from "./proposit-logo-black.js"
+export { propositLogoWhite } from "./proposit-logo-white.js"
+export { propositLetterLogoBlack } from "./proposit-letter-logo-black.js"
 export type { TBrandAsset } from "./types.js"
 
 import type { TColorScheme } from "../colors.js"
 import { propositLogoBlack } from "./proposit-logo-black.js"
 import { propositLogoWhite } from "./proposit-logo-white.js"
 
-export const propositLogoFor = (
-    scheme: TColorScheme,
-): TBrandAsset =>
+export const propositLogoFor = (scheme: TColorScheme): TBrandAsset =>
     scheme === "dark" ? propositLogoWhite : propositLogoBlack
 ```
 
@@ -520,8 +513,8 @@ This spec ships only the shared package. The two implementations below are descr
 1. Add `scripts/build-tokens-css.ts` that imports from `@proposit/shared/ui/*` and emits `src/app/_tokens.css` containing the equivalent Tailwind v4 `@theme { ... }` block (sourced from `colors.light` and the scheme-invariant tokens) plus a `.dark { ... }` override block (sourced from `colors.dark`). Translation of the JS shape into Tailwind v4's CSS conventions — kebab-case names, the `--text-name`/`--text-name--line-height` sub-property pattern for typography, unit appending (`px`) where needed — is a server-side concern and not specified here.
 2. Add `predev` and `prebuild` script bindings so the file regenerates on every dev start and production build.
 3. Add `@import "./_tokens.css";` at the top of `src/app/globals.css`.
-4. While MUI remains in the tree, sync `src/components/shared/consts.ts`'s `RootThemeOpts` to the shared values. This is *not* a one-to-one wire-up: `RootThemeOpts` is MUI-shaped (`palette: { primary: { main, light, dark, contrastText }, ... }`, `typography: { h1: { fontSize, lineHeight, ... }, ... }`) while the shared exports are flat (`colors.light.primary: string`, `textStyle.h1: { fontSize, lineHeight, letterSpacing }`). The server agent writes a small translation function that maps the flat shared shape into MUI's nested shape — `primary.main = colors.light.primary`, `primary.contrastText = colors.light.primaryForeground`, derive MUI's `light`/`dark` palette variants by lightening/darkening (e.g., `chroma.js` or hand-pick), etc. This is non-trivial and should be its own commit within the server's adoption PR.
-5. Update `proposit-server/docs/design-system.md` §1 to note that token *values* are sourced from `@proposit/shared/ui`. The `@theme` *block* still lives in `globals.css` (Tailwind v4 reads it there); it's just generated.
+4. While MUI remains in the tree, sync `src/components/shared/consts.ts`'s `RootThemeOpts` to the shared values. This is _not_ a one-to-one wire-up: `RootThemeOpts` is MUI-shaped (`palette: { primary: { main, light, dark, contrastText }, ... }`, `typography: { h1: { fontSize, lineHeight, ... }, ... }`) while the shared exports are flat (`colors.light.primary: string`, `textStyle.h1: { fontSize, lineHeight, letterSpacing }`). The server agent writes a small translation function that maps the flat shared shape into MUI's nested shape — `primary.main = colors.light.primary`, `primary.contrastText = colors.light.primaryForeground`, derive MUI's `light`/`dark` palette variants by lightening/darkening (e.g., `chroma.js` or hand-pick), etc. This is non-trivial and should be its own commit within the server's adoption PR.
+5. Update `proposit-server/docs/design-system.md` §1 to note that token _values_ are sourced from `@proposit/shared/ui`. The `@theme` _block_ still lives in `globals.css` (Tailwind v4 reads it there); it's just generated.
 
 ### 7.2 `@proposit/proposit-mobile` adoption (separate spec, owned by `proposit-mobile` agent)
 
@@ -530,11 +523,14 @@ This spec ships only the shared package. The two implementations below are descr
     ```ts
     import { useEffect, useState } from "react"
     import { Appearance } from "react-native"
-    import { colorSchemeFor, type TColorScheme } from "@proposit/shared/ui/colors"
+    import {
+        colorSchemeFor,
+        type TColorScheme,
+    } from "@proposit/shared/ui/colors"
 
     export const useTheme = () => {
         const [scheme, setScheme] = useState<TColorScheme>(
-            (Appearance.getColorScheme() ?? "light") as TColorScheme,
+            (Appearance.getColorScheme() ?? "light") as TColorScheme
         )
         useEffect(() => {
             const sub = Appearance.addChangeListener(({ colorScheme }) => {
@@ -551,10 +547,10 @@ This spec ships only the shared package. The two implementations below are descr
 
 ## 8. Versioning and change-management
 
-- **This release: minor bump.** `@proposit/shared@0.3.2 → 0.4.0` (new exported sub-path = feature). Pre-1.0 caret-pin policy applies; consumers re-pin to `^0.4.0`. Note that npm caret on `0.x` does *not* cross minor versions — `proposit-server` and `proposit-mobile`, which currently pin `^0.3.x`, will not auto-receive `0.4.0`. Each consumer needs an explicit `pnpm add @proposit/shared@^0.4.0` in its own adoption PR.
-- Adding a new token *key* → patch bump.
+- **This release: minor bump.** `@proposit/shared@0.3.2 → 0.4.0` (new exported sub-path = feature). Pre-1.0 caret-pin policy applies; consumers re-pin to `^0.4.0`. Note that npm caret on `0.x` does _not_ cross minor versions — `proposit-server` and `proposit-mobile`, which currently pin `^0.3.x`, will not auto-receive `0.4.0`. Each consumer needs an explicit `pnpm add @proposit/shared@^0.4.0` in its own adoption PR.
+- Adding a new token _key_ → patch bump.
 - Renaming or removing a token key → minor bump; called out in `docs/changelogs/upcoming.md`.
-- Changing a token *value* (e.g., shifting brand primary) → patch bump; flagged in `docs/release-notes/upcoming.md` because both apps will visually shift.
+- Changing a token _value_ (e.g., shifting brand primary) → patch bump; flagged in `docs/release-notes/upcoming.md` because both apps will visually shift.
 - Adding a new asset → patch bump.
 - All new sub-paths added to the package's `exports` map must declare `types`, `import`, and `default` conditions.
 
@@ -567,8 +563,8 @@ Explicitly NOT in this spec; each is a separate follow-up:
 - Icon vocabulary registry (a future `@proposit/shared/ui/icons` shipping semantic name keys with no glyphs; deferred per the brainstorming session).
 - Component primitives and domain components in `proposit-shared`. This package is data + helpers only.
 - Content formatters (`formatRelative`, `formatNumber`, etc.).
-- Font *files*. Each app loads fonts via its platform's mechanism (`next/font` web, `expo-font` mobile); shared exports only font-name strings.
-- Tailwind config in shared. Tailwind v4 reads the `@theme` block at the *consuming* site; the server's emitter handles it on its side.
+- Font _files_. Each app loads fonts via its platform's mechanism (`next/font` web, `expo-font` mobile); shared exports only font-name strings.
+- Tailwind config in shared. Tailwind v4 reads the `@theme` block at the _consuming_ site; the server's emitter handles it on its side.
 - Raster icon files (`letter_icon-*.png`, app icons, splash). Each app keeps its own.
 
 ## 10. Agent execution notes
