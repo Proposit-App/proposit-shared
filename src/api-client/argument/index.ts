@@ -144,14 +144,14 @@ export async function getAllArgumentsImpl(
     params: GetAllArgumentsParams = {}
 ) {
     const baseUrl = resolveBaseUrl(config)
-    const url = new URL(`${baseUrl}/api/v1/argument`, "http://localhost")
+    const url = new URL(`${baseUrl}/api/v1/argument`)
     for (const [key, value] of Object.entries(params)) {
         if (value !== undefined) {
             url.searchParams.set(key, String(value))
         }
     }
     return await parseResponse(
-        await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
+        await config.fetchImpl(url.toString(), { method: "GET" }),
         Type.Array(ArgumentWithMetadataSchema)
     )
 }
