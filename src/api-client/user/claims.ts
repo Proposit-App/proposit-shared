@@ -8,13 +8,13 @@ export async function getUserClaimsImpl(
     argumentId?: string
 ) {
     const baseUrl = resolveBaseUrl(config)
-    const url = new URL(`${baseUrl}/api/v1/user/claims`, "http://localhost")
+    const url = new URL(`${baseUrl}/api/v1/user/claims`)
     if (argumentId) {
         url.searchParams.set("argumentId", argumentId)
     }
 
     return await parseResponse(
-        await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
+        await config.fetchImpl(url.toString(), { method: "GET" }),
         UserClaimsResponseSchema
     )
 }

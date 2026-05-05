@@ -152,12 +152,11 @@ export async function getExpressionsImpl(
 ) {
     const baseUrl = resolveBaseUrl(config)
     const url = new URL(
-        `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions`,
-        "http://localhost"
+        `${logicUrl(argumentId, argumentVersion, baseUrl)}/expressions`
     )
     if (premiseId) url.searchParams.set("premiseId", premiseId)
     return await parseResponse(
-        await config.fetchImpl(url.pathname + url.search, { method: "GET" }),
+        await config.fetchImpl(url.toString(), { method: "GET" }),
         Type.Array(PropositionalExpressionSchema)
     )
 }
