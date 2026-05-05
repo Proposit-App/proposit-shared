@@ -14,7 +14,7 @@ describe("colors", () => {
         for (const palette of [colors.light, colors.dark]) {
             for (const [key, value] of Object.entries(palette)) {
                 expect(value, `colors.<scheme>.${key} = ${value}`).toMatch(
-                    HEX_RE,
+                    HEX_RE
                 )
             }
         }

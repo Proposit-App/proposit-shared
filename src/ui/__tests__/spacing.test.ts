@@ -6,7 +6,7 @@ describe("spacing", () => {
         expect(
             Object.keys(spacing)
                 .map(Number)
-                .sort((a, b) => a - b),
+                .sort((a, b) => a - b)
         ).toEqual([0, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24])
     })
 
