@@ -10,7 +10,7 @@ import type { TBrandAsset } from "../assets/index.js"
 const VIEWBOX_RE =
     /^-?\d+(?:\.\d+)? -?\d+(?:\.\d+)? \d+(?:\.\d+)? \d+(?:\.\d+)?$/
 
-const allAssets: ReadonlyArray<readonly [string, TBrandAsset]> = [
+const allAssets: readonly (readonly [string, TBrandAsset])[] = [
     ["propositLogoBlack", propositLogoBlack],
     ["propositLogoWhite", propositLogoWhite],
     ["propositLetterLogoBlack", propositLetterLogoBlack],

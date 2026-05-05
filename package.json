@@ -102,6 +102,21 @@
             "types": "./dist/engine/*.d.ts",
             "import": "./dist/engine/*.js",
             "default": "./dist/engine/*.js"
+        },
+        "./ui": {
+            "types": "./dist/ui/index.d.ts",
+            "import": "./dist/ui/index.js",
+            "default": "./dist/ui/index.js"
+        },
+        "./ui/assets": {
+            "types": "./dist/ui/assets/index.d.ts",
+            "import": "./dist/ui/assets/index.js",
+            "default": "./dist/ui/assets/index.js"
+        },
+        "./ui/*": {
+            "types": "./dist/ui/*.d.ts",
+            "import": "./dist/ui/*.js",
+            "default": "./dist/ui/*.js"
         }
     },
     "files": [
