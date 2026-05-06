@@ -15,7 +15,7 @@ export const ClaimSearchResultSchema = Type.Object({
     argumentId: UUID,
     version: Type.Number(),
     title: Type.String(),
-    type: Type.String(),
+    kind: Type.String(),
     argumentTitle: Type.String(),
     distance: Type.Number(),
 })

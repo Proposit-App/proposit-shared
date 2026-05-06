@@ -55,7 +55,8 @@ describe("PropositArgumentEngine", () => {
             version: argumentVersion,
             title: "Test Claim",
             body: "Test body",
-            type: "claim" as const,
+            kind: "claim" as const,
+            type: "normal" as const,
             creatorId,
             createdOn: now,
             digest: "stmt-digest",
@@ -196,48 +197,6 @@ describe("PropositArgumentEngine", () => {
         })
     })
 
-    describe("source accessors", () => {
-        test("setDomainSource / getDomainSource — set a source and retrieve by ID", () => {
-            const engine = buildEngine()
-            const src = makeSource()
-
-            engine.setDomainSource(src)
-
-            expect(engine.getDomainSource(src.id)).toEqual(src)
-        })
-
-        test("getDomainSource returns undefined for missing ID", () => {
-            const engine = buildEngine()
-
-            expect(engine.getDomainSource(v4())).toBeUndefined()
-        })
-
-        test("getDomainSources returns all sources", () => {
-            const engine = buildEngine()
-            const src1 = makeSource()
-            const src2 = makeSource()
-
-            engine.setDomainSource(src1)
-            engine.setDomainSource(src2)
-
-            const all = engine.getDomainSources()
-            expect(Object.keys(all)).toHaveLength(2)
-            expect(all[src1.id]).toEqual(src1)
-            expect(all[src2.id]).toEqual(src2)
-        })
-
-        test("removeDomainSource removes a source", () => {
-            const engine = buildEngine()
-            const src = makeSource()
-
-            engine.setDomainSource(src)
-            expect(engine.getDomainSource(src.id)).toEqual(src)
-
-            engine.removeDomainSource(src.id)
-            expect(engine.getDomainSource(src.id)).toBeUndefined()
-        })
-    })
-
     describe("claimSource accessors", () => {
         test("addClaimSource / getSourcesForClaim — add a relation and retrieve by claim ID", () => {
             const engine = buildEngine()
@@ -309,14 +268,12 @@ describe("PropositArgumentEngine", () => {
     })
 
     describe("fromServerData factory", () => {
-        test("loads a snapshot + claims/sources/claimSources", () => {
-            const { snapshot, claims, sources, claimSources } =
-                buildSnapshotWithData()
+        test("loads a snapshot + claims/claimSources", () => {
+            const { snapshot, claims, claimSources } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                sources,
                 claimSources
             )
 
@@ -330,17 +287,12 @@ describe("PropositArgumentEngine", () => {
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                sources,
                 claimSources
             )
 
             // Claims
             expect(engine.getClaim(claims[0].id)).toEqual(claims[0])
             expect(Object.keys(engine.getClaims())).toHaveLength(1)
-
-            // Sources
-            expect(engine.getDomainSource(sources[0].id)).toEqual(sources[0])
-            expect(Object.keys(engine.getDomainSources())).toHaveLength(1)
 
             // ClaimSources
             const csForClaim = engine.getSourcesForClaim(claims[0].id)
@@ -349,13 +301,11 @@ describe("PropositArgumentEngine", () => {
         })
 
         test("inherited engine functionality works (e.g., getArgument().id)", () => {
-            const { snapshot, claims, sources, claimSources } =
-                buildSnapshotWithData()
+            const { snapshot, claims, claimSources } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                sources,
                 claimSources
             )
 
@@ -367,20 +317,18 @@ describe("PropositArgumentEngine", () => {
     })
 
     describe("reactive snapshot", () => {
-        test("getProjectSnapshot() includes claims, sources, claimSources records", () => {
+        test("getProjectSnapshot() includes claims and claimSources records", () => {
             const engine = buildEngine()
             const claim = makeClaim()
             const src = makeSource()
             const cs = makeClaimSource(claim.id, src.id)
 
             engine.setClaim(claim)
-            engine.setDomainSource(src)
             engine.addClaimSource(cs)
 
             const snap = engine.getProjectSnapshot()
 
             expect(snap.claims[claim.id]).toEqual(claim)
-            expect(snap.domainSources[src.id]).toEqual(src)
             expect(snap.claimSources[claim.id]).toHaveLength(1)
             expect(snap.claimSources[claim.id][0]).toEqual(cs)
 
@@ -391,40 +339,40 @@ describe("PropositArgumentEngine", () => {
             expect(snap.roles).toBeDefined()
         })
 
-        test("structural sharing: mutating claims doesn't change sources reference", () => {
+        test("structural sharing: mutating claims doesn't change claimSources reference", () => {
             const engine = buildEngine()
-            const src = makeSource()
-            engine.setDomainSource(src)
+            const claimId = v4()
+            const srcId = v4()
+            engine.addClaimSource(makeClaimSource(claimId, srcId))
 
             const snap1 = engine.getProjectSnapshot()
 
-            // Mutate a claim — sources should keep the same reference
+            // Mutate a claim — claimSources should keep the same reference
             const claim = makeClaim()
             engine.setClaim(claim)
 
             const snap2 = engine.getProjectSnapshot()
 
-            // Sources record reference should be the same (structural sharing)
-            expect(snap2.domainSources).toBe(snap1.domainSources)
+            // claimSources record reference should be the same (structural sharing)
+            expect(snap2.claimSources).toBe(snap1.claimSources)
             // Claims record should be a new reference
             expect(snap2.claims).not.toBe(snap1.claims)
         })
 
-        test("structural sharing: mutating sources doesn't change claims reference", () => {
+        test("structural sharing: mutating claimSources doesn't change claims reference", () => {
             const engine = buildEngine()
             const claim = makeClaim()
             engine.setClaim(claim)
 
             const snap1 = engine.getProjectSnapshot()
 
-            // Mutate sources
-            const src = makeSource()
-            engine.setDomainSource(src)
+            // Mutate claimSources
+            engine.addClaimSource(makeClaimSource(v4(), v4()))
 
             const snap2 = engine.getProjectSnapshot()
 
             expect(snap2.claims).toBe(snap1.claims)
-            expect(snap2.domainSources).not.toBe(snap1.domainSources)
+            expect(snap2.claimSources).not.toBe(snap1.claimSources)
         })
 
         test("subscribe notifies on claim mutation", () => {
@@ -438,20 +386,6 @@ describe("PropositArgumentEngine", () => {
             expect(listener).toHaveBeenCalledTimes(1)
 
             engine.removeClaim(claim.id)
-            expect(listener).toHaveBeenCalledTimes(2)
-        })
-
-        test("subscribe notifies on source mutation", () => {
-            const engine = buildEngine()
-            const listener = vi.fn()
-
-            engine.subscribe(listener)
-
-            const src = makeSource()
-            engine.setDomainSource(src)
-            expect(listener).toHaveBeenCalledTimes(1)
-
-            engine.removeDomainSource(src.id)
             expect(listener).toHaveBeenCalledTimes(2)
         })
 
@@ -667,7 +601,7 @@ describe("PropositArgumentEngine", () => {
 
     describe("toggleNegation on PropositArgumentEngine", () => {
         test("toggleNegation works on engine built from fromServerData", async () => {
-            const { snapshot, claims, sources, claimSources, variable } =
+            const { snapshot, claims, claimSources, variable } =
                 buildSnapshotWithData()
 
             // Add a variable expression to the premise snapshot
@@ -694,7 +628,6 @@ describe("PropositArgumentEngine", () => {
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                sources,
                 claimSources
             )
 

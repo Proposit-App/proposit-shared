@@ -22,7 +22,6 @@ function makeSnapshot(
         premises: {},
         roles: { conclusionPremiseId: undefined },
         claims: {},
-        domainSources: {},
         claimSources: {},
         validationIssues: [],
         ...overrides,
@@ -56,7 +55,8 @@ const CLAIM_DEFAULTS = {
     claimForkId: null,
     creatorId: "user-1",
     createdOn: new Date(),
-    type: "claim" as const,
+    kind: "claim" as const,
+    type: "normal" as const,
     parentId: null,
     digest: "digest",
 }

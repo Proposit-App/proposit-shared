@@ -1,5 +1,6 @@
 import Type, { type Static } from "typebox"
 import { EncodableDate, Nullable, UUID } from "../common.js"
+import { IEEEReferenceSchema } from "./references.js"
 
 export const MutableClaimFieldsSchema = Type.Object({
     title: Type.String(),
@@ -15,25 +16,31 @@ export const ClaimUpdateRequestSchema = Type.Interface(
 )
 export type TClaimUpdateFields = Static<typeof ClaimUpdateRequestSchema>
 
-export const ClaimTypes = {
+export const ClaimKinds = {
     CLAIM: "claim",
     CONCLUSION: "conclusion",
     DEFINITION: "definition",
     CRITERION: "criterion",
 } as const
 
-const ChildClaimTypes = Type.Union([
-    Type.Literal(ClaimTypes.DEFINITION),
-    Type.Literal(ClaimTypes.CRITERION),
+const ChildClaimKinds = Type.Union([
+    Type.Literal(ClaimKinds.DEFINITION),
+    Type.Literal(ClaimKinds.CRITERION),
 ])
 
-const LogicalClaimTypes = Type.Union([
-    Type.Literal(ClaimTypes.CONCLUSION),
-    Type.Literal(ClaimTypes.CLAIM),
+const LogicalClaimKinds = Type.Union([
+    Type.Literal(ClaimKinds.CONCLUSION),
+    Type.Literal(ClaimKinds.CLAIM),
 ])
 
-export const ClaimTypesSchema = Type.Union([ChildClaimTypes, LogicalClaimTypes])
-export type TClaimTypesSchema = Static<typeof ClaimTypesSchema>
+export const ClaimKindsSchema = Type.Union([ChildClaimKinds, LogicalClaimKinds])
+export type TClaimKindsSchema = Static<typeof ClaimKindsSchema>
+
+export const ClaimTypeSchema = Type.Union([
+    Type.Literal("normal"),
+    Type.Literal("citation"),
+])
+export type TClaimType = Static<typeof ClaimTypeSchema>
 
 export const ClaimSchema = Type.Interface([ClaimUpdateRequestSchema], {
     id: UUID,
@@ -42,14 +49,20 @@ export const ClaimSchema = Type.Interface([ClaimUpdateRequestSchema], {
     claimForkId: Nullable(UUID),
     creatorId: UUID,
     createdOn: EncodableDate,
-    type: Type.Union([ChildClaimTypes, LogicalClaimTypes]),
+    kind: Type.Union([ChildClaimKinds, LogicalClaimKinds]),
+    type: ClaimTypeSchema,
     parentId: Nullable(UUID),
     titleContentHash: Type.Optional(Nullable(Type.String())),
+    // Citation-extra fields. Optional at the schema level; consumer code
+    // populates these on claims with type === "citation".
+    url: Type.Optional(Nullable(Type.String())),
+    citation: Type.Optional(IEEEReferenceSchema),
+    citationContentHash: Type.Optional(Nullable(Type.String())),
 })
 export type TClaim = Static<typeof ClaimSchema>
 
 export const ClaimWithChildrenSchema = Type.Interface([ClaimSchema], {
     childClaimIds: Type.Array(UUID),
-    childSourceIds: Type.Array(UUID),
+    childCitationIds: Type.Array(UUID),
 })
 export type TClaimWithChildren = Static<typeof ClaimWithChildrenSchema>

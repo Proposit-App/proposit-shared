@@ -15,7 +15,6 @@ import type {
     TPropositionalVariable,
 } from "../schemas/logic.js"
 import type { TClaim } from "../schemas/model/claims.js"
-import type { TSourceNotStrict } from "../schemas/model/sources.js"
 import type { TClaimSource } from "../schemas/model/sources.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
 import {
@@ -32,14 +31,8 @@ export type TProjectSnapshot = TArgumentEngineSnapshot<
 >
 
 /**
- * Extended reactive snapshot that includes domain-specific data alongside core engine state.
- * Domain sources are stored in `domainSources` (not `sources`) because the core's
- * `sources` field is typed as `Record<string, TCoreSource>` and our domain TSourceNotStrict
- * is not structurally compatible. The core fields `variableSourceAssociations` and
- * `expressionSourceAssociations` pass through from the base and will be empty until
- * core source associations are used.
- *
- * `claims` and `claimSources` hold the domain-level claim data managed by proposit-server.
+ * Extended reactive snapshot. Adds project-level claim and claim-source
+ * relation data and computed validation issues to core's reactive snapshot.
  */
 export type TProjectReactiveSnapshot = TReactiveSnapshot<
     TArgument,
@@ -48,7 +41,6 @@ export type TProjectReactiveSnapshot = TReactiveSnapshot<
     TPropositionalVariable
 > & {
     claims: Record<string, TClaim>
-    domainSources: Record<string, TSourceNotStrict>
     claimSources: Record<string, TClaimSource[]>
     validationIssues: TCoreValidationIssue[]
 }
@@ -71,7 +63,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
     // Internal storage — claimsMap also backs the base class's claimLibrary
     // so that setClaim() makes new claims visible to addVariable() validation.
     private claimsMap: Map<string, TClaim>
-    private sourcesMap = new Map<string, TSourceNotStrict>()
     private claimSourcesMap = new Map<string, TClaimSource[]>()
 
     // Shared context object that is captured by the mutableLookup closure
@@ -98,10 +89,11 @@ export class PropositArgumentEngine extends ArgumentEngine<
         const toCoreClaim = (c: {
             id: string
             version: number
+            type: "normal" | "citation"
         }): TCoreClaim => ({
             id: c.id,
             version: c.version,
-            type: "normal",
+            type: c.type ?? "normal",
             frozen: false,
             checksum: "",
         })
@@ -185,12 +177,10 @@ export class PropositArgumentEngine extends ArgumentEngine<
 
     // Dirty tracking for structural sharing
     private claimsDirty = true
-    private sourcesDirty = true
     private claimSourcesDirty = true
 
     // Cached records for reactive snapshot
     private cachedClaims: Record<string, TClaim> = {}
-    private cachedSources: Record<string, TSourceNotStrict> = {}
     private cachedClaimSources: Record<string, TClaimSource[]> = {}
 
     // Full combined snapshot cache (for useSyncExternalStore referential stability)
@@ -212,14 +202,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.claimsDirty = false
         }
         return this.cachedClaims
-    }
-
-    private getSourcesRecord(): Record<string, TSourceNotStrict> {
-        if (this.sourcesDirty) {
-            this.cachedSources = Object.fromEntries(this.sourcesMap)
-            this.sourcesDirty = false
-        }
-        return this.cachedSources
     }
 
     private getClaimSourcesRecord(): Record<string, TClaimSource[]> {
@@ -255,32 +237,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
     removeClaim(id: string): void {
         if (this.claimsMap.delete(id)) {
             this.claimsDirty = true
-            this.notifySubscribers()
-        }
-    }
-
-    // ──── Domain source accessors ────
-    // Named with "Domain" prefix to avoid shadowing core's SourceManager
-    // methods (getSource, getSources, removeSource). Domain sources are
-    // managed at the proposit-server level, not through proposit-core.
-
-    getDomainSource(id: string): TSourceNotStrict | undefined {
-        return this.sourcesMap.get(id)
-    }
-
-    getDomainSources(): Record<string, TSourceNotStrict> {
-        return this.getSourcesRecord()
-    }
-
-    setDomainSource(source: TSourceNotStrict): void {
-        this.sourcesMap.set(source.id, source)
-        this.sourcesDirty = true
-        this.notifySubscribers()
-    }
-
-    removeDomainSource(id: string): void {
-        if (this.sourcesMap.delete(id)) {
-            this.sourcesDirty = true
             this.notifySubscribers()
         }
     }
@@ -332,7 +288,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
     protected override buildReactiveSnapshot(): TProjectReactiveSnapshot {
         const base = super.buildReactiveSnapshot()
         const claims = this.getClaimsRecord()
-        const domainSources = this.getSourcesRecord()
         const claimSources = this.getClaimSourcesRecord()
 
         // Recompute validation when base engine snapshot changes
@@ -362,7 +317,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.cachedProjectSnapshot &&
             base === this.lastBaseSnapshot &&
             claims === this.cachedProjectSnapshot.claims &&
-            domainSources === this.cachedProjectSnapshot.domainSources &&
             claimSources === this.cachedProjectSnapshot.claimSources
         ) {
             return this.cachedProjectSnapshot
@@ -371,7 +325,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
         const snapshot: TProjectReactiveSnapshot = {
             ...base,
             claims,
-            domainSources,
             claimSources,
             validationIssues,
         }
@@ -392,7 +345,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
     static fromServerData(
         snapshot: TProjectSnapshot,
         claims: TClaim[],
-        domainSources: TSourceNotStrict[],
         claimSources: TClaimSource[]
     ): PropositArgumentEngine {
         const claimLookup = createClaimLookup(claims)
@@ -446,9 +398,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
         // Load domain data into internal maps (no notifications)
         for (const claim of claims) {
             engine.claimsMap.set(claim.id, claim)
-        }
-        for (const src of domainSources) {
-            engine.sourcesMap.set(src.id, src)
         }
         for (const cs of claimSources) {
             const existing = engine.claimSourcesMap.get(cs.claimId) ?? []

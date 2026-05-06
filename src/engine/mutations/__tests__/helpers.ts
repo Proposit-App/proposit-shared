@@ -31,7 +31,8 @@ export function mkTestClaim(overrides?: Partial<TClaim>): TClaim {
         title: "Test claim",
         body: "",
         digest: "test-digest",
-        type: "claim",
+        kind: "claim",
+        type: "normal",
         parentId: null,
         forkId: null,
         ...overrides,
@@ -51,5 +52,5 @@ export function createTestEngine(
         config: { checksumConfig: CHECKSUM_CONFIG },
         ...overrides,
     }
-    return PropositArgumentEngine.fromServerData(snapshot, claims, [], [])
+    return PropositArgumentEngine.fromServerData(snapshot, claims, [])
 }
