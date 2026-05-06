@@ -7,7 +7,7 @@ import {
 import { EncodableDate, Nullable, UUID } from "../common.js"
 import { UserPublicFieldsSchema } from "./users.js"
 import { ClaimSchema } from "./claims.js"
-import { SourceSchemaNotStrict, ClaimSourceSchema } from "./sources.js"
+import { ClaimCitationSchema } from "./citations.js"
 import {
     PropositionalVariableSchema,
     PropositionalExpressionSchema,
@@ -90,13 +90,9 @@ export const ArgumentDiffSchema = Type.Object({
             removed: Type.Array(PropositionalPremiseSchema),
         }),
     }),
-    claimSources: Type.Object({
-        added: Type.Array(ClaimSourceSchema),
-        removed: Type.Array(ClaimSourceSchema),
-    }),
-    sources: Type.Object({
-        added: Type.Array(SourceSchemaNotStrict),
-        removed: Type.Array(SourceSchemaNotStrict),
+    claimCitations: Type.Object({
+        added: Type.Array(ClaimCitationSchema),
+        removed: Type.Array(ClaimCitationSchema),
     }),
 })
 export type TArgumentDiff = Static<typeof ArgumentDiffSchema>

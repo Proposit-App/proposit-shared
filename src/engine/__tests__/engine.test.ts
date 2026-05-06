@@ -15,8 +15,7 @@ import type {
     TPropositionalVariable,
 } from "../../schemas/logic.js"
 import type { TClaim } from "../../schemas/model/claims.js"
-import type { TSourceNotStrict } from "../../schemas/model/sources.js"
-import type { TClaimSource } from "../../schemas/model/sources.js"
+import type { TClaimCitation } from "../../schemas/model/citations.js"
 import type { TProjectSnapshot } from "../engine.js"
 
 describe("PropositArgumentEngine", () => {
@@ -66,27 +65,18 @@ describe("PropositArgumentEngine", () => {
         }
     }
 
-    function makeSource(
-        overrides: Partial<TSourceNotStrict> = {}
-    ): TSourceNotStrict {
+    function makeClaimCitation(
+        citingClaimId: string,
+        sourceClaimId: string,
+        overrides: Partial<TClaimCitation> = {}
+    ): TClaimCitation {
         return {
             id: v4(),
-            url: null,
-            citation: { title: "Test Source" },
-            createdOn: now,
-            creatorId,
-            ...overrides,
-        }
-    }
-
-    function makeClaimSource(
-        claimId: string,
-        sourceId: string,
-        overrides: Partial<TClaimSource> = {}
-    ): TClaimSource {
-        return {
-            claimId,
-            sourceId,
+            citingClaimId,
+            citingClaimVersion: 1,
+            sourceClaimId,
+            sourceClaimVersion: 1,
+            checksum: "test-edge-checksum",
             argumentId,
             version: argumentVersion,
             createdOn: now,
@@ -148,11 +138,14 @@ describe("PropositArgumentEngine", () => {
 
         const snapshot = baseEngine.snapshot() as TProjectSnapshot
 
-        const claims = [makeClaim({ id: variable.claimId })]
-        const sources = [makeSource()]
-        const claimSources = [makeClaimSource(claims[0].id, sources[0].id)]
+        const citingClaim = makeClaim({ id: variable.claimId })
+        const sourceClaim = makeClaim({ type: "citation" })
+        const claims = [citingClaim, sourceClaim]
+        const claimCitations = [
+            makeClaimCitation(citingClaim.id, sourceClaim.id),
+        ]
 
-        return { snapshot, claims, sources, claimSources, variable }
+        return { snapshot, claims, claimCitations, variable }
     }
 
     describe("claim accessors", () => {
@@ -197,116 +190,119 @@ describe("PropositArgumentEngine", () => {
         })
     })
 
-    describe("claimSource accessors", () => {
-        test("addClaimSource / getSourcesForClaim — add a relation and retrieve by claim ID", () => {
+    describe("claimCitation accessors", () => {
+        test("addClaimCitation / getSourceClaimsForCitingClaim — add a citation and retrieve by citing-claim ID", () => {
             const engine = buildEngine()
-            const claimId = v4()
-            const srcId = v4()
-            const cs = makeClaimSource(claimId, srcId)
+            const citingClaimId = v4()
+            const sourceClaimId = v4()
+            const cc = makeClaimCitation(citingClaimId, sourceClaimId)
 
-            engine.addClaimSource(cs)
+            engine.addClaimCitation(cc)
 
-            const result = engine.getSourcesForClaim(claimId)
+            const result = engine.getSourceClaimsForCitingClaim(citingClaimId)
             expect(result).toHaveLength(1)
-            expect(result[0]).toEqual(cs)
+            expect(result[0]).toEqual(cc)
         })
 
-        test("getSourcesForClaim returns [] for missing claim ID", () => {
+        test("getSourceClaimsForCitingClaim returns [] for missing citing-claim ID", () => {
             const engine = buildEngine()
 
-            expect(engine.getSourcesForClaim(v4())).toEqual([])
+            expect(engine.getSourceClaimsForCitingClaim(v4())).toEqual([])
         })
 
-        test("addClaimSource appends multiple sources for same claim", () => {
+        test("addClaimCitation appends multiple citations for same citing-claim", () => {
             const engine = buildEngine()
-            const claimId = v4()
-            const srcId1 = v4()
-            const srcId2 = v4()
-            const cs1 = makeClaimSource(claimId, srcId1)
-            const cs2 = makeClaimSource(claimId, srcId2)
+            const citingClaimId = v4()
+            const sourceClaimId1 = v4()
+            const sourceClaimId2 = v4()
+            const cc1 = makeClaimCitation(citingClaimId, sourceClaimId1)
+            const cc2 = makeClaimCitation(citingClaimId, sourceClaimId2)
 
-            engine.addClaimSource(cs1)
-            engine.addClaimSource(cs2)
+            engine.addClaimCitation(cc1)
+            engine.addClaimCitation(cc2)
 
-            const result = engine.getSourcesForClaim(claimId)
+            const result = engine.getSourceClaimsForCitingClaim(citingClaimId)
             expect(result).toHaveLength(2)
         })
 
-        test("removeClaimSource removes a specific relation", () => {
+        test("removeClaimCitation removes a specific edge by edge id", () => {
             const engine = buildEngine()
-            const claimId = v4()
-            const srcId1 = v4()
-            const srcId2 = v4()
-            const cs1 = makeClaimSource(claimId, srcId1)
-            const cs2 = makeClaimSource(claimId, srcId2)
+            const citingClaimId = v4()
+            const sourceClaimId1 = v4()
+            const sourceClaimId2 = v4()
+            const cc1 = makeClaimCitation(citingClaimId, sourceClaimId1)
+            const cc2 = makeClaimCitation(citingClaimId, sourceClaimId2)
 
-            engine.addClaimSource(cs1)
-            engine.addClaimSource(cs2)
+            engine.addClaimCitation(cc1)
+            engine.addClaimCitation(cc2)
 
-            engine.removeClaimSource(claimId, srcId1)
+            engine.removeClaimCitation(cc1.id)
 
-            const result = engine.getSourcesForClaim(claimId)
+            const result = engine.getSourceClaimsForCitingClaim(citingClaimId)
             expect(result).toHaveLength(1)
-            expect(result[0].sourceId).toBe(srcId2)
+            expect(result[0].sourceClaimId).toBe(sourceClaimId2)
         })
 
-        test("getClaimSources returns all relations as Record", () => {
+        test("getClaimCitations returns all citations as Record", () => {
             const engine = buildEngine()
-            const claimId1 = v4()
-            const claimId2 = v4()
-            const cs1 = makeClaimSource(claimId1, v4())
-            const cs2 = makeClaimSource(claimId2, v4())
+            const citingClaimId1 = v4()
+            const citingClaimId2 = v4()
+            const cc1 = makeClaimCitation(citingClaimId1, v4())
+            const cc2 = makeClaimCitation(citingClaimId2, v4())
 
-            engine.addClaimSource(cs1)
-            engine.addClaimSource(cs2)
+            engine.addClaimCitation(cc1)
+            engine.addClaimCitation(cc2)
 
-            const all = engine.getClaimSources()
+            const all = engine.getClaimCitations()
             expect(Object.keys(all)).toHaveLength(2)
-            expect(all[claimId1]).toHaveLength(1)
-            expect(all[claimId2]).toHaveLength(1)
+            expect(all[citingClaimId1]).toHaveLength(1)
+            expect(all[citingClaimId2]).toHaveLength(1)
         })
     })
 
     describe("fromServerData factory", () => {
-        test("loads a snapshot + claims/claimSources", () => {
-            const { snapshot, claims, claimSources } = buildSnapshotWithData()
+        test("loads a snapshot + claims/claimCitations", () => {
+            const { snapshot, claims, claimCitations } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimSources
+                claimCitations
             )
 
             expect(engine).toBeInstanceOf(PropositArgumentEngine)
         })
 
         test("accessors work correctly after construction", () => {
-            const { snapshot, claims, sources, claimSources } =
-                buildSnapshotWithData()
+            const { snapshot, claims, claimCitations } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimSources
+                claimCitations
             )
 
             // Claims
             expect(engine.getClaim(claims[0].id)).toEqual(claims[0])
-            expect(Object.keys(engine.getClaims())).toHaveLength(1)
+            expect(Object.keys(engine.getClaims())).toHaveLength(2)
 
-            // ClaimSources
-            const csForClaim = engine.getSourcesForClaim(claims[0].id)
-            expect(csForClaim).toHaveLength(1)
-            expect(csForClaim[0].sourceId).toBe(sources[0].id)
+            // ClaimCitations
+            const ccForClaim = engine.getSourceClaimsForCitingClaim(
+                claims[0].id
+            )
+            expect(ccForClaim).toHaveLength(1)
+            expect(ccForClaim[0].sourceClaimId).toBe(
+                claimCitations[0].sourceClaimId
+            )
         })
 
         test("inherited engine functionality works (e.g., getArgument().id)", () => {
-            const { snapshot, claims, claimSources } = buildSnapshotWithData()
+            const { snapshot, claims, claimCitations } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimSources
+                claimCitations
             )
 
             expect(engine.getArgument().id).toBe(argumentId)
@@ -317,20 +313,21 @@ describe("PropositArgumentEngine", () => {
     })
 
     describe("reactive snapshot", () => {
-        test("getProjectSnapshot() includes claims and claimSources records", () => {
+        test("getProjectSnapshot() includes claims and claimCitations records", () => {
             const engine = buildEngine()
             const claim = makeClaim()
-            const src = makeSource()
-            const cs = makeClaimSource(claim.id, src.id)
+            const sourceClaim = makeClaim({ type: "citation" })
+            const cc = makeClaimCitation(claim.id, sourceClaim.id)
 
             engine.setClaim(claim)
-            engine.addClaimSource(cs)
+            engine.setClaim(sourceClaim)
+            engine.addClaimCitation(cc)
 
             const snap = engine.getProjectSnapshot()
 
             expect(snap.claims[claim.id]).toEqual(claim)
-            expect(snap.claimSources[claim.id]).toHaveLength(1)
-            expect(snap.claimSources[claim.id][0]).toEqual(cs)
+            expect(snap.claimCitations[claim.id]).toHaveLength(1)
+            expect(snap.claimCitations[claim.id][0]).toEqual(cc)
 
             // Core fields should also be present
             expect(snap.argument).toBeDefined()
@@ -339,40 +336,42 @@ describe("PropositArgumentEngine", () => {
             expect(snap.roles).toBeDefined()
         })
 
-        test("structural sharing: mutating claims doesn't change claimSources reference", () => {
+        test("structural sharing: mutating claims doesn't change claimCitations reference", () => {
             const engine = buildEngine()
-            const claimId = v4()
-            const srcId = v4()
-            engine.addClaimSource(makeClaimSource(claimId, srcId))
+            const citingClaimId = v4()
+            const sourceClaimId = v4()
+            engine.addClaimCitation(
+                makeClaimCitation(citingClaimId, sourceClaimId)
+            )
 
             const snap1 = engine.getProjectSnapshot()
 
-            // Mutate a claim — claimSources should keep the same reference
+            // Mutate a claim — claimCitations should keep the same reference
             const claim = makeClaim()
             engine.setClaim(claim)
 
             const snap2 = engine.getProjectSnapshot()
 
-            // claimSources record reference should be the same (structural sharing)
-            expect(snap2.claimSources).toBe(snap1.claimSources)
+            // claimCitations record reference should be the same (structural sharing)
+            expect(snap2.claimCitations).toBe(snap1.claimCitations)
             // Claims record should be a new reference
             expect(snap2.claims).not.toBe(snap1.claims)
         })
 
-        test("structural sharing: mutating claimSources doesn't change claims reference", () => {
+        test("structural sharing: mutating claimCitations doesn't change claims reference", () => {
             const engine = buildEngine()
             const claim = makeClaim()
             engine.setClaim(claim)
 
             const snap1 = engine.getProjectSnapshot()
 
-            // Mutate claimSources
-            engine.addClaimSource(makeClaimSource(v4(), v4()))
+            // Mutate claimCitations
+            engine.addClaimCitation(makeClaimCitation(v4(), v4()))
 
             const snap2 = engine.getProjectSnapshot()
 
             expect(snap2.claims).toBe(snap1.claims)
-            expect(snap2.claimSources).not.toBe(snap1.claimSources)
+            expect(snap2.claimCitations).not.toBe(snap1.claimCitations)
         })
 
         test("subscribe notifies on claim mutation", () => {
@@ -389,18 +388,19 @@ describe("PropositArgumentEngine", () => {
             expect(listener).toHaveBeenCalledTimes(2)
         })
 
-        test("subscribe notifies on claimSource mutation", () => {
+        test("subscribe notifies on claimCitation mutation", () => {
             const engine = buildEngine()
             const listener = vi.fn()
 
             engine.subscribe(listener)
 
-            const claimId = v4()
-            const srcId = v4()
-            engine.addClaimSource(makeClaimSource(claimId, srcId))
+            const citingClaimId = v4()
+            const sourceClaimId = v4()
+            const cc = makeClaimCitation(citingClaimId, sourceClaimId)
+            engine.addClaimCitation(cc)
             expect(listener).toHaveBeenCalledTimes(1)
 
-            engine.removeClaimSource(claimId, srcId)
+            engine.removeClaimCitation(cc.id)
             expect(listener).toHaveBeenCalledTimes(2)
         })
 
@@ -601,7 +601,7 @@ describe("PropositArgumentEngine", () => {
 
     describe("toggleNegation on PropositArgumentEngine", () => {
         test("toggleNegation works on engine built from fromServerData", async () => {
-            const { snapshot, claims, claimSources, variable } =
+            const { snapshot, claims, claimCitations, variable } =
                 buildSnapshotWithData()
 
             // Add a variable expression to the premise snapshot
@@ -628,7 +628,7 @@ describe("PropositArgumentEngine", () => {
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimSources
+                claimCitations
             )
 
             // Verify the expression is found

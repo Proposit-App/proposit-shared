@@ -70,13 +70,13 @@ export const ClaimForkSchema = Type.Intersect([
 export type TClaimFork = Static<typeof ClaimForkSchema>
 
 // ---------------------------------------------------------------------------
-// Source fork record — tracks source version.
+// Citation fork record — tracks citation edge version.
 // ---------------------------------------------------------------------------
 
-export const SourceForkSchema = Type.Intersect([
+export const CitationForkSchema = Type.Intersect([
     EntityForkRecordBase,
     Type.Object({
         forkedFromEntityVersion: Nullable(Type.Number()),
     }),
 ])
-export type TSourceFork = Static<typeof SourceForkSchema>
+export type TCitationFork = Static<typeof CitationForkSchema>

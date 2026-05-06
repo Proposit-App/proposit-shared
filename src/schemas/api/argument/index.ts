@@ -1,11 +1,10 @@
 import {
     ArgumentSchema,
     MutableArgumentFieldsSchema,
-    ClaimSourceSchema,
-    SourceSchemaNotStrict,
     ParticipantWithUserSchema,
     ClaimSchema,
 } from "../../model.js"
+import { ClaimCitationSchema } from "../../model/citations.js"
 import { Nullable, UUID } from "../../common.js"
 import { TaskSchema } from "../../tasks.js"
 import {
@@ -22,8 +21,7 @@ export const FullArgumentSchema = Type.Object({
     argument: ArgumentSchema,
     claims: Type.Array(ClaimSchema),
     propositionalLogic: ArgumentEngineSnapshotSchema,
-    claimSources: Type.Array(ClaimSourceSchema),
-    sources: Type.Array(SourceSchemaNotStrict),
+    claimCitations: Type.Array(ClaimCitationSchema),
     argumentHistory: Type.Array(ArgumentSchema),
     originalArgument: Nullable(ArgumentSchema),
     participants: Type.Array(ParticipantWithUserSchema),
