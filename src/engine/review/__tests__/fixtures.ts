@@ -6,8 +6,7 @@
 import { PropositArgumentEngine } from "../../engine.js"
 import { CHECKSUM_CONFIG } from "../../../checksum.js"
 import {
-    EMPTY_SOURCE_LOOKUP,
-    EMPTY_CLAIM_SOURCE_LOOKUP,
+    EMPTY_CLAIM_CITATION_LOOKUP,
     createClaimLookup,
 } from "../../library-adapters.js"
 import type { TClaim } from "../../../schemas/model/claims.js"
@@ -159,8 +158,7 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
     const engine = new PropositArgumentEngine(
         makeArgument(),
         claimLookup,
-        EMPTY_SOURCE_LOOKUP,
-        EMPTY_CLAIM_SOURCE_LOOKUP,
+        EMPTY_CLAIM_CITATION_LOOKUP,
         { checksumConfig: CHECKSUM_CONFIG }
     )
 
@@ -175,10 +173,13 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
     const { result: pSupport } = engine.createPremiseWithId(
         PREMISE_IDS.pSupport,
         {
-            title: "Supporting — S1 implies S2",
-            role: "supporting",
-            createdOn: NOW,
-            creatorId: CREATOR_ID,
+            type: "freeform",
+            extras: {
+                title: "Supporting — S1 implies S2",
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
         }
     )
     pSupport.addExpression({
@@ -225,10 +226,13 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
     const { result: pConclusion } = engine.createPremiseWithId(
         PREMISE_IDS.pConclusion,
         {
-            title: "Conclusion — A implies B",
-            role: "conclusion",
-            createdOn: NOW,
-            creatorId: CREATOR_ID,
+            type: "freeform",
+            extras: {
+                title: "Conclusion — A implies B",
+                role: "conclusion",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
         }
     )
     pConclusion.addExpression({

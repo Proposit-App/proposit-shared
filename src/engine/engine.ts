@@ -20,8 +20,7 @@ import type { TClaimSource } from "../schemas/model/sources.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
 import {
     createClaimLookup,
-    createSourceLookup,
-    EMPTY_CLAIM_SOURCE_LOOKUP,
+    EMPTY_CLAIM_CITATION_LOOKUP,
 } from "./library-adapters.js"
 
 /** Project-parameterized snapshot type used to bridge TypeBox schemas and core engine. */
@@ -92,13 +91,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
             >
         >
     ) {
-        const [
-            argument,
-            claimLookup,
-            sourceLookup,
-            claimSourceLookup,
-            options,
-        ] = args
+        const [argument, claimLookup, claimCitationLookup, options] = args
         // Create the shared claims map before super() so we can build a
         // live lookup that the base class stores as this.claimLibrary.
         const claimsMap = new Map<string, TClaim>()
@@ -108,6 +101,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         }): TCoreClaim => ({
             id: c.id,
             version: c.version,
+            type: "normal",
             frozen: false,
             checksum: "",
         })
@@ -130,12 +124,25 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 // (addVariable) still check the lookup — but addVariable is not
                 // called during rollbackInternal, only validate() is.
                 if (claimContext.permissiveForRestore) {
-                    return { id, version, frozen: false, checksum: "" }
+                    return {
+                        id,
+                        version,
+                        type: "normal",
+                        frozen: false,
+                        checksum: "",
+                    }
                 }
                 return undefined
             },
+            getCurrent(id: string) {
+                const c = claimsMap.get(id)
+                if (c) return toCoreClaim(c)
+                const orig = claimLookup.getCurrent(id)
+                if (orig) return toCoreClaim(orig)
+                return undefined
+            },
         }
-        super(argument, mutableLookup, sourceLookup, claimSourceLookup, options)
+        super(argument, mutableLookup, claimCitationLookup, options)
         this.claimsMap = claimsMap
         this.claimContext = claimContext
     }
@@ -389,12 +396,10 @@ export class PropositArgumentEngine extends ArgumentEngine<
         claimSources: TClaimSource[]
     ): PropositArgumentEngine {
         const claimLookup = createClaimLookup(claims)
-        const sourceLookup = createSourceLookup(domainSources)
         const engine = new PropositArgumentEngine(
             snapshot.argument,
             claimLookup,
-            sourceLookup,
-            EMPTY_CLAIM_SOURCE_LOOKUP,
+            EMPTY_CLAIM_CITATION_LOOKUP,
             {
                 checksumConfig: CHECKSUM_CONFIG,
                 positionConfig: snapshot.config?.positionConfig,

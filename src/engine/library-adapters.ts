@@ -1,23 +1,27 @@
-import type { TClaimLookup, TSourceLookup } from "@proposit/proposit-core"
+import type { TClaimLookup } from "@proposit/proposit-core"
 import {
     createLookup,
     EMPTY_CLAIM_LOOKUP,
-    EMPTY_SOURCE_LOOKUP,
-    EMPTY_CLAIM_SOURCE_LOOKUP,
+    EMPTY_CLAIM_CITATION_LOOKUP,
 } from "@proposit/proposit-core"
 
 export function createClaimLookup(
     claims: { id: string; version: number }[]
 ): TClaimLookup {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-    return createLookup(claims, (c) => `${c.id}:${c.version}`) as any
+    const inner = createLookup(claims, (c) => `${c.id}:${c.version}`)
+    const latestById = new Map<string, { id: string; version: number }>()
+    for (const c of claims) {
+        const existing = latestById.get(c.id)
+        if (!existing || c.version > existing.version) {
+            latestById.set(c.id, c)
+        }
+    }
+    return {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+        get: (id, version) => inner.get(id, version) as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+        getCurrent: (id) => latestById.get(id) as any,
+    }
 }
 
-export function createSourceLookup(
-    sources: { id: string; version?: number }[]
-): TSourceLookup {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-    return createLookup(sources, (s) => `${s.id}:${s.version ?? 1}`) as any
-}
-
-export { EMPTY_CLAIM_LOOKUP, EMPTY_SOURCE_LOOKUP, EMPTY_CLAIM_SOURCE_LOOKUP }
+export { EMPTY_CLAIM_LOOKUP, EMPTY_CLAIM_CITATION_LOOKUP }

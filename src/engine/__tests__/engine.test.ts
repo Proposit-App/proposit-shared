@@ -5,8 +5,7 @@ import { CHECKSUM_CONFIG } from "../../checksum.js"
 import { PropositArgumentEngine } from "../engine.js"
 import {
     EMPTY_CLAIM_LOOKUP,
-    EMPTY_SOURCE_LOOKUP,
-    EMPTY_CLAIM_SOURCE_LOOKUP,
+    EMPTY_CLAIM_CITATION_LOOKUP,
     createClaimLookup,
 } from "../library-adapters.js"
 import type { TArgument } from "../../schemas/model/arguments.js"
@@ -99,8 +98,7 @@ describe("PropositArgumentEngine", () => {
         return new PropositArgumentEngine(
             arg,
             EMPTY_CLAIM_LOOKUP,
-            EMPTY_SOURCE_LOOKUP,
-            EMPTY_CLAIM_SOURCE_LOOKUP,
+            EMPTY_CLAIM_CITATION_LOOKUP,
             {
                 checksumConfig: CHECKSUM_CONFIG,
             }
@@ -117,7 +115,7 @@ describe("PropositArgumentEngine", () => {
             TPropositionalPremise,
             TPropositionalExpressionCombined,
             TPropositionalVariable
-        >(arg, claimLookup, EMPTY_SOURCE_LOOKUP, EMPTY_CLAIM_SOURCE_LOOKUP, {
+        >(arg, claimLookup, EMPTY_CLAIM_CITATION_LOOKUP, {
             checksumConfig: CHECKSUM_CONFIG,
         })
 
@@ -501,6 +499,7 @@ describe("PropositArgumentEngine", () => {
             const premiseId = v4()
             const premise: TPropositionalPremise = {
                 id: premiseId,
+                type: "freeform",
                 argumentId,
                 argumentVersion,
                 title: null,
@@ -540,6 +539,7 @@ describe("PropositArgumentEngine", () => {
             const conclusionId = v4()
             const conclusionPremise: TPropositionalPremise = {
                 id: conclusionId,
+                type: "freeform",
                 argumentId,
                 argumentVersion,
                 title: null,
@@ -584,8 +584,7 @@ describe("PropositArgumentEngine", () => {
             const engine = new PropositArgumentEngine(
                 arg,
                 EMPTY_CLAIM_LOOKUP,
-                EMPTY_SOURCE_LOOKUP,
-                EMPTY_CLAIM_SOURCE_LOOKUP,
+                EMPTY_CLAIM_CITATION_LOOKUP,
                 { checksumConfig: CHECKSUM_CONFIG }
             )
             expect(engine.canFork()).toBe(true)
@@ -617,8 +616,7 @@ describe("PropositArgumentEngine", () => {
             const tempEngine = new PropositArgumentEngine(
                 arg,
                 claimLookupWithGhost,
-                EMPTY_SOURCE_LOOKUP,
-                EMPTY_CLAIM_SOURCE_LOOKUP,
+                EMPTY_CLAIM_CITATION_LOOKUP,
                 { checksumConfig: CHECKSUM_CONFIG }
             )
 
@@ -646,8 +644,7 @@ describe("PropositArgumentEngine", () => {
             const engineWithoutGhost = new PropositArgumentEngine(
                 arg,
                 EMPTY_CLAIM_LOOKUP,
-                EMPTY_SOURCE_LOOKUP,
-                EMPTY_CLAIM_SOURCE_LOOKUP,
+                EMPTY_CLAIM_CITATION_LOOKUP,
                 { checksumConfig: CHECKSUM_CONFIG }
             )
             engineWithoutGhost.rollback(snap)

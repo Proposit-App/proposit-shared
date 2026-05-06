@@ -23,7 +23,10 @@ export function mutateCreatePremise(
         )
     }
 
-    const { result: pm, changes } = engine.createPremiseWithId(premiseId, data)
+    const { result: pm, changes } = engine.createPremiseWithId(premiseId, {
+        type: "freeform",
+        extras: data,
+    })
 
     let allChanges = changes
     if (data.role === "conclusion") {

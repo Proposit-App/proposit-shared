@@ -79,17 +79,11 @@ const PremiseEngineSnapshotSchema = Type.Object({
     config: Type.Optional(Type.Unknown()),
 })
 
-const SourceManagerSnapshotSchema = Type.Object({
-    variableSourceAssociations: Type.Array(Type.Unknown()),
-    expressionSourceAssociations: Type.Array(Type.Unknown()),
-})
-
 export const ArgumentEngineSnapshotSchema = Type.Object({
     argument: OptionalChecksumArgument,
     variables: VariableManagerSnapshotSchema,
     premises: Type.Array(PremiseEngineSnapshotSchema),
     conclusionPremiseId: Type.Optional(Type.String()),
-    sources: Type.Optional(SourceManagerSnapshotSchema),
     config: Type.Optional(Type.Unknown()),
 })
 export type TArgumentEngineSnapshot = Static<

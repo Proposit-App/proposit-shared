@@ -129,7 +129,7 @@ export type TReviewDraft = Static<typeof ReviewDraftSchema>
 // Mirrors @proposit/proposit-core dist/lib/types/evaluation.d.ts.
 // Snapshot-tested against a real core evaluation result in Task G1.
 
-// TCoreValidationCode enum (17 literals)
+// TCoreValidationCode enum (18 literals — mirrors core@0.11.0).
 export const TCoreValidationCodeSchema = Type.Union([
     Type.Literal("ARGUMENT_NO_CONCLUSION"),
     Type.Literal("ARGUMENT_CONCLUSION_NOT_FOUND"),
@@ -148,6 +148,7 @@ export const TCoreValidationCodeSchema = Type.Union([
     Type.Literal("SOURCE_EXPRESSION_ASSOCIATION_INVALID_EXPRESSION"),
     Type.Literal("SOURCE_ORPHANED"),
     Type.Literal("EXPR_BOUND_PREMISE_EMPTY"),
+    Type.Literal("DERIVATION_STRUCTURE_INVALID_AT_EVALUATION"),
 ])
 
 export const TCoreValidationIssueSchema = Type.Object({
