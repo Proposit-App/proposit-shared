@@ -9,14 +9,6 @@
 - After a major set of changes, offer `pnpm version patch|minor|major`. First published version will be `0.1.0` (at Phase 0 PR 5).
 - Pre-1.0 versioning policy: minor bumps may include breaking changes (per semver §4). Consumers should pin with caret (`^0.x.y`) knowing that any `0.x+1.0` could break them.
 
-## Broker coordination
-
-This repo's agent coordinates with sibling repos and the workspace orchestrator at `/Users/brian/Projects/Proposit-App/` via the `skill-cefailures:broker` skill — see the skill for identity rules, signal prefixes, and CLI patterns.
-
-- **This repo's identity:** `@proposit/shared` (auto-derived from `package.json`).
-- **Likely sibling identities:** `@proposit/proposit-core`, `proposit-server`, `proposit-mobile`.
-- **Session startup:** at the start of any multi-repo work, launch `broker follow` via `Bash(run_in_background: true)` so incoming DMs stream live without blocking the main loop.
-
 ## Commands
 
 ```bash
