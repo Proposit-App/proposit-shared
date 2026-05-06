@@ -9,7 +9,7 @@ import type { TIEEEReference } from "../schemas/model/references.js"
  * Reused for both server-side embedding generation and
  * client-side fuzzy search display text.
  */
-export function extractSourceTitle(
+export function extractCitationTitle(
     citation: TIEEEReference | { type: "Other"; text?: string }
 ): string | null {
     let text: string | null = null

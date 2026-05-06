@@ -25,8 +25,8 @@ import {
     createClaimImpl,
     deleteClaimImpl,
     updateClaimImpl,
-    createClaimSourceImpl,
-    deleteClaimSourceImpl,
+    createClaimCitationImpl,
+    deleteClaimCitationImpl,
 } from "./argument/claims.js"
 import { createReactionImpl, deleteReactionImpl } from "./argument/reactions.js"
 import {
@@ -59,12 +59,12 @@ import {
 import { repairArgumentImpl } from "./argument/logic/repair.js"
 import {
     searchUserClaimsImpl,
-    searchUserSourcesImpl,
+    searchUserCitationsImpl,
     searchUserEntitiesImpl,
 } from "./search.js"
 import { getUserClaimsImpl } from "./user/claims.js"
 import { deleteUserImpl } from "./user/delete-user.js"
-import { getUserSourcesImpl } from "./user/sources.js"
+import { getUserCitationsImpl } from "./user/citations.js"
 
 /**
  * Registry of all *Impl functions, keyed by the public method name.
@@ -91,8 +91,8 @@ const impls = {
     createClaim: createClaimImpl,
     deleteClaim: deleteClaimImpl,
     updateClaim: updateClaimImpl,
-    createClaimSource: createClaimSourceImpl,
-    deleteClaimSource: deleteClaimSourceImpl,
+    createClaimCitation: createClaimCitationImpl,
+    deleteClaimCitation: deleteClaimCitationImpl,
     createReaction: createReactionImpl,
     deleteReaction: deleteReactionImpl,
     getMyReview: getMyReviewImpl,
@@ -120,10 +120,10 @@ const impls = {
     getVariable: getVariableImpl,
     repairArgument: repairArgumentImpl,
     searchUserClaims: searchUserClaimsImpl,
-    searchUserSources: searchUserSourcesImpl,
+    searchUserCitations: searchUserCitationsImpl,
     searchUserEntities: searchUserEntitiesImpl,
     getUserClaims: getUserClaimsImpl,
-    getUserSources: getUserSourcesImpl,
+    getUserCitations: getUserCitationsImpl,
     deleteUser: deleteUserImpl,
 } as const
 

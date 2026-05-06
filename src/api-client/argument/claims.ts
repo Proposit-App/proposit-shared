@@ -7,8 +7,8 @@ import {
     ClaimCreationRequestSchema,
     ClaimCreationResponseSchema,
     ClaimDeletionResponseSchema,
-    ClaimSourceDeleteResponseSchema,
-    SourceCreationSchema,
+    ClaimCitationDeleteResponseSchema,
+    CitationCreationSchema,
 } from "../../schemas/api/argument/claims.js"
 import {
     IEEEReferenceSchemaMap,
@@ -69,37 +69,36 @@ export async function updateClaimImpl(
     )
 }
 
-export async function createClaimSourceImpl(
+export async function createClaimCitationImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    claimId: string,
+    citingClaimId: string,
     citation: TIEEEReference
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await strictFetch(
-        `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source`,
+        `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${citingClaimId}/citation`,
         { method: "POST" },
         citation,
         IEEEReferenceSchemaMap[citation.type],
-        SourceCreationSchema,
+        CitationCreationSchema,
         config.fetchImpl
     )
 }
 
-export async function deleteClaimSourceImpl(
+export async function deleteClaimCitationImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    claimId: string,
-    sourceId: string
+    edgeId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
-            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claims/${claimId}/source/${sourceId}`,
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/citations/${edgeId}`,
             { method: "DELETE" }
         ),
-        ClaimSourceDeleteResponseSchema
+        ClaimCitationDeleteResponseSchema
     )
 }

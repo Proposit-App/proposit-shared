@@ -90,7 +90,7 @@ export type TSession = Static<typeof SessionSchema>
 export const ObjectLimitTypes = Type.Union([
     Type.Literal("arguments"),
     Type.Literal("statements"),
-    Type.Literal("sources"),
+    Type.Literal("citations"),
     Type.Literal("tokens"),
 ])
 export type TObjectLimitTypes = Static<typeof ObjectLimitTypes>
@@ -98,7 +98,7 @@ export type TObjectLimitTypes = Static<typeof ObjectLimitTypes>
 export const UserTierLimitsSchema = Type.Object({
     maxArguments: Type.Integer(),
     maxStatementsPerArg: Type.Integer(),
-    maxSourcesPerArg: Type.Integer(),
+    maxCitationsPerArg: Type.Integer(),
     maxTokensPerMonth: Type.Integer(),
 })
 export type TUserTierLimits = Static<typeof UserTierLimitsSchema>

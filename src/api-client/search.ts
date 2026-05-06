@@ -1,6 +1,6 @@
 import {
     ClaimSearchResponseSchema,
-    SourceSearchResponseSchema,
+    CitationSearchResponseSchema,
     EntitySearchResponseSchema,
 } from "../schemas/api/search.js"
 import { strictFetch } from "../utils/utils.js"
@@ -27,7 +27,7 @@ export async function searchUserClaimsImpl(
     )
 }
 
-export async function searchUserSourcesImpl(
+export async function searchUserCitationsImpl(
     config: TApiClientConfig,
     query: string,
     limit = 20
@@ -36,11 +36,11 @@ export async function searchUserSourcesImpl(
     const params = new URLSearchParams({ q: query, limit: String(limit) })
 
     return await strictFetch(
-        `${baseUrl}/api/v1/user/sources/search?${params.toString()}`,
+        `${baseUrl}/api/v1/user/citations/search?${params.toString()}`,
         { method: "GET" },
         undefined,
         undefined,
-        SourceSearchResponseSchema,
+        CitationSearchResponseSchema,
         config.fetchImpl
     )
 }

@@ -15,7 +15,7 @@ function urlToString(input: Parameters<typeof fetch>[0]): string {
     return input.url
 }
 
-describe("apiClient.getUserSources", () => {
+describe("apiClient.getUserCitations", () => {
     test("passes an absolute URL (with origin) to fetchImpl", async () => {
         const calls: string[] = []
         const fetchImpl: typeof fetch = (input) => {
@@ -27,10 +27,10 @@ describe("apiClient.getUserSources", () => {
             fetchImpl,
         })
 
-        await apiClient.getUserSources()
+        await apiClient.getUserCitations()
 
         expect(calls).toHaveLength(1)
         expect(new URL(calls[0]).origin).toBe("https://example.test")
-        expect(calls[0]).toBe("https://example.test/api/v1/user/sources")
+        expect(calls[0]).toBe("https://example.test/api/v1/user/citations")
     })
 })

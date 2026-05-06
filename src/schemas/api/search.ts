@@ -24,15 +24,15 @@ export type TClaimSearchResult = Static<typeof ClaimSearchResultSchema>
 export const ClaimSearchResponseSchema = Type.Array(ClaimSearchResultSchema)
 export type TClaimSearchResponse = Static<typeof ClaimSearchResponseSchema>
 
-// ── Source Search ──────────────────────────────────────────────────────────
+// ── Citation Search ────────────────────────────────────────────────────────
 
-export const SourceSearchRequestSchema = Type.Object({
+export const CitationSearchRequestSchema = Type.Object({
     q: Type.String({ minLength: 3 }),
     limit: Type.Optional(Type.Number({ minimum: 1, maximum: 50, default: 20 })),
 })
-export type TSourceSearchRequest = Static<typeof SourceSearchRequestSchema>
+export type TCitationSearchRequest = Static<typeof CitationSearchRequestSchema>
 
-export const SourceSearchResultSchema = Type.Object({
+export const CitationSearchResultSchema = Type.Object({
     id: UUID,
     citation: Type.Any(),
     argumentTitle: Type.String(),
@@ -40,10 +40,14 @@ export const SourceSearchResultSchema = Type.Object({
     argumentVersion: Type.Number(),
     distance: Type.Number(),
 })
-export type TSourceSearchResult = Static<typeof SourceSearchResultSchema>
+export type TCitationSearchResult = Static<typeof CitationSearchResultSchema>
 
-export const SourceSearchResponseSchema = Type.Array(SourceSearchResultSchema)
-export type TSourceSearchResponse = Static<typeof SourceSearchResponseSchema>
+export const CitationSearchResponseSchema = Type.Array(
+    CitationSearchResultSchema
+)
+export type TCitationSearchResponse = Static<
+    typeof CitationSearchResponseSchema
+>
 
 // ── Entity Search (Profile) ────────────────────────────────────────────────
 
@@ -77,6 +81,6 @@ export const EntitySearchResponseSchema = Type.Object({
     arguments: Type.Array(ArgumentSearchResultSchema),
     claims: Type.Array(ClaimSearchResultSchema),
     premises: Type.Array(PremiseSearchResultSchema),
-    sources: Type.Array(SourceSearchResultSchema),
+    citations: Type.Array(CitationSearchResultSchema),
 })
 export type TEntitySearchResponse = Static<typeof EntitySearchResponseSchema>

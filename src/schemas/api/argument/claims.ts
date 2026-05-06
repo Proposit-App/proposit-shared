@@ -1,10 +1,7 @@
 import Type, { type Static } from "typebox"
 import { Nullable } from "../../common.js"
 import { ClaimSchema, MutableClaimFieldsSchema } from "../../model.js"
-import {
-    SourceSchemaNotStrict,
-    ClaimSourceSchema,
-} from "../../model/sources.js"
+import { ClaimCitationSchema } from "../../model/citations.js"
 import {
     PropositionalVariableSchema,
     PropositionalExpressionSchema,
@@ -29,15 +26,15 @@ export const ClaimDeletionResponseSchema = Type.Object({
 })
 export type TClaimDeletionResponse = Static<typeof ClaimDeletionResponseSchema>
 
-export const SourceCreationSchema = Type.Object({
-    source: SourceSchemaNotStrict,
-    sourceRelation: ClaimSourceSchema,
+export const CitationCreationSchema = Type.Object({
+    citation: ClaimSchema,
+    citationEdge: ClaimCitationSchema,
 })
-export type TSourceCreation = Static<typeof SourceCreationSchema>
+export type TCitationCreation = Static<typeof CitationCreationSchema>
 
-export const ClaimSourceDeleteResponseSchema = Type.Object({
-    deletedSources: Type.Array(ClaimSourceSchema),
+export const ClaimCitationDeleteResponseSchema = Type.Object({
+    deletedCitations: Type.Array(ClaimCitationSchema),
 })
-export type TClaimSourceDeleteResponse = Static<
-    typeof ClaimSourceDeleteResponseSchema
+export type TClaimCitationDeleteResponse = Static<
+    typeof ClaimCitationDeleteResponseSchema
 >

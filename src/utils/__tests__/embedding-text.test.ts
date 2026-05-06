@@ -1,11 +1,11 @@
 import { describe, test, expect } from "vitest"
 import type { TIEEEReference } from "../../schemas/model/references.js"
-import { extractSourceTitle } from "../embedding-text.js"
+import { extractCitationTitle } from "../embedding-text.js"
 
-describe("extractSourceTitle", () => {
+describe("extractCitationTitle", () => {
     // Strategy 1: direct title field
     test("returns title for Book reference", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Book",
             title: "Climate Change Evidence",
             year: "2024",
@@ -17,7 +17,7 @@ describe("extractSourceTitle", () => {
 
     // Strategy 2: alternate title-like fields
     test("returns pageTitle for Website reference", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Website",
             pageTitle: "How Climate Models Work",
             websiteTitle: "NASA",
@@ -29,7 +29,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("returns chapterTitle for BookChapter reference", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "BookChapter",
             chapterTitle: "The Greenhouse Effect",
             bookTitle: "Earth Science",
@@ -42,7 +42,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("returns postTitle for Blog reference", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Blog",
             postTitle: "Why Carbon Taxes Work",
             blogName: "EconBlog",
@@ -55,7 +55,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("returns episodeTitle for Podcast reference", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Podcast",
             episodeTitle: "Sea Level Rise",
             seriesTitle: "Climate Pod",
@@ -67,7 +67,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("returns caseName for CourtCase reference", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "CourtCase",
             caseName: "Massachusetts v. EPA",
             reporter: "US",
@@ -80,7 +80,7 @@ describe("extractSourceTitle", () => {
 
     // Strategy 3: synthetic strings
     test("returns conferenceName for ConferenceProceedings", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "ConferenceProceedings",
             conferenceName: "IEEE Climate Conference",
             location: "NYC",
@@ -91,7 +91,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("constructs synthetic string for SocialMedia", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "SocialMedia",
             author: { givenNames: "James", familyName: "Hansen" },
             platform: "Twitter",
@@ -102,7 +102,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("constructs synthetic string for Interview", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Interview",
             interviewee: { givenNames: "Michael", familyName: "Mann" },
             date: new Date(),
@@ -111,7 +111,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("constructs synthetic string for PersonalCommunication", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "PersonalCommunication",
             person: { givenNames: "Gavin", familyName: "Schmidt" },
             date: new Date(),
@@ -120,7 +120,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("constructs synthetic string for Email", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Email",
             sender: { givenNames: "Phil", familyName: "Jones" },
             recipient: { givenNames: "Michael", familyName: "Mann" },
@@ -131,7 +131,7 @@ describe("extractSourceTitle", () => {
 
     // UnparsedURL references (import-path sources)
     test("returns text for UnparsedURL citation with text", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "UnparsedURL",
             url: "https://example.com/article",
             text: "An interesting article",
@@ -140,7 +140,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("falls back to url for UnparsedURL citation without text", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "UnparsedURL",
             url: "https://example.com/article",
         } as TIEEEReference)
@@ -149,7 +149,7 @@ describe("extractSourceTitle", () => {
 
     // Legacy "Other" citations (pre-0.8.19 imports)
     test("returns text for Other citation (legacy import path)", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Other",
             text: "Source citation text from import",
         } as unknown as TIEEEReference)
@@ -157,7 +157,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("returns null for Other citation with empty text", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Other",
             text: "",
         } as unknown as TIEEEReference)
@@ -165,7 +165,7 @@ describe("extractSourceTitle", () => {
     })
 
     test("returns null for Other citation with no text field", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Other",
         } as unknown as TIEEEReference)
         expect(result).toBeNull()
@@ -173,7 +173,7 @@ describe("extractSourceTitle", () => {
 
     // Fallback
     test("returns null for empty title", () => {
-        const result = extractSourceTitle({
+        const result = extractCitationTitle({
             type: "Book",
             title: "   ",
             year: "2024",

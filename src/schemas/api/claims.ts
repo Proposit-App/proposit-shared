@@ -5,7 +5,6 @@ import {
     PropositionalExpressionSchema,
     PropositionalPremiseSchema,
 } from "../logic.js"
-import { SourceSchemaNotStrict } from "../model/sources.js"
 import { UUID } from "../common.js"
 
 export const ClaimWithContextSchema = Type.Object({
@@ -17,7 +16,6 @@ export const ClaimWithContextSchema = Type.Object({
     }),
     version: Type.Number(),
     variable: Type.Optional(PropositionalVariableSchema),
-    sources: Type.Optional(Type.Array(SourceSchemaNotStrict)),
     expressions: Type.Optional(Type.Array(PropositionalExpressionSchema)),
     premises: Type.Optional(Type.Array(PropositionalPremiseSchema)),
 })
