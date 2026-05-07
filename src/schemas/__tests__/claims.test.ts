@@ -66,6 +66,30 @@ describe("ClaimSchema citation discriminator", () => {
         expect(Value.Check(ClaimSchema, legacyClaim)).toBe(false)
     })
 
+    it("accepts a normal claim with citation explicitly set to null", () => {
+        // Postgres stores `citation: NULL` for normal-type claims; the
+        // wire payload that comes back from the server therefore carries
+        // `citation: null`, not an absent field. Schema must accept that.
+        const claim = {
+            id: "11111111-1111-1111-1111-111111111111",
+            argumentId: "22222222-2222-2222-2222-222222222222",
+            version: 1,
+            claimForkId: null,
+            creatorId: "33333333-3333-3333-3333-333333333333",
+            createdOn: new Date("2026-05-06T00:00:00Z"),
+            kind: "claim",
+            type: "normal",
+            parentId: null,
+            title: "Cats are mammals",
+            body: "All cats are mammals.",
+            digest: "digest-null-citation",
+            url: null,
+            citation: null,
+            citationContentHash: null,
+        }
+        expect(Value.Check(ClaimSchema, claim)).toBe(true)
+    })
+
     it("rejects a claim using the old 'type' field for category", () => {
         const oldShape = {
             id: "11111111-1111-1111-1111-111111111111",

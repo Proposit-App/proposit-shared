@@ -6,7 +6,6 @@ export const ClaimCitationSchema = Type.Intersect([
     CoreClaimCitationSchema,
     Type.Object({
         argumentId: UUID,
-        version: Type.Number(),
         createdOn: EncodableDate,
     }),
 ])

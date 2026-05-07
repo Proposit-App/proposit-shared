@@ -11,14 +11,13 @@ export const CHECKSUM_CONFIG = createChecksumConfig({
         "createdOn",
         "creatorId",
     ]),
-    premiseFields: new Set([
-        "argumentId",
-        "argumentVersion",
-        "role",
-        "createdOn",
-        "creatorId",
-        "title",
-    ]),
+    // In proposit-core@0.11+, the engine's internal PremiseEngine strips
+    // extra fields (role, title, creatorId, createdOn) before computing
+    // premise checksums — only the 4 core fields (argumentId, argumentVersion,
+    // type, derivedClaimId) are hashed. Matching the DEFAULT_CHECKSUM_CONFIG
+    // premise fields here ensures client (PropositArgumentEngine) and server
+    // agree on premise checksums regardless of what extra fields are present.
+    // premiseFields intentionally omitted: falls back to DEFAULT (4 core fields)
     argumentFields: new Set([
         "title",
         "published",

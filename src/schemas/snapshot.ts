@@ -64,11 +64,19 @@ const OptionalChecksumPremise = Type.Intersect([
         "checksum",
         "descendantChecksum",
         "combinedChecksum",
+        // In proposit-core@0.11+, premise role is tracked at the ArgumentEngine
+        // level (via conclusionPremiseId in the snapshot root), not in the
+        // per-premise data. Make role optional here so snapshot validation
+        // succeeds for engines that don't embed role in premise data.
+        "role",
     ]),
     Type.Object({
         checksum: Type.Optional(Type.String()),
         descendantChecksum: Type.Optional(Nullable(Type.String())),
         combinedChecksum: Type.Optional(Type.String()),
+        role: Type.Optional(
+            Type.Union([Type.Literal("conclusion"), Type.Literal("supporting")])
+        ),
     }),
 ])
 

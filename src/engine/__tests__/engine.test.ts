@@ -78,7 +78,6 @@ describe("PropositArgumentEngine", () => {
             sourceClaimVersion: 1,
             checksum: "test-edge-checksum",
             argumentId,
-            version: argumentVersion,
             createdOn: now,
             ...overrides,
         }

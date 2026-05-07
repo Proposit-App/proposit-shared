@@ -56,7 +56,7 @@ export const ClaimSchema = Type.Interface([ClaimUpdateRequestSchema], {
     // Citation-extra fields. Optional at the schema level; consumer code
     // populates these on claims with type === "citation".
     url: Type.Optional(Nullable(Type.String())),
-    citation: Type.Optional(IEEEReferenceSchema),
+    citation: Type.Optional(Nullable(IEEEReferenceSchema)),
     citationContentHash: Type.Optional(Nullable(Type.String())),
 })
 export type TClaim = Static<typeof ClaimSchema>
