@@ -91,6 +91,7 @@ describe("buildTextTree", () => {
                     premise: {
                         id: "premise-1",
                         title: "My Premise",
+                        type: "freeform",
                     } as TProjectReactiveSnapshot["premises"][string]["premise"],
                     rootExpressionId: "expr-1",
                     expressions: {
@@ -117,6 +118,7 @@ describe("buildTextTree", () => {
             premiseId: "premise-1",
             role: "supporting",
             title: "My Premise",
+            premiseType: "freeform",
         })
         expect(result[1]).toMatchObject({
             type: "claim",
@@ -125,9 +127,63 @@ describe("buildTextTree", () => {
             claimId: "claim-1",
             claimTitle: "Claim Title",
             claimBody: "Claim Body",
+            claimType: "normal",
             negated: false,
             isConclusion: false,
             depth: 0,
+        })
+    })
+
+    test("populates claimType='citation' from snapshot claim type", () => {
+        const snapshot = makeSnapshot({
+            claims: {
+                "claim-cite": {
+                    ...CLAIM_DEFAULTS,
+                    id: "claim-cite",
+                    title: "Cited Source",
+                    body: "Body",
+                    type: "citation",
+                },
+            },
+            variables: {
+                "var-1": {
+                    ...VAR_DEFAULTS,
+                    id: "var-1",
+                    symbol: "C",
+                    claimId: "claim-cite",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+            },
+            premises: {
+                "premise-1": {
+                    premise: {
+                        id: "premise-1",
+                        title: null,
+                        type: "freeform",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "expr-1",
+                    expressions: {
+                        "expr-1": {
+                            ...EXPR_DEFAULTS,
+                            id: "expr-1",
+                            type: "variable",
+                            variableId: "var-1",
+                            operator: null,
+                            premiseId: "premise-1",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+            },
+        })
+
+        const result = buildTextTree(snapshot)
+        const claimItem = result.find((i) => i.type === "claim")
+        expect(claimItem).toMatchObject({
+            type: "claim",
+            claimId: "claim-cite",
+            claimType: "citation",
         })
     })
 

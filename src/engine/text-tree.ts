@@ -21,6 +21,7 @@ export type TTextTreeItem =
           premiseId: string
           role: "conclusion" | "supporting"
           title: string | null
+          premiseType: "freeform" | "derivation"
       }
     | {
           type: "claim"
@@ -29,6 +30,7 @@ export type TTextTreeItem =
           claimId: string | null
           claimTitle: string
           claimBody: string
+          claimType: "normal" | "citation"
           negated: boolean
           isConclusion: boolean
           depth: number
@@ -109,12 +111,14 @@ function walkPremiseExpression(args: {
         let claimId: string | null = null
         let claimTitle = ""
         let claimBody = ""
+        let claimType: "normal" | "citation" = "normal"
         if (variable && "claimId" in variable) {
             claimId = variable.claimId
             const claim = claims[variable.claimId]
             if (claim) {
                 claimTitle = claim.title
                 claimBody = claim.body
+                claimType = claim.type ?? "normal"
             }
         }
         items.push({
@@ -124,6 +128,7 @@ function walkPremiseExpression(args: {
             claimId,
             claimTitle,
             claimBody,
+            claimType,
             negated,
             isConclusion,
             depth,
@@ -205,6 +210,7 @@ export function buildTextTree(
             role:
                 premiseId === conclusionPremiseId ? "conclusion" : "supporting",
             title: premiseSnap.premise.title ?? null,
+            premiseType: premiseSnap.premise.type ?? "freeform",
         })
         items.push(...buildPremiseTextTree(snapshot, premiseId))
     }
