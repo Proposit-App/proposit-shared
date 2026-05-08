@@ -220,7 +220,10 @@ test("populateDerivationFromCitations on a naked premise with sourceClaimIds bui
     const operatorAdds = (changes.expressions?.added ?? []).filter(
         (e) => e.type === "operator"
     )
-    expect(operatorAdds.map((e) => e.operator).sort()).toEqual(["implies", "or"])
+    expect(operatorAdds.map((e) => e.operator).sort()).toEqual([
+        "implies",
+        "or",
+    ])
     // The OR has one variable child (the citation), and the consequent
     // variable expression is now the position-1 child of IMPLIES.
     const variableAdds = (changes.expressions?.added ?? []).filter(
@@ -256,7 +259,9 @@ test("populateDerivationFromCitations with two sources produces a 2-child OR in 
 })
 
 test("populateDerivationFromCitations on a populated premise throws DERIVATION_ANTECEDENT_NON_EMPTY", () => {
-    const engine = makeArgumentEngineWithPopulatedDerivationPremise("p-1", ["a"])
+    const engine = makeArgumentEngineWithPopulatedDerivationPremise("p-1", [
+        "a",
+    ])
     expect(() =>
         populateDerivationFromCitations(engine, "p-1", ["b"])
     ).toThrowError(/DERIVATION_ANTECEDENT_NON_EMPTY/)
@@ -276,8 +281,12 @@ test("populateDerivationFromCitations on a non-derivation premise throws DERIVAT
 test("buildTextTree skips derivation premises", () => {
     const snapshot = makeSnapshot({
         premises: {
-            "p-free": { /* freeform with one claim variable */ },
-            "p-deriv": { /* derivation with a Q variable */ },
+            "p-free": {
+                /* freeform with one claim variable */
+            },
+            "p-deriv": {
+                /* derivation with a Q variable */
+            },
         },
     })
     const items = buildTextTree(snapshot)

@@ -1,0 +1,333 @@
+import { describe, test, expect } from "vitest"
+import { createTestEngine, mkTestClaim } from "./helpers.js"
+import {
+    mutateCreatePremise,
+    mutateCreateDerivationPremise,
+    clearDerivationAntecedent,
+    populateDerivationFromCitations,
+} from "../premises.js"
+import type { PropositArgumentEngine } from "../../engine.js"
+
+const ARG_ID = "test-arg-id"
+const ARG_VERSION = 1
+const USER_ID = "test-user-id"
+
+function setupEngineWithClaims(claimIds: string[]): PropositArgumentEngine {
+    return createTestEngine(
+        undefined,
+        claimIds.map((id) => mkTestClaim({ id }))
+    )
+}
+
+function createNakedDerivationPremise(
+    engine: PropositArgumentEngine,
+    derivedClaimId: string,
+    ids?: { premiseId?: string; varId?: string; exprId?: string }
+) {
+    return mutateCreateDerivationPremise(
+        engine,
+        ids?.premiseId ?? crypto.randomUUID(),
+        {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId,
+            consequentVariableId: ids?.varId ?? crypto.randomUUID(),
+            consequentExpressionId: ids?.exprId ?? crypto.randomUUID(),
+        }
+    )
+}
+
+describe("mutateCreateDerivationPremise", () => {
+    test("creates a naked-Q derivation premise atomically with caller-minted IDs", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const premiseId = "p-d-1"
+        const consequentVariableId = "v-1"
+        const consequentExpressionId = "e-1"
+
+        const result = mutateCreateDerivationPremise(engine, premiseId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            consequentVariableId,
+            consequentExpressionId,
+        })
+
+        expect(result.premise.type).toBe("derivation")
+        expect(
+            (result.premise as { derivedClaimId?: string }).derivedClaimId
+        ).toBe("claim-q")
+
+        expect(result.consequentExpression.type).toBe("variable")
+        expect(result.consequentExpression.parentId).toBeNull()
+        expect(result.consequentExpression.position).toBe(0)
+        expect(result.consequentExpression.id).toBe(consequentExpressionId)
+        if (result.consequentExpression.type === "variable") {
+            expect(result.consequentExpression.variableId).toBe(
+                consequentVariableId
+            )
+        }
+
+        expect(result.consequentVariable.id).toBe(consequentVariableId)
+        if ("claimId" in result.consequentVariable) {
+            expect(result.consequentVariable.claimId).toBe("claim-q")
+        }
+
+        expect(result.changes.premises?.added).toContainEqual(
+            expect.objectContaining({ id: premiseId, type: "derivation" })
+        )
+        expect(result.changes.variables?.added).toContainEqual(
+            expect.objectContaining({ id: consequentVariableId })
+        )
+        expect(result.changes.expressions?.added).toContainEqual(
+            expect.objectContaining({ id: consequentExpressionId })
+        )
+
+        // No leaked auto entities: the auto consequent var (engine-generated id)
+        // and auto naked-Q expression (engine-generated id) should not appear.
+        const variableAdds = result.changes.variables?.added ?? []
+        const claimBoundAdds = variableAdds.filter(
+            (v) => "claimId" in v && v.claimId === "claim-q"
+        )
+        expect(claimBoundAdds).toHaveLength(1)
+        expect(claimBoundAdds[0].id).toBe(consequentVariableId)
+    })
+
+    test("subsequent snapshot/fromSnapshot round-trip loads without invariant violations", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-d-1",
+            varId: "v-1",
+            exprId: "e-1",
+        })
+
+        // Snapshot the engine after the mutation.
+        const snapshot = engine.snapshot()
+
+        // Restoring from the resulting snapshot should not throw — the engine
+        // validates derivation structure invariants on rollback.
+        const restored = setupEngineWithClaims(["claim-q"])
+        expect(() => restored.rollback(snapshot)).not.toThrow()
+        expect(restored.getPremise("p-d-1")?.toPremiseData().type).toBe(
+            "derivation"
+        )
+    })
+})
+
+describe("clearDerivationAntecedent", () => {
+    test("on a naked premise is a no-op", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q")
+        const { changes } = clearDerivationAntecedent(engine, premise.id)
+        expect(changes.expressions).toBeUndefined()
+        expect(changes.variables).toBeUndefined()
+        expect(changes.premises).toBeUndefined()
+    })
+
+    test("on a populated premise removes IMPLIES/OR/citation_vars and re-roots Q", () => {
+        const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromCitations(engine, premise.id, ["src-a", "src-b"])
+
+        // Sanity-check: pre-clear, the premise should be in IMPLIES form.
+        const beforeRoot = engine.getPremise(premise.id)?.getRootExpressionId()
+        const beforeRootExpr = engine
+            .getPremise(premise.id)
+            ?.getExpression(beforeRoot!)
+        expect(beforeRootExpr?.type).toBe("operator")
+
+        const { changes } = clearDerivationAntecedent(engine, premise.id)
+
+        // Expression removals: IMPLIES + OR + 2 citation_vars = 4. The
+        // consequent variable expression survives as `modified` (its
+        // parentId/position changed when promoted to root).
+        expect(
+            changes.expressions?.removed?.length ?? 0
+        ).toBeGreaterThanOrEqual(4)
+        expect(
+            changes.expressions?.modified?.length ?? 0
+        ).toBeGreaterThanOrEqual(1)
+
+        // Variable removals: the two citation-bound variables (one per source).
+        expect(changes.variables?.removed?.length).toBe(2)
+
+        // Premise itself untouched.
+        expect(changes.premises?.removed ?? []).toHaveLength(0)
+
+        // Engine state: root is the consequent variable expression at the top.
+        const afterRootId = engine.getPremise(premise.id)?.getRootExpressionId()
+        expect(afterRootId).toBe("e-q")
+        const afterRoot = engine.getPremise(premise.id)?.getExpression("e-q")
+        expect(afterRoot?.type).toBe("variable")
+        expect(afterRoot?.parentId).toBeNull()
+    })
+})
+
+describe("populateDerivationFromCitations", () => {
+    test("on a naked premise with one source builds IMPLIES(citation_var, Q)", () => {
+        const engine = setupEngineWithClaims(["claim-q", "src-a"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+
+        const { changes } = populateDerivationFromCitations(
+            engine,
+            premise.id,
+            ["src-a"]
+        )
+
+        const operatorAdds = (changes.expressions?.added ?? []).filter(
+            (e) => e.type === "operator"
+        )
+        expect(operatorAdds.map((e) => e.operator).sort()).toEqual(["implies"])
+
+        // One added variable expression (the citation_var). The consequent
+        // expression is reparented (modified), not added.
+        const variableAdds = (changes.expressions?.added ?? []).filter(
+            (e) => e.type === "variable"
+        )
+        expect(variableAdds).toHaveLength(1)
+
+        // The consequent's row identity is preserved (e-q); it now sits at
+        // position 1 (the consequent slot) of IMPLIES — i.e., higher than the
+        // antecedent. Engine positions are midpoint-based (not literal 0/1),
+        // so verify ordering rather than specific values.
+        const consequentMods = (changes.expressions?.modified ?? []).filter(
+            (e) => e.id === "e-q"
+        )
+        expect(consequentMods).toHaveLength(1)
+        const pm = engine.getPremise(premise.id)!
+        const rootId = pm.getRootExpressionId()!
+        const rootChildren = pm
+            .getChildExpressions(rootId)
+            .sort((a, b) => a.position - b.position)
+        expect(rootChildren).toHaveLength(2)
+        // Antecedent first, consequent second.
+        const consequentChild = rootChildren[1]
+        expect(consequentChild.id).toBe("e-q")
+    })
+
+    test("with two sources produces IMPLIES(OR(s_a, s_b), Q) in source-id order", () => {
+        const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+
+        const { changes } = populateDerivationFromCitations(
+            engine,
+            premise.id,
+            ["src-a", "src-b"]
+        )
+
+        const operatorAdds = (changes.expressions?.added ?? []).filter(
+            (e) => e.type === "operator"
+        )
+        expect(operatorAdds.map((e) => e.operator).sort()).toEqual([
+            "implies",
+            "or",
+        ])
+
+        // Two citation_var children of OR plus the OR itself plus the IMPLIES.
+        const variableAdds = (changes.expressions?.added ?? []).filter(
+            (e) => e.type === "variable"
+        )
+        expect(variableAdds).toHaveLength(2)
+
+        // Inspect the OR's children directly via the engine to assert ordering.
+        const pm = engine.getPremise(premise.id)!
+        const rootId = pm.getRootExpressionId()!
+        const rootChildren = pm
+            .getChildExpressions(rootId)
+            .sort((a, b) => a.position - b.position)
+        const antecedent = rootChildren[0]
+        expect(antecedent.type).toBe("operator")
+        if (antecedent.type === "operator") {
+            expect(antecedent.operator).toBe("or")
+        }
+        const orChildren = pm
+            .getChildExpressions(antecedent.id)
+            .sort((a, b) => a.position - b.position)
+        expect(orChildren).toHaveLength(2)
+
+        // First child should be bound to a variable for src-a, second for src-b.
+        const firstVarId =
+            orChildren[0].type === "variable" ? orChildren[0].variableId : null
+        const secondVarId =
+            orChildren[1].type === "variable" ? orChildren[1].variableId : null
+        const firstVar = firstVarId ? engine.getVariable(firstVarId) : undefined
+        const secondVar = secondVarId
+            ? engine.getVariable(secondVarId)
+            : undefined
+        expect(firstVar && "claimId" in firstVar && firstVar.claimId).toBe(
+            "src-a"
+        )
+        expect(secondVar && "claimId" in secondVar && secondVar.claimId).toBe(
+            "src-b"
+        )
+    })
+
+    test("with empty sourceClaimIds is a no-op", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q")
+        const { changes } = populateDerivationFromCitations(
+            engine,
+            premise.id,
+            []
+        )
+        expect(changes.expressions).toBeUndefined()
+        expect(changes.variables).toBeUndefined()
+        expect(changes.premises).toBeUndefined()
+    })
+
+    test("on a populated premise throws DERIVATION_ANTECEDENT_NON_EMPTY", () => {
+        const engine = setupEngineWithClaims(["claim-q", "src-a"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q")
+        populateDerivationFromCitations(engine, premise.id, ["src-a"])
+        expect(() =>
+            populateDerivationFromCitations(engine, premise.id, ["src-a"])
+        ).toThrowError(/DERIVATION_ANTECEDENT_NON_EMPTY/)
+    })
+
+    test("on a non-derivation premise throws DERIVATION_TYPE_MISMATCH", () => {
+        const engine = setupEngineWithClaims([])
+        const premiseId = crypto.randomUUID()
+        mutateCreatePremise(engine, premiseId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            title: null,
+            role: "supporting",
+        })
+        expect(() =>
+            populateDerivationFromCitations(engine, premiseId, ["src-a"])
+        ).toThrowError(/DERIVATION_TYPE_MISMATCH/)
+    })
+
+    test("clearDerivationAntecedent on a non-derivation premise throws DERIVATION_TYPE_MISMATCH", () => {
+        const engine = setupEngineWithClaims([])
+        const premiseId = crypto.randomUUID()
+        mutateCreatePremise(engine, premiseId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            title: null,
+            role: "supporting",
+        })
+        expect(() => clearDerivationAntecedent(engine, premiseId)).toThrowError(
+            /DERIVATION_TYPE_MISMATCH/
+        )
+    })
+})

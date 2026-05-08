@@ -10,6 +10,9 @@ export {
     mutateUpdatePremiseRole,
     mutateUpdatePremiseExtras,
     mutateDeletePremise,
+    mutateCreateDerivationPremise,
+    clearDerivationAntecedent,
+    populateDerivationFromCitations,
 } from "./premises.js"
 
 export {

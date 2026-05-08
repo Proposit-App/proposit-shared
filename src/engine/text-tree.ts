@@ -195,6 +195,10 @@ export function buildTextTree(
     })
 
     for (const [premiseId, premiseSnap] of sortedPremises) {
+        // Derivation premises render via citation badges + naked-Q indicator on
+        // claim cards, computed from snapshot helpers — they should not produce
+        // premise-header → operator → claim items in the flat text walk.
+        if (premiseSnap.premise.type === "derivation") continue
         items.push({
             type: "premise-header",
             premiseId,

@@ -485,4 +485,92 @@ describe("buildTextTree", () => {
             depth: 1,
         })
     })
+
+    test("skips derivation premises", () => {
+        const snapshot = makeSnapshot({
+            claims: {
+                "claim-q": {
+                    ...CLAIM_DEFAULTS,
+                    id: "claim-q",
+                    title: "Q",
+                    body: "Body Q",
+                },
+                "claim-free": {
+                    ...CLAIM_DEFAULTS,
+                    id: "claim-free",
+                    title: "F",
+                    body: "Body F",
+                },
+            },
+            variables: {
+                "var-q": {
+                    ...VAR_DEFAULTS,
+                    id: "var-q",
+                    symbol: "Q",
+                    claimId: "claim-q",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+                "var-free": {
+                    ...VAR_DEFAULTS,
+                    id: "var-free",
+                    symbol: "P",
+                    claimId: "claim-free",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+            },
+            premises: {
+                "p-free": {
+                    premise: {
+                        id: "p-free",
+                        title: "Freeform",
+                        type: "freeform",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "expr-free",
+                    expressions: {
+                        "expr-free": {
+                            ...EXPR_DEFAULTS,
+                            id: "expr-free",
+                            type: "variable",
+                            variableId: "var-free",
+                            operator: null,
+                            premiseId: "p-free",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+                "p-deriv": {
+                    premise: {
+                        id: "p-deriv",
+                        title: null,
+                        type: "derivation",
+                        derivedClaimId: "claim-q",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "expr-q",
+                    expressions: {
+                        "expr-q": {
+                            ...EXPR_DEFAULTS,
+                            id: "expr-q",
+                            type: "variable",
+                            variableId: "var-q",
+                            operator: null,
+                            premiseId: "p-deriv",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+            },
+        })
+
+        const items = buildTextTree(snapshot)
+        const headers = items.filter((i) => i.type === "premise-header")
+        expect(
+            headers.map((h) => (h as { premiseId: string }).premiseId)
+        ).toEqual(["p-free"])
+        // No claim/operator items from the derivation premise either.
+        const claimItems = items.filter((i) => i.type === "claim")
+        expect(claimItems).toHaveLength(1)
+        expect(claimItems[0]).toMatchObject({ claimId: "claim-free" })
+    })
 })
