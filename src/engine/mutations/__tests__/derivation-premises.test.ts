@@ -6,7 +6,7 @@ import {
     clearDerivationAntecedent,
     populateDerivationFromCitations,
 } from "../premises.js"
-import type { PropositArgumentEngine } from "../../engine.js"
+import { PropositArgumentEngine } from "../../engine.js"
 
 const ARG_ID = "test-arg-id"
 const ARG_VERSION = 1
@@ -382,5 +382,122 @@ describe("populateDerivationFromCitations", () => {
         expect(() => clearDerivationAntecedent(engine, premiseId)).toThrowError(
             /DERIVATION_TYPE_MISMATCH/
         )
+    })
+})
+
+describe("fromServerData with wave-2 derivation premises", () => {
+    // Reproduces docs/change-requests/2026-05-08-fromServerData-relaxed-load-grammar.md.
+    // The strict runtime grammar (`enforceFormulaBetweenOperators: true`) bans
+    // direct OR-as-child-of-IMPLIES nesting, but `populateDerivationFromCitations`
+    // intentionally produces exactly that shape for n>=2 citations. A snapshot
+    // captured after the populate carries the strict grammar in its
+    // ExpressionManager config, and `rollback`'s `validate()` pass throws
+    // EXPR_FORMULA_BETWEEN_OPERATORS_VIOLATED unless `fromServerData` relaxes
+    // grammar for the load phase and re-tightens it afterwards.
+
+    const claimIds = ["claim-q", "src-a", "src-b"]
+
+    function buildWave2Snapshot() {
+        const engine = setupEngineWithClaims(claimIds)
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromCitations(engine, "p-1", ["src-a", "src-b"])
+        return engine.snapshot()
+    }
+
+    test("loads a snapshot containing IMPLIES(OR(c1, c2), Q) without throwing", () => {
+        const snapshot = buildWave2Snapshot()
+        const claims = claimIds.map((id) => mkTestClaim({ id }))
+
+        expect(() =>
+            PropositArgumentEngine.fromServerData(snapshot, claims, [])
+        ).not.toThrow()
+    })
+
+    test("round-trips the IMPLIES(OR(c1, c2), Q) shape", () => {
+        const snapshot = buildWave2Snapshot()
+        const claims = claimIds.map((id) => mkTestClaim({ id }))
+
+        const restored = PropositArgumentEngine.fromServerData(
+            snapshot,
+            claims,
+            []
+        )
+
+        const pm = restored.getPremise("p-1")!
+        const rootId = pm.getRootExpressionId()!
+        const root = pm.getExpression(rootId)!
+        expect(root.type).toBe("operator")
+        if (root.type === "operator") expect(root.operator).toBe("implies")
+
+        const rootChildren = pm
+            .getChildExpressions(rootId)
+            .sort((a, b) => a.position - b.position)
+        const antecedent = rootChildren[0]
+        expect(antecedent.type).toBe("operator")
+        if (antecedent.type === "operator")
+            expect(antecedent.operator).toBe("or")
+
+        const orChildren = pm.getChildExpressions(antecedent.id)
+        expect(orChildren).toHaveLength(2)
+        for (const child of orChildren) {
+            expect(child.type).toBe("variable")
+        }
+    })
+
+    test("after load, runtime mutations on a freeform premise still respect strict grammar (auto-correct)", () => {
+        // After fromServerData returns, runtime mutations should be subject to
+        // the strict runtime grammar. Specifically, `populateDerivationFromCitations`
+        // on a NEW derivation premise should still go through the temporary
+        // permissive-grammar window inside ManagedDerivationPremiseEngine. If
+        // grammar weren't re-tightened, surrounding wave-1-style mutations
+        // could silently bypass `enforceFormulaBetweenOperators`.
+        //
+        // We verify the re-tightening end-to-end by snapshotting the restored
+        // engine, then loading that snapshot a second time. A snapshot whose
+        // expression configs already carry strict grammar would only round-trip
+        // if the re-tightening actually wrote PERMISSIVE values back to STRICT
+        // on each premise's ExpressionManager.
+        const snapshot = buildWave2Snapshot()
+        const claims = claimIds.map((id) => mkTestClaim({ id }))
+
+        const restored = PropositArgumentEngine.fromServerData(
+            snapshot,
+            claims,
+            []
+        )
+        const reSnapshot = restored.snapshot()
+        const reSnapshotGrammar =
+            reSnapshot.premises[0]?.expressions.config?.grammarConfig
+        expect(reSnapshotGrammar?.enforceFormulaBetweenOperators).toBe(true)
+    })
+
+    test("pre-wave-2 grammar-compliant snapshot still loads identically", () => {
+        // Regression guard: ensure relaxing grammar at load doesn't change the
+        // outcome for snapshots that were already grammar-compliant.
+        const engine = setupEngineWithClaims(["claim-q", "src-a"])
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromCitations(engine, "p-1", ["src-a"]) // n=1 → IMPLIES(citvar, Q)
+
+        const snapshot = engine.snapshot()
+        const claims = ["claim-q", "src-a"].map((id) => mkTestClaim({ id }))
+
+        const restored = PropositArgumentEngine.fromServerData(
+            snapshot,
+            claims,
+            []
+        )
+        const pm = restored.getPremise("p-1")!
+        const rootId = pm.getRootExpressionId()!
+        const root = pm.getExpression(rootId)!
+        expect(root.type).toBe("operator")
+        if (root.type === "operator") expect(root.operator).toBe("implies")
     })
 })

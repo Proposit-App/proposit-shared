@@ -25,7 +25,7 @@ Failed to load argument 78afb06e-570c-47a4-9f26-3afc9bde63fb: invariant violatio
 DB row evidence (server-side, unchanged from the wave-2 migration backfill):
 
 | premise type | role       | parent_op | this_op |
-|--------------|------------|-----------|---------|
+| ------------ | ---------- | --------- | ------- |
 | derivation   | supporting | implies   | or      |
 
 This is exactly the canonical `IMPLIES(OR(…), Q)` derivation-tree shape promised by `populateDerivationFromCitations`'s contract.

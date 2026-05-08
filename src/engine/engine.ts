@@ -5,6 +5,7 @@ import {
     type TClaimLookup,
     type TCoreClaim,
     type TCoreValidationIssue,
+    type TGrammarConfig,
     type TReactiveSnapshot,
 } from "@proposit/proposit-core"
 
@@ -21,6 +22,20 @@ import {
     createClaimLookup,
     EMPTY_CLAIM_CITATION_LOOKUP,
 } from "./library-adapters.js"
+
+// Grammar configs used by fromServerData. Wave-2 derivation premises produced
+// by populateDerivationFromCitations carry an `IMPLIES(OR(c1, c2), Q)` shape
+// that violates the strict runtime rule banning a non-not operator as a direct
+// child of another operator. Loading must therefore tolerate that shape, while
+// runtime mutations after the load must still be disciplined.
+const RUNTIME_GRAMMAR: TGrammarConfig = {
+    autoNormalize: false,
+    enforceFormulaBetweenOperators: true,
+}
+const LOADING_GRAMMAR: TGrammarConfig = {
+    ...RUNTIME_GRAMMAR,
+    enforceFormulaBetweenOperators: false,
+}
 
 /** Project-parameterized snapshot type used to bridge TypeBox schemas and core engine. */
 export type TProjectSnapshot = TArgumentEngineSnapshot<
@@ -362,10 +377,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
             {
                 checksumConfig: CHECKSUM_CONFIG,
                 positionConfig: snapshot.config?.positionConfig,
-                grammarConfig: {
-                    autoNormalize: false,
-                    enforceFormulaBetweenOperators: true,
-                },
+                grammarConfig: RUNTIME_GRAMMAR,
                 generateId: () => crypto.randomUUID(),
             }
         )
@@ -381,6 +393,14 @@ export class PropositArgumentEngine extends ArgumentEngine<
         // claimContext.permissiveForRestore = true during the validate() call,
         // so unknown claim references in the snapshot don't cause failures when
         // the caller provides an incomplete claims array.
+        //
+        // The per-premise expression configs are also rewritten to LOADING_GRAMMAR
+        // so that rollback's `validate()` pass tolerates wave-2 derivation shapes
+        // (`IMPLIES(OR(c1, c2), Q)`) — those are produced intentionally by
+        // populateDerivationFromCitations and bypass the normal
+        // enforceFormulaBetweenOperators rule. After rollback, each PremiseEngine
+        // is re-tightened to RUNTIME_GRAMMAR so subsequent runtime mutations
+        // remain disciplined.
         const snapshotWithVariableConfig: TProjectSnapshot = {
             ...snapshot,
             variables: {
@@ -389,6 +409,16 @@ export class PropositArgumentEngine extends ArgumentEngine<
                     checksumConfig: CHECKSUM_CONFIG,
                 },
             },
+            premises: snapshot.premises.map((premiseSnap) => ({
+                ...premiseSnap,
+                expressions: {
+                    ...premiseSnap.expressions,
+                    config: {
+                        ...premiseSnap.expressions.config,
+                        grammarConfig: LOADING_GRAMMAR,
+                    },
+                },
+            })),
         }
         try {
             engine.rollback(snapshotWithVariableConfig)
@@ -400,6 +430,12 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 )
             }
             throw error
+        }
+
+        // Re-tighten so subsequent mutations (addExpression, wrapExpression, …)
+        // respect the explicit-formula-between-operators discipline.
+        for (const pe of engine.listPremises()) {
+            pe.setGrammarConfig(RUNTIME_GRAMMAR)
         }
 
         // Load domain data into internal maps (no notifications)
