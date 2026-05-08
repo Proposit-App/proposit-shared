@@ -19,10 +19,10 @@ instance) works correctly; the bug only manifests after a load/reload boundary.
 
 This breaks the canonical "load → mutate → persist" flow that the server uses
 for every HTTP request: each request reloads the engine via `loadArgumentData
-+ constructEngineFromData`, then runs `clearDerivationAntecedent` +
-`populateDerivationFromCitations` to rebuild the IMPLIES tree on the citing
-claim's derivation premise. The second invocation of `addClaimCitation` on the
-same claim (which produces an `n=1 → n=2` reshape) reliably hits this bug.
+
+- constructEngineFromData`, then runs `clearDerivationAntecedent`+`populateDerivationFromCitations`to rebuild the IMPLIES tree on the citing
+claim's derivation premise. The second invocation of`addClaimCitation`on the
+same claim (which produces an`n=1 → n=2` reshape) reliably hits this bug.
 
 ## Reproducer
 
@@ -37,7 +37,9 @@ import {
 } from "@proposit/shared/engine/mutations"
 
 // build minimal engine with claim-q + src-1 in the library, then:
-mutateCreateDerivationPremise(engine, "p1", { /* ... */ })
+mutateCreateDerivationPremise(engine, "p1", {
+    /* ... */
+})
 populateDerivationFromCitations(engine, "p1", ["src-1"]) // n=1: IMPLIES(c, Q)
 
 // Round-trip across the load boundary
@@ -56,7 +58,7 @@ Inside `clearDerivationAntecedent`, three sub-changesets are produced and
 merged via the internal `mergeChangesetSequence(collected)`:
 
 1. `pm.removeExpression(antecedent.id, true)` — cascade-removes the antecedent.
-   On a reloaded engine, the parent IMPLIES node's *descendant checksum* is
+   On a reloaded engine, the parent IMPLIES node's _descendant checksum_ is
    recomputed and the engine emits IMPLIES as a `modified` entry in the
    changeset. (On a fresh in-process engine, the descendant-checksum tracker
    is in a different state and IMPLIES is not emitted as `modified`.)
@@ -87,8 +89,10 @@ function mergeChangesetSequence(changesets: ProjectChangeset[]) {
     }
     for (const c of changesets) {
         for (const p of c.premises?.removed ?? []) removedIds.premises.add(p.id)
-        for (const v of c.variables?.removed ?? []) removedIds.variables.add(v.id)
-        for (const e of c.expressions?.removed ?? []) removedIds.expressions.add(e.id)
+        for (const v of c.variables?.removed ?? [])
+            removedIds.variables.add(v.id)
+        for (const e of c.expressions?.removed ?? [])
+            removedIds.expressions.add(e.id)
     }
     // existing addedIds collection ...
     let result: ProjectChangeset = {}

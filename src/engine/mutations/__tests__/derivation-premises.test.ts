@@ -168,6 +168,59 @@ describe("clearDerivationAntecedent", () => {
         expect(afterRoot?.type).toBe("variable")
         expect(afterRoot?.parentId).toBeNull()
     })
+
+    test("after snapshot/rollback round-trip, clear on n=1 IMPLIES does not throw", () => {
+        // Reproduces docs/change-requests/2026-05-08-clear-derivation-modified-removed-conflict.md.
+        // On a reloaded engine the descendant-checksum tracker is in a fresh
+        // state, so removing the antecedent emits IMPLIES as `modified` in the
+        // first sub-changeset; the next sub-changeset removes IMPLIES. The
+        // merge step previously left IMPLIES in BOTH `modified` and `removed`,
+        // tripping mergeChangesets's single-bucket invariant.
+        const engine = setupEngineWithClaims(["claim-q", "src-a"])
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromCitations(engine, "p-1", ["src-a"])
+
+        const snapshot = engine.snapshot()
+        const reloaded = setupEngineWithClaims(["claim-q", "src-a"])
+        reloaded.rollback(snapshot)
+
+        expect(() => clearDerivationAntecedent(reloaded, "p-1")).not.toThrow()
+    })
+
+    test("after reload, clear → populate cycle works (mirrors server addClaimCitation flow)", () => {
+        // Server's addClaimCitation reloads the engine each request and calls
+        // clear → populate to rebuild IMPLIES with the next citation set. The
+        // n=1 → n=2 reshape was the originally-reported failure.
+        const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromCitations(engine, "p-1", ["src-a"])
+
+        // First reload + reshape: clear → populate with two sources.
+        const snap1 = engine.snapshot()
+        const reload1 = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
+        reload1.rollback(snap1)
+        expect(() => {
+            clearDerivationAntecedent(reload1, "p-1")
+            populateDerivationFromCitations(reload1, "p-1", ["src-a", "src-b"])
+        }).not.toThrow()
+
+        // Second reload + reshape: clear → populate again with the same set.
+        const snap2 = reload1.snapshot()
+        const reload2 = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
+        reload2.rollback(snap2)
+        expect(() => {
+            clearDerivationAntecedent(reload2, "p-1")
+            populateDerivationFromCitations(reload2, "p-1", ["src-a", "src-b"])
+        }).not.toThrow()
+    })
 })
 
 describe("populateDerivationFromCitations", () => {

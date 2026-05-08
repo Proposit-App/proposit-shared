@@ -684,8 +684,16 @@ function sanitizeAddedThenModified(
  * Resolution rule per id:
  *   - If the id is `added` in ANY changeset, drop all `modified` entries for
  *     that id (the `added` row will reflect the final post-merge state).
- *   - `removed` entries are preserved; if `added` and `removed` for the same
- *     id appear, that's a logic error and `mergeChangesets` will surface it.
+ *   - If the id is `removed` in ANY changeset, drop all `modified` entries
+ *     for that id (the row is going away; intermediate descendant-checksum
+ *     changes on it are irrelevant to the merged result). This case shows up
+ *     in `clearDerivationAntecedent` after an engine reload: removing the
+ *     antecedent triggers a descendant-checksum recompute on the parent
+ *     IMPLIES (emitted as `modified` in step 1's changeset), and step 2
+ *     subsequently removes IMPLIES — without this rule, IMPLIES would land
+ *     in both buckets.
+ *   - If `added` and `removed` for the same id appear, that's a logic error
+ *     and `mergeChangesets` will surface it.
  */
 function mergeChangesetSequence(
     changesets: ProjectChangeset[]
@@ -695,11 +703,21 @@ function mergeChangesetSequence(
         variables: new Set<string>(),
         expressions: new Set<string>(),
     }
+    const removedIds = {
+        premises: new Set<string>(),
+        variables: new Set<string>(),
+        expressions: new Set<string>(),
+    }
     for (const c of changesets) {
         for (const p of c.premises?.added ?? []) addedIds.premises.add(p.id)
         for (const v of c.variables?.added ?? []) addedIds.variables.add(v.id)
         for (const e of c.expressions?.added ?? [])
             addedIds.expressions.add(e.id)
+        for (const p of c.premises?.removed ?? []) removedIds.premises.add(p.id)
+        for (const v of c.variables?.removed ?? [])
+            removedIds.variables.add(v.id)
+        for (const e of c.expressions?.removed ?? [])
+            removedIds.expressions.add(e.id)
     }
     let result: ProjectChangeset = {}
     for (const c of changesets) {
@@ -708,7 +726,9 @@ function mergeChangesetSequence(
             sanitized.premises = {
                 ...c.premises,
                 modified: c.premises.modified.filter(
-                    (p) => !addedIds.premises.has(p.id)
+                    (p) =>
+                        !addedIds.premises.has(p.id) &&
+                        !removedIds.premises.has(p.id)
                 ),
             }
         }
@@ -716,7 +736,9 @@ function mergeChangesetSequence(
             sanitized.variables = {
                 ...c.variables,
                 modified: c.variables.modified.filter(
-                    (v) => !addedIds.variables.has(v.id)
+                    (v) =>
+                        !addedIds.variables.has(v.id) &&
+                        !removedIds.variables.has(v.id)
                 ),
             }
         }
@@ -724,7 +746,9 @@ function mergeChangesetSequence(
             sanitized.expressions = {
                 ...c.expressions,
                 modified: c.expressions.modified.filter(
-                    (e) => !addedIds.expressions.has(e.id)
+                    (e) =>
+                        !addedIds.expressions.has(e.id) &&
+                        !removedIds.expressions.has(e.id)
                 ),
             }
         }
