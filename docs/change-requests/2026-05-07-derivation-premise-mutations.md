@@ -82,28 +82,39 @@ export function clearDerivationAntecedent(
 
 **Idempotency:** calling on an already-naked premise is a no-op.
 
-### 3. `populateDerivationFromCitations(engine, premiseId) → { changes }`
+### 3. `populateDerivationFromCitations(engine, premiseId, sourceClaimIds) → { changes }`
 
-Thin wrapper around `ManagedDerivationPremiseEngine.populateFromCitations(citationLib, argumentEngine)` that returns the changeset rather than mutating in place. Required because the server composes this with `clearDerivationAntecedent` via `mergeChangesets` and persists the result in one shot.
+Builds the `IMPLIES(OR(citation_var_1, …, citation_var_n), Q)` tree on a naked derivation premise using shared's existing changeset-returning primitives. Does **not** call core's `ManagedDerivationPremiseEngine.populateFromCitations(citationLib, argumentEngine)` directly — that method mutates in place and returns void, and would also require teaching `constructEngineFromData` to populate the engine's `claimCitationLibrary` (which currently uses `EMPTY_CLAIM_SOURCE_LOOKUP`). Building the tree from primitives is mechanical, matches the migration's raw-SQL backfill shape exactly, and composes cleanly with `mergeChangesets`.
 
 **Suggested signature:**
 
 ```ts
 export function populateDerivationFromCitations(
     engine: ProjectEngine,
-    premiseId: string
+    premiseId: string,
+    /**
+     * Ordered list of source claim IDs (the cited claims). Order determines
+     * the OR's child positions. Caller queries these from `claimCitations`
+     * for the citing claim, sorted by `createdOn` ascending.
+     */
+    sourceClaimIds: string[]
 ): { changes: ProjectChangeset }
 ```
 
 **Behavior:**
 
-- Looks up the derivation premise by id (must be `type='derivation'`, otherwise throw).
-- Looks up the citing claim's claim-citation library from the engine's snapshot.
-- Calls `pe.populateFromCitations(claimCitationLibrary, engine)` on the `ManagedDerivationPremiseEngine` instance for `premiseId`.
-- Captures the resulting changes through whatever changeset-collector mechanism the engine already uses for other mutations.
-- Returns `{ changes }`.
+- Throw `DERIVATION_TYPE_MISMATCH` if `premiseId` doesn't resolve to a `type='derivation'` premise.
+- Throw `DERIVATION_ANTECEDENT_NON_EMPTY` if the premise's root expression isn't a bare consequent variable. (Caller is expected to call `clearDerivationAntecedent` first when the premise is already populated.)
+- If `sourceClaimIds` is empty, return an empty changeset (premise stays naked).
+- Otherwise, build the tree using existing engine primitives — each returns a changeset:
+    1. For each `sourceClaimId`, mint a claim-bound variable via the existing variable mutation surface (`engine.ensureClaimBoundVariable(sourceClaimId)` or equivalent — re-use whatever shape `mutateCreateClaimBoundVariable` already exposes; if no public mutation exists, expose a thin wrapper).
+    2. Find the existing consequent variable expression (the current root of the premise; bare variable, parentId=null, position=0). Modify it to set `parentId = <implies-id>, position = 1`.
+    3. Add an `IMPLIES` operator expression as the new root (`parentId=null, position=0`).
+    4. Add an `OR` operator expression as position-0 child of IMPLIES.
+    5. Add `citation_var` expressions of `type='variable'` as children of OR, position k for k=0..n-1, each bound to the corresponding `sourceClaimId`'s claim-bound variable.
+- Merge all sub-changesets via `mergeChangesets` and return.
 
-**Throws:** `DERIVATION_ANTECEDENT_NON_EMPTY` if the premise already has an IMPLIES root (caller forgot to clear). `DERIVATION_TYPE_MISMATCH` if `premiseId` resolves to a non-derivation premise.
+**Why caller-supplied source IDs:** keeps the engine's `claimCitationLibrary` out of the picture (it's empty in the server's `constructEngineFromData` setup); makes the migration and live-write paths use the same trace; lets the server choose ordering (it sorts edges by `createdOn` before passing).
 
 ### 4. `buildTextTree` filters out derivation premises
 
@@ -199,32 +210,63 @@ test("clearDerivationAntecedent on a populated premise removes IMPLIES/OR/citati
 ### `populateDerivationFromCitations`
 
 ```ts
-test("populateDerivationFromCitations on a naked premise builds IMPLIES(OR(citations), Q)", () => {
-    const engine = makeArgumentEngineWithDerivationPremiseAndCitations(
-        "p-1",
-        ["citation-claim-a"]
-    )
-    const { changes } = populateDerivationFromCitations(engine, "p-1")
+test("populateDerivationFromCitations on a naked premise with sourceClaimIds builds IMPLIES(OR(citations), Q)", () => {
+    const engine = makeArgumentEngineWithDerivationPremise("p-1", "claim-Q")
+    const { changes } = populateDerivationFromCitations(engine, "p-1", [
+        "citation-claim-a",
+    ])
     // The IMPLIES, OR, and one citation_var should be added; the consequent
     // expression's parent should be modified.
     const operatorAdds = (changes.expressions?.added ?? []).filter(
         (e) => e.type === "operator"
     )
     expect(operatorAdds.map((e) => e.operator).sort()).toEqual(["implies", "or"])
+    // The OR has one variable child (the citation), and the consequent
+    // variable expression is now the position-1 child of IMPLIES.
+    const variableAdds = (changes.expressions?.added ?? []).filter(
+        (e) => e.type === "variable"
+    )
+    expect(variableAdds).toHaveLength(1) // only the citation_var; consequent is reparented, not added
+    const consequentMods = (changes.expressions?.modified ?? []).filter(
+        (e) => e.type === "variable"
+    )
+    expect(consequentMods).toHaveLength(1)
+    expect(consequentMods[0].position).toBe(1)
+})
+
+test("populateDerivationFromCitations with empty sourceClaimIds is a no-op", () => {
+    const engine = makeArgumentEngineWithDerivationPremise("p-1", "claim-Q")
+    const { changes } = populateDerivationFromCitations(engine, "p-1", [])
+    expect(Object.keys(changes)).toHaveLength(0)
+})
+
+test("populateDerivationFromCitations with two sources produces a 2-child OR in source-id order", () => {
+    const engine = makeArgumentEngineWithDerivationPremise("p-1", "claim-Q")
+    const { changes } = populateDerivationFromCitations(engine, "p-1", [
+        "src-a",
+        "src-b",
+    ])
+    const variableAdds = (changes.expressions?.added ?? []).filter(
+        (e) => e.type === "variable"
+    )
+    expect(variableAdds).toHaveLength(2)
+    // Ordered: position 0 → src-a, position 1 → src-b.
+    expect(variableAdds[0].position).toBe(0)
+    expect(variableAdds[1].position).toBe(1)
 })
 
 test("populateDerivationFromCitations on a populated premise throws DERIVATION_ANTECEDENT_NON_EMPTY", () => {
     const engine = makeArgumentEngineWithPopulatedDerivationPremise("p-1", ["a"])
-    expect(() => populateDerivationFromCitations(engine, "p-1")).toThrowError(
-        /DERIVATION_ANTECEDENT_NON_EMPTY/
-    )
+    expect(() =>
+        populateDerivationFromCitations(engine, "p-1", ["b"])
+    ).toThrowError(/DERIVATION_ANTECEDENT_NON_EMPTY/)
 })
 
 test("populateDerivationFromCitations on a non-derivation premise throws DERIVATION_TYPE_MISMATCH", () => {
     const engine = makeArgumentEngineWithFreeformPremise("p-free")
-    expect(() => populateDerivationFromCitations(engine, "p-free")).toThrowError(
-        /DERIVATION_TYPE_MISMATCH/
-    )
+    expect(() =>
+        populateDerivationFromCitations(engine, "p-free", ["a"])
+    ).toThrowError(/DERIVATION_TYPE_MISMATCH/)
 })
 ```
 
@@ -250,8 +292,19 @@ The server's wave-2 `addClaimCitation` will compose these like:
 
 ```ts
 const engine = await getOrLoadEngine(trx, argumentId, version)
+// Query the citing claim's current citation set in createdOn order.
+const sourceClaimIds = (
+    await trx("claimCitations")
+        .where({ citingClaimId, citingClaimVersion: version, argumentId })
+        .orderBy("createdOn")
+        .select("sourceClaimId")
+).map((r) => r.sourceClaimId)
 const clearChangeset = clearDerivationAntecedent(engine, derivationPremiseId)
-const populateChangeset = populateDerivationFromCitations(engine, derivationPremiseId)
+const populateChangeset = populateDerivationFromCitations(
+    engine,
+    derivationPremiseId,
+    sourceClaimIds
+)
 const merged = mergeChangesets(clearChangeset, populateChangeset)
 await persistChangeset(trx, argumentId, version, merged)
 ```
