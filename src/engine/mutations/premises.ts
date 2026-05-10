@@ -1,8 +1,4 @@
-import {
-    InvariantViolationError,
-    PERMISSIVE_GRAMMAR_CONFIG,
-    type TGrammarConfig,
-} from "@proposit/proposit-core"
+import { InvariantViolationError } from "@proposit/proposit-core"
 import type {
     TPremiseRoleType,
     TPropositionalPremise,
@@ -310,9 +306,14 @@ export function clearDerivationAntecedent(
     }
 
     // Collect citation-bound variable IDs so we can cascade-remove them after
-    // the antecedent expressions are gone. n=1: antecedent is the lone
-    // citation variable expression. n≥2: antecedent is an OR with one citation
-    // variable child per source.
+    // the antecedent expressions are gone. Three antecedent shapes are
+    // supported:
+    //   - n = 1: antecedent is the lone citation variable expression.
+    //   - n ≥ 2 (canonical, post-v0.7.0): antecedent is a `formula` node
+    //     whose only child is an OR; the OR's children are citation vars.
+    //   - n ≥ 2 (legacy pre-v0.7.0 snapshots): antecedent is the OR directly
+    //     (no formula buffer), reached only via a load through
+    //     `LOADING_GRAMMAR`.
     const citationVariableIds: string[] = []
     if (antecedent.type === "variable") {
         if (antecedent.variableId != null) {
@@ -320,6 +321,22 @@ export function clearDerivationAntecedent(
         }
     } else if (antecedent.type === "operator" && antecedent.operator === "or") {
         for (const child of pm.getChildExpressions(antecedent.id)) {
+            if (child.type === "variable" && child.variableId != null) {
+                citationVariableIds.push(child.variableId)
+            }
+        }
+    } else if (antecedent.type === "formula") {
+        const formulaChildren = pm.getChildExpressions(antecedent.id)
+        if (
+            formulaChildren.length !== 1 ||
+            formulaChildren[0].type !== "operator" ||
+            formulaChildren[0].operator !== "or"
+        ) {
+            throw new Error(
+                `clearDerivationAntecedent: expected formula antecedent to wrap a single OR for premise ${premiseId}`
+            )
+        }
+        for (const child of pm.getChildExpressions(formulaChildren[0].id)) {
             if (child.type === "variable" && child.variableId != null) {
                 citationVariableIds.push(child.variableId)
             }
@@ -332,10 +349,10 @@ export function clearDerivationAntecedent(
 
     const collected: ProjectChangeset[] = []
 
-    // 1. Remove the antecedent subtree (cascade=true). The cascade removes the
-    //    OR (if present) and all citation variable expressions in one shot.
-    //    The IMPLIES root is unaffected; the consequent variable expression is
-    //    unaffected (it's the position-1 child).
+    // 1. Remove the antecedent subtree (cascade=true). The cascade removes any
+    //    intermediate formula/OR nodes and all citation variable expressions in
+    //    one shot. The IMPLIES root is unaffected; the consequent variable
+    //    expression is unaffected (it's the position-1 child).
     const { changes: removeAntecedentChanges } = pm.removeExpression(
         antecedent.id,
         true
@@ -346,13 +363,11 @@ export function clearDerivationAntecedent(
     //    child (the consequent variable expression) to take IMPLIES's slot —
     //    its parentId becomes null, position becomes IMPLIES's old position.
     //    The consequent expression appears as `modified` in the changeset.
-    withGrammarConfig(pm, PERMISSIVE_GRAMMAR_CONFIG, () => {
-        const { changes: removeImpliesChanges } = pm.removeExpression(
-            rootExprId,
-            false
-        )
-        collected.push(removeImpliesChanges)
-    })
+    const { changes: removeImpliesChanges } = pm.removeExpression(
+        rootExprId,
+        false
+    )
+    collected.push(removeImpliesChanges)
 
     // 3. Cascade citation-bound variable removals. By this point the
     //    expressions referencing them are already gone, so removeVariable's
@@ -473,63 +488,68 @@ export function populateDerivationFromCitations(
     //    sibling the left (antecedent) child of the new IMPLIES root. The
     //    consequent appears in the wrap's changeset as `modified` (its
     //    parentId/position changed).
-    withGrammarConfig(pm, PERMISSIVE_GRAMMAR_CONFIG, () => {
-        const impliesId = generateId()
-        const impliesOp = {
-            id: impliesId,
+    //
+    // Standard grammar drives construction throughout. For n ≥ 2 the engine's
+    // wrapInsertFormula auto-normalize rule inserts a formula buffer between
+    // IMPLIES and OR, producing the canonical
+    // `IMPLIES(formula(OR(c1, …, cn)), Q)` shape. n = 0 and n = 1 have no
+    // operator-under-operator nesting so no formula gets inserted.
+    const impliesId = generateId()
+    const impliesOp = {
+        id: impliesId,
+        ...sharedMeta,
+        parentId: null,
+        type: "operator" as const,
+        operator: "implies" as const,
+        variableId: null,
+    }
+    if (sourceVariables.length === 1) {
+        const sibling = {
+            id: generateId(),
             ...sharedMeta,
-            parentId: null,
-            type: "operator" as const,
-            operator: "implies" as const,
-            variableId: null,
-        }
-        if (sourceVariables.length === 1) {
-            const sibling = {
-                id: generateId(),
-                ...sharedMeta,
-                parentId: null, // wrapExpression sets the real parentId
-                type: "variable" as const,
-                variableId: sourceVariables[0].id,
-                operator: null,
-            }
-            const { changes: wrap } = pm.wrapExpression(
-                impliesOp as Parameters<typeof pm.wrapExpression>[0],
-                sibling as Parameters<typeof pm.wrapExpression>[1],
-                undefined,
-                consequentExpr.id
-            )
-            collected.push(wrap)
-            return
-        }
-        // n ≥ 2: wrap with IMPLIES(OR, Q) and append citation children to OR.
-        const orId = generateId()
-        const orSibling = {
-            id: orId,
-            ...sharedMeta,
-            parentId: null,
-            type: "operator" as const,
-            operator: "or" as const,
-            variableId: null,
+            parentId: null, // wrapExpression sets the real parentId
+            type: "variable" as const,
+            variableId: sourceVariables[0].id,
+            operator: null,
         }
         const { changes: wrap } = pm.wrapExpression(
             impliesOp as Parameters<typeof pm.wrapExpression>[0],
-            orSibling as Parameters<typeof pm.wrapExpression>[1],
+            sibling as Parameters<typeof pm.wrapExpression>[1],
             undefined,
             consequentExpr.id
         )
         collected.push(wrap)
-        for (const sourceVar of sourceVariables) {
-            const { changes: appendChanges } = pm.appendExpression(orId, {
-                id: generateId(),
-                ...sharedMeta,
-                parentId: orId,
-                type: "variable" as const,
-                variableId: sourceVar.id,
-                operator: null,
-            } as Parameters<typeof pm.appendExpression>[1])
-            collected.push(appendChanges)
-        }
-    })
+        return { changes: mergeChangesetSequence(collected) }
+    }
+    // n ≥ 2: wrap with IMPLIES(OR, Q) and append citation children to OR.
+    // wrapInsertFormula slips a formula expression between IMPLIES and OR.
+    const orId = generateId()
+    const orSibling = {
+        id: orId,
+        ...sharedMeta,
+        parentId: null,
+        type: "operator" as const,
+        operator: "or" as const,
+        variableId: null,
+    }
+    const { changes: wrap } = pm.wrapExpression(
+        impliesOp as Parameters<typeof pm.wrapExpression>[0],
+        orSibling as Parameters<typeof pm.wrapExpression>[1],
+        undefined,
+        consequentExpr.id
+    )
+    collected.push(wrap)
+    for (const sourceVar of sourceVariables) {
+        const { changes: appendChanges } = pm.appendExpression(orId, {
+            id: generateId(),
+            ...sharedMeta,
+            parentId: orId,
+            type: "variable" as const,
+            variableId: sourceVar.id,
+            operator: null,
+        } as Parameters<typeof pm.appendExpression>[1])
+        collected.push(appendChanges)
+    }
 
     return { changes: mergeChangesetSequence(collected) }
 }
@@ -569,31 +589,6 @@ function withoutEntities(
         }
     }
     return result
-}
-
-/**
- * Runs `fn` with `pm.grammarConfig` swapped to `nextConfig`, restoring the
- * original config after `fn` returns or throws. Mirrors the technique used by
- * core's `ManagedDerivationPremiseEngine.populateFromCitations`, which needs
- * permissive grammar to place an `OR` operator directly under `IMPLIES`
- * without a formula buffer.
- */
-function withGrammarConfig<T>(
-    pm: ReturnType<ProjectEngine["getPremise"]> & object,
-    nextConfig: TGrammarConfig,
-    fn: () => T
-): T {
-    // grammarConfig is `protected` on PremiseEngine. Casting to access it is
-    // intentional: the alternative — exposing it publicly in core — would be a
-    // larger surface change for a single use-case.
-    const target = pm as unknown as { grammarConfig: TGrammarConfig }
-    const saved = target.grammarConfig
-    pm.setGrammarConfig(nextConfig)
-    try {
-        return fn()
-    } finally {
-        pm.setGrammarConfig(saved)
-    }
 }
 
 /** Generates a fresh UUID for engine-auto-generated antecedent expressions. */

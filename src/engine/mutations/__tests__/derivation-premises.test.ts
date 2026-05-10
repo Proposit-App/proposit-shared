@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest"
+import { ArgumentEngine } from "@proposit/proposit-core"
 import { createTestEngine, mkTestClaim } from "./helpers.js"
 import {
     mutateCreatePremise,
@@ -7,6 +8,10 @@ import {
     populateDerivationFromCitations,
 } from "../premises.js"
 import { PropositArgumentEngine } from "../../engine.js"
+import {
+    createClaimLookup,
+    EMPTY_CLAIM_CITATION_LOOKUP,
+} from "../../library-adapters.js"
 
 const ARG_ID = "test-arg-id"
 const ARG_VERSION = 1
@@ -145,12 +150,10 @@ describe("clearDerivationAntecedent", () => {
 
         const { changes } = clearDerivationAntecedent(engine, premise.id)
 
-        // Expression removals: IMPLIES + OR + 2 citation_vars = 4. The
-        // consequent variable expression survives as `modified` (its
+        // Expression removals: IMPLIES + formula + OR + 2 citation_vars = 5.
+        // The consequent variable expression survives as `modified` (its
         // parentId/position changed when promoted to root).
-        expect(
-            changes.expressions?.removed?.length ?? 0
-        ).toBeGreaterThanOrEqual(4)
+        expect(changes.expressions?.removed?.length ?? 0).toBe(5)
         expect(
             changes.expressions?.modified?.length ?? 0
         ).toBeGreaterThanOrEqual(1)
@@ -269,7 +272,7 @@ describe("populateDerivationFromCitations", () => {
         expect(consequentChild.id).toBe("e-q")
     })
 
-    test("with two sources produces IMPLIES(OR(s_a, s_b), Q) in source-id order", () => {
+    test("with two sources produces IMPLIES(formula(OR(s_a, s_b)), Q) in source-id order", () => {
         const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
         const { premise } = createNakedDerivationPremise(engine, "claim-q", {
             premiseId: "p-1",
@@ -291,25 +294,39 @@ describe("populateDerivationFromCitations", () => {
             "or",
         ])
 
-        // Two citation_var children of OR plus the OR itself plus the IMPLIES.
+        // Standard grammar's wrapInsertFormula auto-inserts a formula buffer
+        // between IMPLIES and OR, so the changeset contains exactly one formula
+        // expression alongside the two operator nodes.
+        const formulaAdds = (changes.expressions?.added ?? []).filter(
+            (e) => e.type === "formula"
+        )
+        expect(formulaAdds).toHaveLength(1)
+
+        // Two citation_var children of OR.
         const variableAdds = (changes.expressions?.added ?? []).filter(
             (e) => e.type === "variable"
         )
         expect(variableAdds).toHaveLength(2)
 
-        // Inspect the OR's children directly via the engine to assert ordering.
+        // Inspect the antecedent through the formula buffer to assert ordering.
         const pm = engine.getPremise(premise.id)!
         const rootId = pm.getRootExpressionId()!
         const rootChildren = pm
             .getChildExpressions(rootId)
             .sort((a, b) => a.position - b.position)
         const antecedent = rootChildren[0]
-        expect(antecedent.type).toBe("operator")
-        if (antecedent.type === "operator") {
-            expect(antecedent.operator).toBe("or")
+        expect(antecedent.type).toBe("formula")
+        const formulaChildren = pm
+            .getChildExpressions(antecedent.id)
+            .sort((a, b) => a.position - b.position)
+        expect(formulaChildren).toHaveLength(1)
+        const orNode = formulaChildren[0]
+        expect(orNode.type).toBe("operator")
+        if (orNode.type === "operator") {
+            expect(orNode.operator).toBe("or")
         }
         const orChildren = pm
-            .getChildExpressions(antecedent.id)
+            .getChildExpressions(orNode.id)
             .sort((a, b) => a.position - b.position)
         expect(orChildren).toHaveLength(2)
 
@@ -328,6 +345,40 @@ describe("populateDerivationFromCitations", () => {
         expect(secondVar && "claimId" in secondVar && secondVar.claimId).toBe(
             "src-b"
         )
+    })
+
+    test("with two sources, formula expression's parent is IMPLIES and child is OR", () => {
+        // Explicit n=2 structural lock for the formula buffer (regression
+        // companion to the v0.7.0 fix that dropped the permissive-grammar
+        // wrapper from populateDerivationFromCitations).
+        const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+
+        populateDerivationFromCitations(engine, premise.id, ["src-a", "src-b"])
+
+        const pm = engine.getPremise(premise.id)!
+        const rootId = pm.getRootExpressionId()!
+        const root = pm.getExpression(rootId)!
+        expect(root.type).toBe("operator")
+        if (root.type === "operator") expect(root.operator).toBe("implies")
+
+        const rootChildren = pm
+            .getChildExpressions(rootId)
+            .sort((a, b) => a.position - b.position)
+        const antecedent = rootChildren[0]
+        expect(antecedent.type).toBe("formula")
+        expect(antecedent.parentId).toBe(rootId)
+
+        const formulaChildren = pm.getChildExpressions(antecedent.id)
+        expect(formulaChildren).toHaveLength(1)
+        const orNode = formulaChildren[0]
+        expect(orNode.type).toBe("operator")
+        if (orNode.type === "operator") expect(orNode.operator).toBe("or")
+        expect(orNode.parentId).toBe(antecedent.id)
     })
 
     test("with empty sourceClaimIds is a no-op", () => {
@@ -386,14 +437,14 @@ describe("populateDerivationFromCitations", () => {
 })
 
 describe("fromServerData with wave-2 derivation premises", () => {
-    // Reproduces docs/change-requests/2026-05-08-fromServerData-relaxed-load-grammar.md.
-    // The strict runtime grammar (`enforceFormulaBetweenOperators: true`) bans
-    // direct OR-as-child-of-IMPLIES nesting, but `populateDerivationFromCitations`
-    // intentionally produces exactly that shape for n>=2 citations. A snapshot
-    // captured after the populate carries the strict grammar in its
-    // ExpressionManager config, and `rollback`'s `validate()` pass throws
-    // EXPR_FORMULA_BETWEEN_OPERATORS_VIOLATED unless `fromServerData` relaxes
-    // grammar for the load phase and re-tightens it afterwards.
+    // The canonical wave-2 antecedent shape is `IMPLIES(formula(OR(c1, c2)), Q)`
+    // — the formula buffer between IMPLIES and OR is what strict grammar
+    // (`enforceFormulaBetweenOperators: true`) requires. Pre-v0.7.0 of this
+    // package, `populateDerivationFromCitations` produced an unbuffered
+    // `IMPLIES(OR(c1, c2), Q)` shape via a permissive-grammar bypass; that
+    // shape still appears in older stored snapshots. The `LOADING_GRAMMAR`
+    // shim in `fromServerData` keeps loading those rows until consumers run
+    // a one-shot canonicalization migration, after which the shim can go.
 
     const claimIds = ["claim-q", "src-a", "src-b"]
 
@@ -408,7 +459,89 @@ describe("fromServerData with wave-2 derivation premises", () => {
         return engine.snapshot()
     }
 
-    test("loads a snapshot containing IMPLIES(OR(c1, c2), Q) without throwing", () => {
+    /**
+     * Builds a pre-v0.7.0 shape-A snapshot — `IMPLIES(OR(c1, c2), Q)` with no
+     * formula buffer between IMPLIES and OR. Used to verify the back-compat
+     * `LOADING_GRAMMAR` shim still accepts unmigrated rows.
+     */
+    function buildLegacyUnbufferedSnapshot() {
+        const engine = setupEngineWithClaims(claimIds)
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        const pm = engine.getPremise("p-1")!
+        const consequentExpr = pm.getExpression(pm.getRootExpressionId()!)!
+        if (consequentExpr.type !== "variable") {
+            throw new Error("expected naked-Q consequent to be a variable")
+        }
+
+        const varA = engine.ensureClaimBoundVariable("src-a")
+        const varB = engine.ensureClaimBoundVariable("src-b")
+
+        const sharedMeta = {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            premiseId: "p-1",
+            creatorId: USER_ID,
+            createdOn: new Date(),
+        }
+
+        // Permissive grammar lets us put OR directly under IMPLIES (the old
+        // shape). Restore strict grammar after so the snapshot's expression
+        // config matches what production rows would carry.
+        pm.setGrammarConfig({
+            enforceFormulaBetweenOperators: false,
+            autoNormalize: false,
+        })
+        const impliesId = crypto.randomUUID()
+        const orId = crypto.randomUUID()
+        pm.wrapExpression(
+            {
+                id: impliesId,
+                ...sharedMeta,
+                parentId: null,
+                type: "operator" as const,
+                operator: "implies" as const,
+                variableId: null,
+            },
+            {
+                id: orId,
+                ...sharedMeta,
+                parentId: null,
+                type: "operator" as const,
+                operator: "or" as const,
+                variableId: null,
+            },
+            undefined,
+            consequentExpr.id
+        )
+        pm.appendExpression(orId, {
+            id: crypto.randomUUID(),
+            ...sharedMeta,
+            parentId: orId,
+            type: "variable" as const,
+            variableId: varA.id,
+            operator: null,
+        })
+        pm.appendExpression(orId, {
+            id: crypto.randomUUID(),
+            ...sharedMeta,
+            parentId: orId,
+            type: "variable" as const,
+            variableId: varB.id,
+            operator: null,
+        })
+        pm.setGrammarConfig({
+            enforceFormulaBetweenOperators: true,
+            autoNormalize: false,
+        })
+
+        return engine.snapshot()
+    }
+
+    test("loads a wave-2 snapshot in canonical formula-buffered shape without throwing", () => {
         const snapshot = buildWave2Snapshot()
         const claims = claimIds.map((id) => mkTestClaim({ id }))
 
@@ -417,7 +550,19 @@ describe("fromServerData with wave-2 derivation premises", () => {
         ).not.toThrow()
     })
 
-    test("round-trips the IMPLIES(OR(c1, c2), Q) shape", () => {
+    test("loads a legacy pre-v0.7.0 snapshot containing IMPLIES(OR(c1, c2), Q) (back-compat via LOADING_GRAMMAR)", () => {
+        // Negative control for the canonicalization fix: even after shared
+        // produces only the formula-buffered shape, fromServerData must keep
+        // accepting the unbuffered shape so unmigrated rows still load.
+        const snapshot = buildLegacyUnbufferedSnapshot()
+        const claims = claimIds.map((id) => mkTestClaim({ id }))
+
+        expect(() =>
+            PropositArgumentEngine.fromServerData(snapshot, claims, [])
+        ).not.toThrow()
+    })
+
+    test("round-trips the IMPLIES(formula(OR(c1, c2)), Q) shape", () => {
         const snapshot = buildWave2Snapshot()
         const claims = claimIds.map((id) => mkTestClaim({ id }))
 
@@ -437,15 +582,48 @@ describe("fromServerData with wave-2 derivation premises", () => {
             .getChildExpressions(rootId)
             .sort((a, b) => a.position - b.position)
         const antecedent = rootChildren[0]
-        expect(antecedent.type).toBe("operator")
-        if (antecedent.type === "operator")
-            expect(antecedent.operator).toBe("or")
+        expect(antecedent.type).toBe("formula")
 
-        const orChildren = pm.getChildExpressions(antecedent.id)
+        const formulaChildren = pm.getChildExpressions(antecedent.id)
+        expect(formulaChildren).toHaveLength(1)
+        const orNode = formulaChildren[0]
+        expect(orNode.type).toBe("operator")
+        if (orNode.type === "operator") expect(orNode.operator).toBe("or")
+
+        const orChildren = pm.getChildExpressions(orNode.id)
         expect(orChildren).toHaveLength(2)
         for (const child of orChildren) {
             expect(child.type).toBe("variable")
         }
+    })
+
+    test("strict-load and auto-normalize-load of the canonical shape produce identical combinedChecksum", () => {
+        // Locks in the fixed-point claim: the formula-buffered shape is the
+        // canonical output of normalization, so re-running normalization on a
+        // freshly-built snapshot must not change its checksum. This is the
+        // shared-side mirror of proposit-core's v0.11.2 fixed-point regression
+        // test — both libraries' construction paths must converge here.
+        const snapshot = buildWave2Snapshot()
+        const claimLookup = createClaimLookup(
+            claimIds.map((id) => mkTestClaim({ id }))
+        )
+
+        const strictLoaded = ArgumentEngine.fromSnapshot(
+            snapshot,
+            claimLookup,
+            EMPTY_CLAIM_CITATION_LOOKUP,
+            { autoNormalize: false, enforceFormulaBetweenOperators: true }
+        )
+        const autoNormalizeLoaded = ArgumentEngine.fromSnapshot(
+            snapshot,
+            claimLookup,
+            EMPTY_CLAIM_CITATION_LOOKUP,
+            { autoNormalize: true, enforceFormulaBetweenOperators: true }
+        )
+
+        expect(strictLoaded.combinedChecksum()).toBe(
+            autoNormalizeLoaded.combinedChecksum()
+        )
     })
 
     test("after load, runtime mutations on a freeform premise still respect strict grammar (auto-correct)", () => {
