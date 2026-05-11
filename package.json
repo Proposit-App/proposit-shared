@@ -132,7 +132,8 @@
         "prettify": "pnpm exec prettier -w .",
         "prettify:check": "pnpm exec prettier --check .",
         "test": "pnpm exec vitest run",
-        "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build"
+        "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
+        "prepublishOnly": "pnpm run check"
     },
     "peerDependencies": {
         "@proposit/proposit-core": "^0.11.2"
