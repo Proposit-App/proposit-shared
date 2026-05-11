@@ -105,12 +105,30 @@ export function mutateDeletePremise(
  * the root) is the only valid empty antecedent shape; populate the antecedent
  * via `populateDerivationFromCitations` once citations exist.
  *
- * All three IDs are caller-controlled so the live engine path produces the same
- * row IDs as the server's raw-SQL migration backfill, simplifying post-migration
- * verification.
+ * Two variants are supported via mutually-exclusive parameters:
+ *
+ *   - **Mint** (`consequentVariableId`): caller-minted id for a brand-new
+ *     claim-bound consequent variable. The caller-supplied IDs match the
+ *     server's raw-SQL migration backfill so live-engine and migration paths
+ *     produce identical row IDs.
+ *   - **Adopt** (`existingConsequentVariableId`): adopts an existing
+ *     claim-bound variable in the engine as the consequent rather than
+ *     allocating a new one. Used when the canonical claim-bound variable for
+ *     `derivedClaimId` already lives in the argument (legacy / fork-from-older
+ *     arguments where the derivation premise was never minted, or future
+ *     deletion paths that preserve the variable). Avoids the DB-level
+ *     `(symbol, argumentId, argumentVersion)` unique-constraint violation
+ *     that minting a duplicate would trigger.
+ *
+ * Exactly one of `consequentVariableId` / `existingConsequentVariableId` must
+ * be supplied.
  *
  * @throws InvariantViolationError(CREATE_DERIVATION_CLAIM_NOT_FOUND) when
  *         `derivedClaimId` does not resolve in the engine's claim library.
+ * @throws Error when both or neither of `consequentVariableId` /
+ *         `existingConsequentVariableId` are supplied, or when
+ *         `existingConsequentVariableId` does not reference a claim-bound
+ *         variable for `derivedClaimId`.
  */
 export function mutateCreateDerivationPremise(
     engine: ProjectEngine,
@@ -121,7 +139,8 @@ export function mutateCreateDerivationPremise(
         creatorId: string
         createdOn: Date
         derivedClaimId: string
-        consequentVariableId: string
+        consequentVariableId?: string
+        existingConsequentVariableId?: string
         consequentExpressionId: string
     }
 ): {
@@ -130,6 +149,38 @@ export function mutateCreateDerivationPremise(
     consequentExpression: TPropositionalExpressionCombined
     changes: ProjectChangeset
 } {
+    // 0. Validate the mint/adopt mode selection up front.
+    const mintMode = data.consequentVariableId != null
+    const adoptMode = data.existingConsequentVariableId != null
+    if (mintMode && adoptMode) {
+        throw new Error(
+            "mutateCreateDerivationPremise: consequentVariableId and existingConsequentVariableId are mutually exclusive — supply exactly one"
+        )
+    }
+    if (!mintMode && !adoptMode) {
+        throw new Error(
+            "mutateCreateDerivationPremise: must supply exactly one of consequentVariableId (mint) or existingConsequentVariableId (adopt)"
+        )
+    }
+    if (adoptMode) {
+        const existing = engine.getVariable(data.existingConsequentVariableId!)
+        if (!existing) {
+            throw new Error(
+                `mutateCreateDerivationPremise: existingConsequentVariableId ${data.existingConsequentVariableId} not found in engine`
+            )
+        }
+        if (!("claimId" in existing)) {
+            throw new Error(
+                `mutateCreateDerivationPremise: existingConsequentVariableId ${data.existingConsequentVariableId} is not claim-bound`
+            )
+        }
+        if (existing.claimId !== data.derivedClaimId) {
+            throw new Error(
+                `mutateCreateDerivationPremise: existingConsequentVariableId ${data.existingConsequentVariableId} is bound to claim ${existing.claimId}, expected derivedClaimId ${data.derivedClaimId}`
+            )
+        }
+    }
+
     // 1. Create the derivation premise. Core auto-creates: a premise-bound
     //    variable for the new premise, a claim-bound consequent variable
     //    (engine-generated id), and a naked-Q variable expression rooted on
@@ -147,8 +198,8 @@ export function mutateCreateDerivationPremise(
         }
     )
 
-    // 2. Identify the auto-generated entities so we can swap their IDs for the
-    //    caller-minted ones.
+    // 2. Identify the auto-generated entities so we can swap them out for the
+    //    caller-minted (mint mode) or pre-existing (adopt mode) consequent.
     const autoExpressions = pm.getExpressions()
     if (autoExpressions.length !== 1) {
         throw new Error(
@@ -169,16 +220,29 @@ export function mutateCreateDerivationPremise(
         )
     }
 
-    // 3. Update the engine's internal state to use caller-minted IDs. The
-    //    intermediate changesets from these calls are discarded; we filter
-    //    the auto entities out of `premiseChanges` (step 4) so the merged
-    //    result never references them.
+    // 3. Update the engine's internal state to point at the chosen consequent
+    //    variable. The intermediate changesets from these calls are discarded;
+    //    we filter the auto entities out of `premiseChanges` (step 4) so the
+    //    merged result never references them.
+    //
+    // Mode-dependent behavior on the auto entities:
+    //   - Mint: the auto var is a brand-new claim-bound variable. Remove it
+    //     along with the auto expression so the caller-minted replacement can
+    //     take its place.
+    //   - Adopt: core's `createPremiseWithId` uses `ensureClaimBoundVariable`
+    //     to allocate the consequent, which reuses the existing claim-bound
+    //     variable when one is in the engine. So `autoVarId` is the
+    //     pre-existing variable id we want to adopt — remove only the auto
+    //     expression, keep the variable.
     pm.removeExpression(autoExpr.id, true)
-    engine.removeVariable(autoVarId)
 
-    const { result: consequentVariable, changes: addVarChanges } =
-        engine.addVariable({
-            id: data.consequentVariableId,
+    let consequentVariable: TPropositionalVariable
+    let consequentVariableChanges: ProjectChangeset
+    let consequentVariableIdToReference: string
+    if (mintMode) {
+        engine.removeVariable(autoVarId)
+        const { result, changes } = engine.addVariable({
+            id: data.consequentVariableId!,
             argumentId: data.argumentId,
             argumentVersion: data.argumentVersion,
             claimId: data.derivedClaimId,
@@ -187,6 +251,22 @@ export function mutateCreateDerivationPremise(
             creatorId: data.creatorId,
             createdOn: data.createdOn,
         } as Parameters<typeof engine.addVariable>[0])
+        consequentVariable = result
+        consequentVariableChanges = changes
+        consequentVariableIdToReference = data.consequentVariableId!
+    } else {
+        // Sanity check: ensureClaimBoundVariable should have surfaced the
+        // existing variable as the auto consequent. Bail loudly if it didn't —
+        // proceeding would leak the auto-allocated duplicate the bug describes.
+        if (autoVarId !== data.existingConsequentVariableId) {
+            throw new Error(
+                `mutateCreateDerivationPremise: adopt-mode invariant violated — engine auto-allocated ${autoVarId} for derivedClaimId ${data.derivedClaimId} despite existing claim-bound variable ${data.existingConsequentVariableId}`
+            )
+        }
+        consequentVariable = autoVar as TPropositionalVariable
+        consequentVariableChanges = {}
+        consequentVariableIdToReference = data.existingConsequentVariableId!
+    }
 
     const { result: consequentExpression, changes: addExprChanges } =
         pm.appendExpression(null, {
@@ -196,7 +276,7 @@ export function mutateCreateDerivationPremise(
             premiseId,
             parentId: null,
             type: "variable",
-            variableId: data.consequentVariableId,
+            variableId: consequentVariableIdToReference,
             operator: null,
             creatorId: data.creatorId,
             createdOn: data.createdOn,
@@ -205,7 +285,7 @@ export function mutateCreateDerivationPremise(
     // 4. Strip the auto entities from the create-premise changeset so the
     //    merged result reflects only: the premise, the auto-created
     //    premise-bound variable (engine-managed; not caller-minted), and the
-    //    caller-minted consequent variable + naked-Q expression.
+    //    chosen consequent variable + naked-Q expression.
     //
     // Also normalize the changeset so the premise doesn't appear in both
     // `added` and `modified`. Core's createPremiseWithId for derivation
@@ -221,7 +301,7 @@ export function mutateCreateDerivationPremise(
         })
     )
     const droppedModifiedAddVarChanges = withoutPremiseModifications(
-        addVarChanges,
+        consequentVariableChanges,
         premiseId
     )
     const droppedModifiedAddExprChanges = withoutPremiseModifications(

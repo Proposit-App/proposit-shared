@@ -7,6 +7,7 @@ import {
     clearDerivationAntecedent,
     populateDerivationFromCitations,
 } from "../premises.js"
+import { mutateCreateVariable } from "../variables.js"
 import { PropositArgumentEngine } from "../../engine.js"
 import {
     createClaimLookup,
@@ -119,6 +120,266 @@ describe("mutateCreateDerivationPremise", () => {
         expect(restored.getPremise("p-d-1")?.toPremiseData().type).toBe(
             "derivation"
         )
+    })
+})
+
+describe("mutateCreateDerivationPremise — adopt existing consequent variable", () => {
+    test("adopts an existing claim-bound variable as the consequent and does not mint a new one", () => {
+        // Mimics a legacy / fork-from-older-arg claim: a claim-bound free
+        // variable for the claim already exists, but no derivation premise has
+        // been minted yet. The new adopt path lets the heal-on-write flow reuse
+        // the existing variable rather than allocating a duplicate.
+        const engine = setupEngineWithClaims(["claim-q"])
+        const existingVarId = "existing-q-var"
+        mutateCreateVariable(engine, existingVarId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            claimId: "claim-q",
+            claimVersion: 1,
+            symbol: "Q",
+            creatorId: USER_ID,
+            createdOn: new Date(),
+        })
+
+        const premiseId = "p-d-1"
+        const consequentExpressionId = "e-1"
+
+        const result = mutateCreateDerivationPremise(engine, premiseId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            existingConsequentVariableId: existingVarId,
+            consequentExpressionId,
+        })
+
+        expect(result.premise.type).toBe("derivation")
+        expect(result.consequentVariable.id).toBe(existingVarId)
+
+        expect(result.consequentExpression.type).toBe("variable")
+        expect(result.consequentExpression.id).toBe(consequentExpressionId)
+        if (result.consequentExpression.type === "variable") {
+            expect(result.consequentExpression.variableId).toBe(existingVarId)
+        }
+
+        // Changeset must not contain a freshly added claim-bound variable for
+        // claim-q — the existing one is reused.
+        const variableAdds = result.changes.variables?.added ?? []
+        const claimBoundAddsForQ = variableAdds.filter(
+            (v) => "claimId" in v && v.claimId === "claim-q"
+        )
+        expect(claimBoundAddsForQ).toHaveLength(0)
+
+        // Engine snapshot: exactly one claim-bound variable bound to claim-q.
+        const claimBoundForQ = engine
+            .getVariables()
+            .filter((v) => "claimId" in v && v.claimId === "claim-q")
+        expect(claimBoundForQ).toHaveLength(1)
+        expect(claimBoundForQ[0].id).toBe(existingVarId)
+    })
+
+    test("throws when neither consequentVariableId nor existingConsequentVariableId is supplied", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+
+        expect(() =>
+            mutateCreateDerivationPremise(engine, "p-1", {
+                argumentId: ARG_ID,
+                argumentVersion: ARG_VERSION,
+                creatorId: USER_ID,
+                createdOn: new Date(),
+                derivedClaimId: "claim-q",
+                consequentExpressionId: "e-1",
+            } as Parameters<typeof mutateCreateDerivationPremise>[2])
+        ).toThrowError(
+            /consequentVariableId.*existingConsequentVariableId|existingConsequentVariableId.*consequentVariableId/
+        )
+    })
+
+    test("throws when both consequentVariableId and existingConsequentVariableId are supplied", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const existingVarId = "existing-q-var"
+        mutateCreateVariable(engine, existingVarId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            claimId: "claim-q",
+            claimVersion: 1,
+            symbol: "Q",
+            creatorId: USER_ID,
+            createdOn: new Date(),
+        })
+
+        expect(() =>
+            mutateCreateDerivationPremise(engine, "p-1", {
+                argumentId: ARG_ID,
+                argumentVersion: ARG_VERSION,
+                creatorId: USER_ID,
+                createdOn: new Date(),
+                derivedClaimId: "claim-q",
+                consequentVariableId: "new-var",
+                existingConsequentVariableId: existingVarId,
+                consequentExpressionId: "e-1",
+            })
+        ).toThrowError(/mutually exclusive|cannot.*both/i)
+    })
+
+    test("throws when existingConsequentVariableId references a variable not in the engine", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+
+        expect(() =>
+            mutateCreateDerivationPremise(engine, "p-1", {
+                argumentId: ARG_ID,
+                argumentVersion: ARG_VERSION,
+                creatorId: USER_ID,
+                createdOn: new Date(),
+                derivedClaimId: "claim-q",
+                existingConsequentVariableId: "nonexistent-var-id",
+                consequentExpressionId: "e-1",
+            })
+        ).toThrowError(/not found|does not exist/i)
+    })
+
+    test("throws when existingConsequentVariableId references a premise-bound (non-claim-bound) variable", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        // Mint a derivation premise normally so we have a premise-bound variable
+        // to point at. createPremiseWithId auto-allocates a premise-bound var.
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-existing",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        const premiseBoundVars = engine
+            .getVariables()
+            .filter((v) => !("claimId" in v))
+        expect(premiseBoundVars.length).toBeGreaterThan(0)
+        const premiseBoundVar = premiseBoundVars[0]
+
+        // sanity: ensure the premise we just created is what we expect
+        expect(premise.type).toBe("derivation")
+
+        expect(() =>
+            mutateCreateDerivationPremise(engine, "p-2", {
+                argumentId: ARG_ID,
+                argumentVersion: ARG_VERSION,
+                creatorId: USER_ID,
+                createdOn: new Date(),
+                derivedClaimId: "claim-q",
+                existingConsequentVariableId: premiseBoundVar.id,
+                consequentExpressionId: "e-1",
+            })
+        ).toThrowError(/claim-bound|not.*claim-bound/i)
+    })
+
+    test("throws when existingConsequentVariableId references a claim-bound variable for a different claim", () => {
+        const engine = setupEngineWithClaims(["claim-q", "claim-r"])
+        const wrongClaimVarId = "var-for-r"
+        mutateCreateVariable(engine, wrongClaimVarId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            claimId: "claim-r",
+            claimVersion: 1,
+            symbol: "R",
+            creatorId: USER_ID,
+            createdOn: new Date(),
+        })
+
+        expect(() =>
+            mutateCreateDerivationPremise(engine, "p-1", {
+                argumentId: ARG_ID,
+                argumentVersion: ARG_VERSION,
+                creatorId: USER_ID,
+                createdOn: new Date(),
+                derivedClaimId: "claim-q",
+                existingConsequentVariableId: wrongClaimVarId,
+                consequentExpressionId: "e-1",
+            })
+        ).toThrowError(/claim-q|claimId|derivedClaimId/i)
+    })
+
+    test("mint-path behavior is unchanged when consequentVariableId is supplied", () => {
+        // Existing happy-path test (above) already covers this; replicate the
+        // most important assertion as a regression lock against the adopt-path
+        // refactor.
+        const engine = setupEngineWithClaims(["claim-q"])
+
+        const result = mutateCreateDerivationPremise(engine, "p-d-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            consequentVariableId: "v-mint-1",
+            consequentExpressionId: "e-mint-1",
+        })
+
+        const variableAdds = result.changes.variables?.added ?? []
+        const claimBoundAdds = variableAdds.filter(
+            (v) => "claimId" in v && v.claimId === "claim-q"
+        )
+        expect(claimBoundAdds).toHaveLength(1)
+        expect(claimBoundAdds[0].id).toBe("v-mint-1")
+    })
+
+    test("adopt-path snapshot/rollback round-trip loads without invariant violations", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const existingVarId = "existing-q-var"
+        mutateCreateVariable(engine, existingVarId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            claimId: "claim-q",
+            claimVersion: 1,
+            symbol: "Q",
+            creatorId: USER_ID,
+            createdOn: new Date(),
+        })
+        mutateCreateDerivationPremise(engine, "p-d-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            existingConsequentVariableId: existingVarId,
+            consequentExpressionId: "e-1",
+        })
+
+        const snapshot = engine.snapshot()
+        const restored = setupEngineWithClaims(["claim-q"])
+        expect(() => restored.rollback(snapshot)).not.toThrow()
+        expect(restored.getPremise("p-d-1")?.toPremiseData().type).toBe(
+            "derivation"
+        )
+    })
+
+    test("adopt-path supports the full clear/populate round-trip after reload (mirrors server addClaimCitation flow)", () => {
+        const engine = setupEngineWithClaims(["claim-q", "src-a"])
+        const existingVarId = "existing-q-var"
+        mutateCreateVariable(engine, existingVarId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            claimId: "claim-q",
+            claimVersion: 1,
+            symbol: "Q",
+            creatorId: USER_ID,
+            createdOn: new Date(),
+        })
+        mutateCreateDerivationPremise(engine, "p-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            existingConsequentVariableId: existingVarId,
+            consequentExpressionId: "e-q",
+        })
+
+        // Snapshot + reload, then run a clear → populate cycle.
+        const snapshot = engine.snapshot()
+        const reloaded = setupEngineWithClaims(["claim-q", "src-a"])
+        reloaded.rollback(snapshot)
+        expect(() => {
+            clearDerivationAntecedent(reloaded, "p-1")
+            populateDerivationFromCitations(reloaded, "p-1", ["src-a"])
+        }).not.toThrow()
     })
 })
 

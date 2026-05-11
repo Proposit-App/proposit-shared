@@ -29,7 +29,10 @@ The wave-2 ATV invariant says every `type='normal'` non-conclusion claim has exa
 
 ```ts
 import { ArgumentEngine } from "@proposit/proposit-core"
-import { mutateCreateVariable, mutateCreateDerivationPremise } from "@proposit/shared/engine/mutations"
+import {
+    mutateCreateVariable,
+    mutateCreateDerivationPremise,
+} from "@proposit/shared/engine/mutations"
 
 // 1. Build an engine with a claim-bound free variable for claim `q-claim`
 //    that has no derivation premise.
