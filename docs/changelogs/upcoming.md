@@ -2,8 +2,13 @@
 
 ## Dependencies
 
-- Bumped `@proposit/proposit-core` peer + dev dependency from `^0.11.2` to
-  `^0.12.0`.
+- Bumped `@proposit/proposit-core` peer dependency from `^0.11.2` to `^0.12.0`
+  and dev dependency to `^0.12.1`. The v0.12.1 follow-up fixes
+  (`populateFromSupports` dedup, stricter axiom-assignment guard, new
+  `CITATION_NOT_FOUND` / `AXIOM_NOT_FOUND` invariant codes on connection-library
+  `remove`) were audited as no-impact for shared — zero callers of the affected
+  core APIs and existing `InvariantViolationError` catches don't switch on
+  `.code`.
 
 ## Breaking changes — engine accessor renames
 

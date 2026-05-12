@@ -11,8 +11,14 @@ follows core's vocabulary throughout — the rename surfaces are listed under
 
 ### Dependency
 
-- `peerDependencies` and `devDependencies` for `@proposit/proposit-core`
-  bumped from `^0.11.2` to `^0.12.0`.
+- `peerDependencies` for `@proposit/proposit-core` bumped from `^0.11.2` to
+  `^0.12.0`; `devDependencies` bumped to `^0.12.1` (this repo's tests and
+  builds run against the latest 0.12.x). The v0.12.1 follow-up bug fixes —
+  `populateFromSupports` dedup, stricter axiom-assignment guard, and the new
+  `CITATION_NOT_FOUND` / `AXIOM_NOT_FOUND` invariant codes on
+  `ClaimCitationLibrary.remove` / `ClaimAxiomLibrary.remove` — were audited
+  as no-impact for shared: zero references to those APIs and the existing
+  `InvariantViolationError` catches don't switch on `.code`.
 
 ### `PropositArgumentEngine` accessor renames
 
