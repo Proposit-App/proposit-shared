@@ -9,10 +9,7 @@ import {
 } from "../premises.js"
 import { mutateCreateVariable } from "../variables.js"
 import { PropositArgumentEngine } from "../../engine.js"
-import {
-    createClaimLookup,
-    EMPTY_CLAIM_CITATION_LOOKUP,
-} from "../../library-adapters.js"
+import { createClaimLookup } from "../../library-adapters.js"
 
 const ARG_ID = "test-arg-id"
 const ARG_VERSION = 1
@@ -872,13 +869,11 @@ describe("fromServerData with wave-2 derivation premises", () => {
         const strictLoaded = ArgumentEngine.fromSnapshot(
             snapshot,
             claimLookup,
-            EMPTY_CLAIM_CITATION_LOOKUP,
             { autoNormalize: false, enforceFormulaBetweenOperators: true }
         )
         const autoNormalizeLoaded = ArgumentEngine.fromSnapshot(
             snapshot,
             claimLookup,
-            EMPTY_CLAIM_CITATION_LOOKUP,
             { autoNormalize: true, enforceFormulaBetweenOperators: true }
         )
 

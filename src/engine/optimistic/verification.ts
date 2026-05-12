@@ -1,6 +1,5 @@
 import type { DivergenceScope } from "./types.js"
 import type { PropositArgumentEngine, TProjectSnapshot } from "../engine.js"
-import { EMPTY_CLAIM_CITATION_LOOKUP } from "../library-adapters.js"
 import { CHECKSUM_CONFIG } from "../../checksum.js"
 import { ArgumentEngine } from "@proposit/proposit-core"
 import type {
@@ -32,7 +31,6 @@ export function detectDivergence(
     >(
         serverSnapshot.argument,
         { get: () => undefined, getCurrent: () => undefined },
-        EMPTY_CLAIM_CITATION_LOOKUP,
         {
             checksumConfig: CHECKSUM_CONFIG,
             positionConfig: serverSnapshot.config?.positionConfig,

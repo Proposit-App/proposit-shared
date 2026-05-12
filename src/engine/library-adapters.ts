@@ -1,9 +1,5 @@
 import type { TClaimLookup } from "@proposit/proposit-core"
-import {
-    createLookup,
-    EMPTY_CLAIM_LOOKUP,
-    EMPTY_CLAIM_CITATION_LOOKUP,
-} from "@proposit/proposit-core"
+import { createLookup, EMPTY_CLAIM_LOOKUP } from "@proposit/proposit-core"
 
 export function createClaimLookup(
     claims: { id: string; version: number }[]
@@ -24,4 +20,4 @@ export function createClaimLookup(
     }
 }
 
-export { EMPTY_CLAIM_LOOKUP, EMPTY_CLAIM_CITATION_LOOKUP }
+export { EMPTY_CLAIM_LOOKUP }

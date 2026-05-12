@@ -3,11 +3,7 @@ import { v4 } from "uuid"
 import { ArgumentEngine } from "@proposit/proposit-core"
 import { CHECKSUM_CONFIG } from "../../checksum.js"
 import { PropositArgumentEngine } from "../engine.js"
-import {
-    EMPTY_CLAIM_LOOKUP,
-    EMPTY_CLAIM_CITATION_LOOKUP,
-    createClaimLookup,
-} from "../library-adapters.js"
+import { EMPTY_CLAIM_LOOKUP, createClaimLookup } from "../library-adapters.js"
 import type { TArgument } from "../../schemas/model/arguments.js"
 import type {
     TPropositionalExpressionCombined,
@@ -66,16 +62,16 @@ describe("PropositArgumentEngine", () => {
     }
 
     function makeClaimCitation(
-        citingClaimId: string,
-        sourceClaimId: string,
+        claimId: string,
+        supportingClaimId: string,
         overrides: Partial<TClaimCitation> = {}
     ): TClaimCitation {
         return {
             id: v4(),
-            citingClaimId,
-            citingClaimVersion: 1,
-            sourceClaimId,
-            sourceClaimVersion: 1,
+            claimId,
+            claimVersion: 1,
+            supportingClaimId,
+            supportingClaimVersion: 1,
             checksum: "test-edge-checksum",
             argumentId,
             createdOn: now,
@@ -85,14 +81,9 @@ describe("PropositArgumentEngine", () => {
 
     function buildEngine(): PropositArgumentEngine {
         const arg = makeArgument()
-        return new PropositArgumentEngine(
-            arg,
-            EMPTY_CLAIM_LOOKUP,
-            EMPTY_CLAIM_CITATION_LOOKUP,
-            {
-                checksumConfig: CHECKSUM_CONFIG,
-            }
-        )
+        return new PropositArgumentEngine(arg, EMPTY_CLAIM_LOOKUP, {
+            checksumConfig: CHECKSUM_CONFIG,
+        })
     }
 
     function buildSnapshotWithData() {
@@ -105,7 +96,7 @@ describe("PropositArgumentEngine", () => {
             TPropositionalPremise,
             TPropositionalExpressionCombined,
             TPropositionalVariable
-        >(arg, claimLookup, EMPTY_CLAIM_CITATION_LOOKUP, {
+        >(arg, claimLookup, {
             checksumConfig: CHECKSUM_CONFIG,
         })
 
@@ -189,73 +180,73 @@ describe("PropositArgumentEngine", () => {
         })
     })
 
-    describe("claimCitation accessors", () => {
-        test("addClaimCitation / getSourceClaimsForCitingClaim — add a citation and retrieve by citing-claim ID", () => {
+    describe("citation accessors", () => {
+        test("addCitation / getCitationsForClaim — add a citation and retrieve by claim ID", () => {
             const engine = buildEngine()
-            const citingClaimId = v4()
-            const sourceClaimId = v4()
-            const cc = makeClaimCitation(citingClaimId, sourceClaimId)
+            const claimId = v4()
+            const supportingClaimId = v4()
+            const cc = makeClaimCitation(claimId, supportingClaimId)
 
-            engine.addClaimCitation(cc)
+            engine.addCitation(cc)
 
-            const result = engine.getSourceClaimsForCitingClaim(citingClaimId)
+            const result = engine.getCitationsForClaim(claimId)
             expect(result).toHaveLength(1)
             expect(result[0]).toEqual(cc)
         })
 
-        test("getSourceClaimsForCitingClaim returns [] for missing citing-claim ID", () => {
+        test("getCitationsForClaim returns [] for missing claim ID", () => {
             const engine = buildEngine()
 
-            expect(engine.getSourceClaimsForCitingClaim(v4())).toEqual([])
+            expect(engine.getCitationsForClaim(v4())).toEqual([])
         })
 
-        test("addClaimCitation appends multiple citations for same citing-claim", () => {
+        test("addCitation appends multiple citations for same claim", () => {
             const engine = buildEngine()
-            const citingClaimId = v4()
-            const sourceClaimId1 = v4()
-            const sourceClaimId2 = v4()
-            const cc1 = makeClaimCitation(citingClaimId, sourceClaimId1)
-            const cc2 = makeClaimCitation(citingClaimId, sourceClaimId2)
+            const claimId = v4()
+            const supportingClaimId1 = v4()
+            const supportingClaimId2 = v4()
+            const cc1 = makeClaimCitation(claimId, supportingClaimId1)
+            const cc2 = makeClaimCitation(claimId, supportingClaimId2)
 
-            engine.addClaimCitation(cc1)
-            engine.addClaimCitation(cc2)
+            engine.addCitation(cc1)
+            engine.addCitation(cc2)
 
-            const result = engine.getSourceClaimsForCitingClaim(citingClaimId)
+            const result = engine.getCitationsForClaim(claimId)
             expect(result).toHaveLength(2)
         })
 
-        test("removeClaimCitation removes a specific edge by edge id", () => {
+        test("removeCitation removes a specific edge by edge id", () => {
             const engine = buildEngine()
-            const citingClaimId = v4()
-            const sourceClaimId1 = v4()
-            const sourceClaimId2 = v4()
-            const cc1 = makeClaimCitation(citingClaimId, sourceClaimId1)
-            const cc2 = makeClaimCitation(citingClaimId, sourceClaimId2)
+            const claimId = v4()
+            const supportingClaimId1 = v4()
+            const supportingClaimId2 = v4()
+            const cc1 = makeClaimCitation(claimId, supportingClaimId1)
+            const cc2 = makeClaimCitation(claimId, supportingClaimId2)
 
-            engine.addClaimCitation(cc1)
-            engine.addClaimCitation(cc2)
+            engine.addCitation(cc1)
+            engine.addCitation(cc2)
 
-            engine.removeClaimCitation(cc1.id)
+            engine.removeCitation(cc1.id)
 
-            const result = engine.getSourceClaimsForCitingClaim(citingClaimId)
+            const result = engine.getCitationsForClaim(claimId)
             expect(result).toHaveLength(1)
-            expect(result[0].sourceClaimId).toBe(sourceClaimId2)
+            expect(result[0].supportingClaimId).toBe(supportingClaimId2)
         })
 
-        test("getClaimCitations returns all citations as Record", () => {
+        test("getCitations returns all citations as Record", () => {
             const engine = buildEngine()
-            const citingClaimId1 = v4()
-            const citingClaimId2 = v4()
-            const cc1 = makeClaimCitation(citingClaimId1, v4())
-            const cc2 = makeClaimCitation(citingClaimId2, v4())
+            const claimId1 = v4()
+            const claimId2 = v4()
+            const cc1 = makeClaimCitation(claimId1, v4())
+            const cc2 = makeClaimCitation(claimId2, v4())
 
-            engine.addClaimCitation(cc1)
-            engine.addClaimCitation(cc2)
+            engine.addCitation(cc1)
+            engine.addCitation(cc2)
 
-            const all = engine.getClaimCitations()
+            const all = engine.getCitations()
             expect(Object.keys(all)).toHaveLength(2)
-            expect(all[citingClaimId1]).toHaveLength(1)
-            expect(all[citingClaimId2]).toHaveLength(1)
+            expect(all[claimId1]).toHaveLength(1)
+            expect(all[claimId2]).toHaveLength(1)
         })
     })
 
@@ -285,13 +276,11 @@ describe("PropositArgumentEngine", () => {
             expect(engine.getClaim(claims[0].id)).toEqual(claims[0])
             expect(Object.keys(engine.getClaims())).toHaveLength(2)
 
-            // ClaimCitations
-            const ccForClaim = engine.getSourceClaimsForCitingClaim(
-                claims[0].id
-            )
+            // Citations
+            const ccForClaim = engine.getCitationsForClaim(claims[0].id)
             expect(ccForClaim).toHaveLength(1)
-            expect(ccForClaim[0].sourceClaimId).toBe(
-                claimCitations[0].sourceClaimId
+            expect(ccForClaim[0].supportingClaimId).toBe(
+                claimCitations[0].supportingClaimId
             )
         })
 
@@ -312,21 +301,21 @@ describe("PropositArgumentEngine", () => {
     })
 
     describe("reactive snapshot", () => {
-        test("getProjectSnapshot() includes claims and claimCitations records", () => {
+        test("getProjectSnapshot() includes claims and citations records", () => {
             const engine = buildEngine()
             const claim = makeClaim()
-            const sourceClaim = makeClaim({ type: "citation" })
-            const cc = makeClaimCitation(claim.id, sourceClaim.id)
+            const supportingClaim = makeClaim({ type: "citation" })
+            const cc = makeClaimCitation(claim.id, supportingClaim.id)
 
             engine.setClaim(claim)
-            engine.setClaim(sourceClaim)
-            engine.addClaimCitation(cc)
+            engine.setClaim(supportingClaim)
+            engine.addCitation(cc)
 
             const snap = engine.getProjectSnapshot()
 
             expect(snap.claims[claim.id]).toEqual(claim)
-            expect(snap.claimCitations[claim.id]).toHaveLength(1)
-            expect(snap.claimCitations[claim.id][0]).toEqual(cc)
+            expect(snap.citations[claim.id]).toHaveLength(1)
+            expect(snap.citations[claim.id][0]).toEqual(cc)
 
             // Core fields should also be present
             expect(snap.argument).toBeDefined()
@@ -335,42 +324,40 @@ describe("PropositArgumentEngine", () => {
             expect(snap.roles).toBeDefined()
         })
 
-        test("structural sharing: mutating claims doesn't change claimCitations reference", () => {
+        test("structural sharing: mutating claims doesn't change citations reference", () => {
             const engine = buildEngine()
-            const citingClaimId = v4()
-            const sourceClaimId = v4()
-            engine.addClaimCitation(
-                makeClaimCitation(citingClaimId, sourceClaimId)
-            )
+            const claimId = v4()
+            const supportingClaimId = v4()
+            engine.addCitation(makeClaimCitation(claimId, supportingClaimId))
 
             const snap1 = engine.getProjectSnapshot()
 
-            // Mutate a claim — claimCitations should keep the same reference
+            // Mutate a claim — citations should keep the same reference
             const claim = makeClaim()
             engine.setClaim(claim)
 
             const snap2 = engine.getProjectSnapshot()
 
-            // claimCitations record reference should be the same (structural sharing)
-            expect(snap2.claimCitations).toBe(snap1.claimCitations)
+            // citations record reference should be the same (structural sharing)
+            expect(snap2.citations).toBe(snap1.citations)
             // Claims record should be a new reference
             expect(snap2.claims).not.toBe(snap1.claims)
         })
 
-        test("structural sharing: mutating claimCitations doesn't change claims reference", () => {
+        test("structural sharing: mutating citations doesn't change claims reference", () => {
             const engine = buildEngine()
             const claim = makeClaim()
             engine.setClaim(claim)
 
             const snap1 = engine.getProjectSnapshot()
 
-            // Mutate claimCitations
-            engine.addClaimCitation(makeClaimCitation(v4(), v4()))
+            // Mutate citations
+            engine.addCitation(makeClaimCitation(v4(), v4()))
 
             const snap2 = engine.getProjectSnapshot()
 
             expect(snap2.claims).toBe(snap1.claims)
-            expect(snap2.claimCitations).not.toBe(snap1.claimCitations)
+            expect(snap2.citations).not.toBe(snap1.citations)
         })
 
         test("subscribe notifies on claim mutation", () => {
@@ -387,19 +374,19 @@ describe("PropositArgumentEngine", () => {
             expect(listener).toHaveBeenCalledTimes(2)
         })
 
-        test("subscribe notifies on claimCitation mutation", () => {
+        test("subscribe notifies on citation mutation", () => {
             const engine = buildEngine()
             const listener = vi.fn()
 
             engine.subscribe(listener)
 
-            const citingClaimId = v4()
-            const sourceClaimId = v4()
-            const cc = makeClaimCitation(citingClaimId, sourceClaimId)
-            engine.addClaimCitation(cc)
+            const claimId = v4()
+            const supportingClaimId = v4()
+            const cc = makeClaimCitation(claimId, supportingClaimId)
+            engine.addCitation(cc)
             expect(listener).toHaveBeenCalledTimes(1)
 
-            engine.removeClaimCitation(cc.id)
+            engine.removeCitation(cc.id)
             expect(listener).toHaveBeenCalledTimes(2)
         })
 
@@ -514,12 +501,9 @@ describe("PropositArgumentEngine", () => {
 
         test("returns true for a published argument", () => {
             const arg = { ...makeArgument(), published: true }
-            const engine = new PropositArgumentEngine(
-                arg,
-                EMPTY_CLAIM_LOOKUP,
-                EMPTY_CLAIM_CITATION_LOOKUP,
-                { checksumConfig: CHECKSUM_CONFIG }
-            )
+            const engine = new PropositArgumentEngine(arg, EMPTY_CLAIM_LOOKUP, {
+                checksumConfig: CHECKSUM_CONFIG,
+            })
             expect(engine.canFork()).toBe(true)
         })
     })
@@ -549,7 +533,6 @@ describe("PropositArgumentEngine", () => {
             const tempEngine = new PropositArgumentEngine(
                 arg,
                 claimLookupWithGhost,
-                EMPTY_CLAIM_CITATION_LOOKUP,
                 { checksumConfig: CHECKSUM_CONFIG }
             )
 
@@ -577,7 +560,6 @@ describe("PropositArgumentEngine", () => {
             const engineWithoutGhost = new PropositArgumentEngine(
                 arg,
                 EMPTY_CLAIM_LOOKUP,
-                EMPTY_CLAIM_CITATION_LOOKUP,
                 { checksumConfig: CHECKSUM_CONFIG }
             )
             engineWithoutGhost.rollback(snap)

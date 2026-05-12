@@ -90,7 +90,7 @@ export const ArgumentDiffSchema = Type.Object({
             removed: Type.Array(PropositionalPremiseSchema),
         }),
     }),
-    claimCitations: Type.Object({
+    citations: Type.Object({
         added: Type.Array(ClaimCitationSchema),
         removed: Type.Array(ClaimCitationSchema),
     }),

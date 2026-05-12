@@ -5,10 +5,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { PropositArgumentEngine } from "../../engine.js"
 import { CHECKSUM_CONFIG } from "../../../checksum.js"
-import {
-    EMPTY_CLAIM_CITATION_LOOKUP,
-    createClaimLookup,
-} from "../../library-adapters.js"
+import { createClaimLookup } from "../../library-adapters.js"
 import type { TClaim } from "../../../schemas/model/claims.js"
 import type { TArgument } from "../../../schemas/model/arguments.js"
 import type { TClaimBoundVariable } from "../../../schemas/logic.js"
@@ -156,12 +153,9 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
     ]
     const claimLookup = createClaimLookup(claims)
 
-    const engine = new PropositArgumentEngine(
-        makeArgument(),
-        claimLookup,
-        EMPTY_CLAIM_CITATION_LOOKUP,
-        { checksumConfig: CHECKSUM_CONFIG }
-    )
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+    })
 
     // Variables — two bound to sA so pSupport can be an implies(S1, S2) inference
     // while still referencing only one claim (sA) for the claim queue.

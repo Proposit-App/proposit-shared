@@ -18,10 +18,7 @@ import type {
 import type { TClaim } from "../schemas/model/claims.js"
 import type { TClaimCitation } from "../schemas/model/citations.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
-import {
-    createClaimLookup,
-    EMPTY_CLAIM_CITATION_LOOKUP,
-} from "./library-adapters.js"
+import { createClaimLookup } from "./library-adapters.js"
 
 // Grammar configs used by fromServerData. Wave-2 derivation premises produced
 // by populateDerivationFromCitations carry an `IMPLIES(OR(c1, c2), Q)` shape
@@ -46,8 +43,8 @@ export type TProjectSnapshot = TArgumentEngineSnapshot<
 >
 
 /**
- * Extended reactive snapshot. Adds project-level claim and claim-citation
- * relation data and computed validation issues to core's reactive snapshot.
+ * Extended reactive snapshot. Adds project-level claim and citation edge
+ * data and computed validation issues to core's reactive snapshot.
  */
 export type TProjectReactiveSnapshot = TReactiveSnapshot<
     TArgument,
@@ -56,13 +53,13 @@ export type TProjectReactiveSnapshot = TReactiveSnapshot<
     TPropositionalVariable
 > & {
     claims: Record<string, TClaim>
-    claimCitations: Record<string, TClaimCitation[]>
+    citations: Record<string, TClaimCitation[]>
     validationIssues: TCoreValidationIssue[]
 }
 
 /**
  * Project-specific extension of ArgumentEngine that manages domain data
- * (claims and claim-citation edges) alongside the core
+ * (claims and citation edges) alongside the core
  * propositional logic state.
  *
  * Mutations to domain data trigger reactive notifications via the inherited
@@ -78,7 +75,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
     // Internal storage — claimsMap also backs the base class's claimLibrary
     // so that setClaim() makes new claims visible to addVariable() validation.
     private claimsMap: Map<string, TClaim>
-    private claimCitationsMap = new Map<string, TClaimCitation[]>()
+    private citationsMap = new Map<string, TClaimCitation[]>()
 
     // Shared context object that is captured by the mutableLookup closure
     // and also accessible after construction so the rollback() override can
@@ -97,14 +94,14 @@ export class PropositArgumentEngine extends ArgumentEngine<
             >
         >
     ) {
-        const [argument, claimLookup, claimCitationLookup, options] = args
+        const [argument, claimLookup, options] = args
         // Create the shared claims map before super() so we can build a
         // live lookup that the base class stores as this.claimLibrary.
         const claimsMap = new Map<string, TClaim>()
         const toCoreClaim = (c: {
             id: string
             version: number
-            type: "normal" | "citation"
+            type: "normal" | "citation" | "axiomatic"
         }): TCoreClaim => ({
             id: c.id,
             version: c.version,
@@ -149,7 +146,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 return undefined
             },
         }
-        super(argument, mutableLookup, claimCitationLookup, options)
+        super(argument, mutableLookup, options)
         this.claimsMap = claimsMap
         this.claimContext = claimContext
     }
@@ -192,11 +189,11 @@ export class PropositArgumentEngine extends ArgumentEngine<
 
     // Dirty tracking for structural sharing
     private claimsDirty = true
-    private claimCitationsDirty = true
+    private citationsDirty = true
 
     // Cached records for reactive snapshot
     private cachedClaims: Record<string, TClaim> = {}
-    private cachedClaimCitations: Record<string, TClaimCitation[]> = {}
+    private cachedCitations: Record<string, TClaimCitation[]> = {}
 
     // Full combined snapshot cache (for useSyncExternalStore referential stability)
     private cachedProjectSnapshot: TProjectReactiveSnapshot | undefined
@@ -219,14 +216,12 @@ export class PropositArgumentEngine extends ArgumentEngine<
         return this.cachedClaims
     }
 
-    private getClaimCitationsRecord(): Record<string, TClaimCitation[]> {
-        if (this.claimCitationsDirty) {
-            this.cachedClaimCitations = Object.fromEntries(
-                this.claimCitationsMap
-            )
-            this.claimCitationsDirty = false
+    private getCitationsRecord(): Record<string, TClaimCitation[]> {
+        if (this.citationsDirty) {
+            this.cachedCitations = Object.fromEntries(this.citationsMap)
+            this.citationsDirty = false
         }
-        return this.cachedClaimCitations
+        return this.cachedCitations
     }
 
     // ──── Typed snapshot accessor ────
@@ -258,38 +253,38 @@ export class PropositArgumentEngine extends ArgumentEngine<
         }
     }
 
-    // ──── ClaimCitation accessors ────
+    // ──── Citation accessors ────
 
-    getSourceClaimsForCitingClaim(citingClaimId: string): TClaimCitation[] {
-        return this.claimCitationsMap.get(citingClaimId) ?? []
+    getCitationsForClaim(claimId: string): TClaimCitation[] {
+        return this.citationsMap.get(claimId) ?? []
     }
 
-    getClaimCitations(): Record<string, TClaimCitation[]> {
-        return { ...this.getClaimCitationsRecord() }
+    getCitations(): Record<string, TClaimCitation[]> {
+        return { ...this.getCitationsRecord() }
     }
 
-    addClaimCitation(cc: TClaimCitation): void {
-        const existing = this.claimCitationsMap.get(cc.citingClaimId) ?? []
-        this.claimCitationsMap.set(cc.citingClaimId, [...existing, cc])
-        this.claimCitationsDirty = true
+    addCitation(cc: TClaimCitation): void {
+        const existing = this.citationsMap.get(cc.claimId) ?? []
+        this.citationsMap.set(cc.claimId, [...existing, cc])
+        this.citationsDirty = true
         this.notifySubscribers()
     }
 
-    removeClaimCitation(edgeId: string): void {
+    removeCitation(edgeId: string): void {
         let removed = false
-        for (const [citingClaimId, edges] of this.claimCitationsMap.entries()) {
+        for (const [claimId, edges] of this.citationsMap.entries()) {
             const filtered = edges.filter((e) => e.id !== edgeId)
             if (filtered.length !== edges.length) {
                 if (filtered.length > 0) {
-                    this.claimCitationsMap.set(citingClaimId, filtered)
+                    this.citationsMap.set(claimId, filtered)
                 } else {
-                    this.claimCitationsMap.delete(citingClaimId)
+                    this.citationsMap.delete(claimId)
                 }
                 removed = true
             }
         }
         if (removed) {
-            this.claimCitationsDirty = true
+            this.citationsDirty = true
             this.notifySubscribers()
         }
     }
@@ -310,7 +305,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
     protected override buildReactiveSnapshot(): TProjectReactiveSnapshot {
         const base = super.buildReactiveSnapshot()
         const claims = this.getClaimsRecord()
-        const claimCitations = this.getClaimCitationsRecord()
+        const citations = this.getCitationsRecord()
 
         // Recompute validation when base engine snapshot changes
         let validationIssues: TCoreValidationIssue[]
@@ -339,7 +334,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.cachedProjectSnapshot &&
             base === this.lastBaseSnapshot &&
             claims === this.cachedProjectSnapshot.claims &&
-            claimCitations === this.cachedProjectSnapshot.claimCitations
+            citations === this.cachedProjectSnapshot.citations
         ) {
             return this.cachedProjectSnapshot
         }
@@ -347,7 +342,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         const snapshot: TProjectReactiveSnapshot = {
             ...base,
             claims,
-            claimCitations,
+            citations,
             validationIssues,
         }
         this.cachedProjectSnapshot = snapshot
@@ -373,7 +368,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
         const engine = new PropositArgumentEngine(
             snapshot.argument,
             claimLookup,
-            EMPTY_CLAIM_CITATION_LOOKUP,
             {
                 checksumConfig: CHECKSUM_CONFIG,
                 positionConfig: snapshot.config?.positionConfig,
@@ -443,10 +437,9 @@ export class PropositArgumentEngine extends ArgumentEngine<
             engine.claimsMap.set(claim.id, claim)
         }
         for (const cc of claimCitations) {
-            const existing =
-                engine.claimCitationsMap.get(cc.citingClaimId) ?? []
+            const existing = engine.citationsMap.get(cc.claimId) ?? []
             existing.push(cc)
-            engine.claimCitationsMap.set(cc.citingClaimId, existing)
+            engine.citationsMap.set(cc.claimId, existing)
         }
 
         return engine

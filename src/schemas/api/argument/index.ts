@@ -21,7 +21,7 @@ export const FullArgumentSchema = Type.Object({
     argument: ArgumentSchema,
     claims: Type.Array(ClaimSchema),
     propositionalLogic: ArgumentEngineSnapshotSchema,
-    claimCitations: Type.Array(ClaimCitationSchema),
+    citations: Type.Array(ClaimCitationSchema),
     argumentHistory: Type.Array(ArgumentSchema),
     originalArgument: Nullable(ArgumentSchema),
     participants: Type.Array(ParticipantWithUserSchema),

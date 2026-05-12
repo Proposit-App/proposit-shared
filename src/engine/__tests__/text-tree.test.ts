@@ -22,7 +22,7 @@ function makeSnapshot(
         premises: {},
         roles: { conclusionPremiseId: undefined },
         claims: {},
-        claimCitations: {},
+        citations: {},
         validationIssues: [],
         ...overrides,
     }
