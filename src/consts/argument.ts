@@ -1,6 +1,8 @@
 import type { TArgumentImportOrigin } from "../schemas/integrations/index.js"
 
-export const CLAIM_TITLE_MAX_LEN = 50
+export const ARGUMENT_TITLE_MAX_LEN = 100
+export const PREMISE_TITLE_MAX_LEN = 100
+export const CLAIM_TITLE_MAX_LEN = 100
 export const CLAIM_BODY_MAX_LEN = 500
 
 export const POPULARITY_ALGO_PARAMS = {
