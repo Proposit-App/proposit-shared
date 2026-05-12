@@ -1,1 +1,117 @@
 # Upcoming release notes
+
+Tracks `@proposit/proposit-core` v0.12.0 — the rename of citation-edge endpoint
+vocabulary (`citingClaim*` / `sourceClaim*` → `claim*` / `supportingClaim*`),
+the rename of `core.claimCitations` to `core.citations`, and the
+`ArgumentEngine` constructor's dropped `claimCitationLookup` parameter. Shared
+follows core's vocabulary throughout — the rename surfaces are listed under
+"Breaking changes" below so server and mobile can sequence their own bumps.
+
+## What changed
+
+### Dependency
+
+- `peerDependencies` and `devDependencies` for `@proposit/proposit-core`
+  bumped from `^0.11.2` to `^0.12.0`.
+
+### `PropositArgumentEngine` accessor renames
+
+| Before                                         | After                           |
+| ---------------------------------------------- | ------------------------------- |
+| `getSourceClaimsForCitingClaim(citingClaimId)` | `getCitationsForClaim(claimId)` |
+| `getClaimCitations()`                          | `getCitations()`                |
+| `addClaimCitation(cc)`                         | `addCitation(cc)`               |
+| `removeClaimCitation(edgeId)`                  | `removeCitation(edgeId)`        |
+
+The internal `claimCitationsMap` field is now `citationsMap`. (Private — listed
+for completeness only.)
+
+### `TProjectReactiveSnapshot` snapshot key
+
+`snapshot.claimCitations` → `snapshot.citations`. Code reading
+`engine.getSnapshot().claimCitations` must rename.
+
+### Wire-format renames
+
+- `FullArgumentSchema.claimCitations` → `FullArgumentSchema.citations`
+- `ArgumentDiffSchema.claimCitations` → `ArgumentDiffSchema.citations`
+
+The values inside these fields are still `TClaimCitation[]` and
+`{ added: TClaimCitation[]; removed: TClaimCitation[] }` respectively. Only
+the wrapper key changed.
+
+### Citation-edge field renames
+
+Inherited from core: `TClaimCitation` (`Static<typeof ClaimCitationSchema>`)
+field names changed from `citingClaim*`/`sourceClaim*` to
+`claim*`/`supportingClaim*`. Concretely:
+
+| Before               | After                    |
+| -------------------- | ------------------------ |
+| `citingClaimId`      | `claimId`                |
+| `citingClaimVersion` | `claimVersion`           |
+| `sourceClaimId`      | `supportingClaimId`      |
+| `sourceClaimVersion` | `supportingClaimVersion` |
+
+The `argumentId` and `createdOn` app-level fields are unchanged.
+
+### `ArgumentEngine` constructor
+
+Core's `ArgumentEngine` no longer accepts a `claimCitationLookup` argument —
+the field was vestigial in v0.11 and never read. Direct callers of
+`new ArgumentEngine(...)` (notably `detectDivergence` in
+`src/engine/optimistic/verification.ts`) drop the third argument.
+`PropositArgumentEngine` similarly drops the parameter from its constructor —
+external callers don't pass a citation lookup anymore.
+
+The `EMPTY_CLAIM_CITATION_LOOKUP` re-export is gone from
+`src/engine/library-adapters.ts`. Shared no longer has any callers that need
+it; consumers who imported it via `@proposit/proposit-core` should use core's
+new `emptyClaimConnectionLookup<TCoreClaimCitation>()` factory.
+
+## Why the wire-format rename is in this bump
+
+The naming-authority rule (`@proposit/shared` follows
+`@proposit/proposit-core` for any name it consumes) requires the
+wire-wrapper rename. Server's response builders will need a coordinated
+rename when they bump their `@proposit/shared` dep — see "Migration impact"
+below.
+
+## Migration impact
+
+### `proposit-server`
+
+After bumping `@proposit/shared` past this release, server's TypeScript code
+that builds `FullArgument` and `ArgumentDiff` responses must rename the
+`claimCitations` field on the response object to `citations`. Likely
+locations: the API route handlers that load an argument with its claim
+citations and the diff-computation utility. Engine callers that read
+`engine.getSourceClaimsForCitingClaim` etc. rename per the table above.
+
+### `proposit-mobile`
+
+Likely no engine-accessor callers today, but verify any code that reads
+`reactiveSnapshot.claimCitations` from the project store — that key is now
+`citations`.
+
+## Out of scope (deferred)
+
+- **Axiomatic claim type support.** Core v0.12 adds a third
+  `ClaimTypeSchema` member (`"axiomatic"`) plus a parallel `ClaimAxiomLibrary`.
+  Shared's `ClaimTypeSchema` is unchanged in this release (still
+  `"normal" | "citation"`). Once a server flow or mobile UI needs axiomatic
+  claims, a follow-up bump will widen the union and add parallel
+  `axiomsMap` / `getAxiomsForClaim` / `addAxiom` / `removeAxiom` accessors
+  on `PropositArgumentEngine` plus an `axioms` slot on
+  `FullArgumentSchema` / `ArgumentDiffSchema`. The follow-up plan also
+  decides how `text-tree.ts` should render axiomatic claims.
+
+## Versioning intent
+
+Pre-1.0 minor bump (`0.7.2` → `0.8.0`) per the policy in `CLAUDE.md`. Multiple
+breaking renames; consumers should pin caret and expect a coordinated update.
+
+## See also
+
+- `proposit-core` v0.12.0 release notes — full upstream rename and the
+  axiomatic-claim feature this upgrade chooses not to surface yet.
