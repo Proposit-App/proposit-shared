@@ -354,7 +354,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
 
     /**
      * Creates a PropositArgumentEngine from server-provided data: an engine
-     * snapshot (for logic state) plus arrays of claims and claim-citation
+     * snapshot (for logic state) plus arrays of claims and citation
      * edges.
      *
      * Does NOT trigger reactive notifications during initial data loading.
@@ -362,7 +362,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
     static fromServerData(
         snapshot: TProjectSnapshot,
         claims: TClaim[],
-        claimCitations: TClaimCitation[]
+        citations: TClaimCitation[]
     ): PropositArgumentEngine {
         const claimLookup = createClaimLookup(claims)
         const engine = new PropositArgumentEngine(
@@ -436,7 +436,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         for (const claim of claims) {
             engine.claimsMap.set(claim.id, claim)
         }
-        for (const cc of claimCitations) {
+        for (const cc of citations) {
             const existing = engine.citationsMap.get(cc.claimId) ?? []
             existing.push(cc)
             engine.citationsMap.set(cc.claimId, existing)

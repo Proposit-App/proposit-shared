@@ -128,14 +128,12 @@ describe("PropositArgumentEngine", () => {
 
         const snapshot = baseEngine.snapshot() as TProjectSnapshot
 
-        const citingClaim = makeClaim({ id: variable.claimId })
-        const sourceClaim = makeClaim({ type: "citation" })
-        const claims = [citingClaim, sourceClaim]
-        const claimCitations = [
-            makeClaimCitation(citingClaim.id, sourceClaim.id),
-        ]
+        const claim = makeClaim({ id: variable.claimId })
+        const supportingClaim = makeClaim({ type: "citation" })
+        const claims = [claim, supportingClaim]
+        const citations = [makeClaimCitation(claim.id, supportingClaim.id)]
 
-        return { snapshot, claims, claimCitations, variable }
+        return { snapshot, claims, citations, variable }
     }
 
     describe("claim accessors", () => {
@@ -251,25 +249,25 @@ describe("PropositArgumentEngine", () => {
     })
 
     describe("fromServerData factory", () => {
-        test("loads a snapshot + claims/claimCitations", () => {
-            const { snapshot, claims, claimCitations } = buildSnapshotWithData()
+        test("loads a snapshot + claims/citations", () => {
+            const { snapshot, claims, citations } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimCitations
+                citations
             )
 
             expect(engine).toBeInstanceOf(PropositArgumentEngine)
         })
 
         test("accessors work correctly after construction", () => {
-            const { snapshot, claims, claimCitations } = buildSnapshotWithData()
+            const { snapshot, claims, citations } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimCitations
+                citations
             )
 
             // Claims
@@ -280,17 +278,17 @@ describe("PropositArgumentEngine", () => {
             const ccForClaim = engine.getCitationsForClaim(claims[0].id)
             expect(ccForClaim).toHaveLength(1)
             expect(ccForClaim[0].supportingClaimId).toBe(
-                claimCitations[0].supportingClaimId
+                citations[0].supportingClaimId
             )
         })
 
         test("inherited engine functionality works (e.g., getArgument().id)", () => {
-            const { snapshot, claims, claimCitations } = buildSnapshotWithData()
+            const { snapshot, claims, citations } = buildSnapshotWithData()
 
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimCitations
+                citations
             )
 
             expect(engine.getArgument().id).toBe(argumentId)
@@ -582,7 +580,7 @@ describe("PropositArgumentEngine", () => {
 
     describe("toggleNegation on PropositArgumentEngine", () => {
         test("toggleNegation works on engine built from fromServerData", async () => {
-            const { snapshot, claims, claimCitations, variable } =
+            const { snapshot, claims, citations, variable } =
                 buildSnapshotWithData()
 
             // Add a variable expression to the premise snapshot
@@ -609,7 +607,7 @@ describe("PropositArgumentEngine", () => {
             const engine = PropositArgumentEngine.fromServerData(
                 snapshot,
                 claims,
-                claimCitations
+                citations
             )
 
             // Verify the expression is found
