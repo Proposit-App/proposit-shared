@@ -56,6 +56,7 @@ Goal: shared compiles and tests pass against core `^0.12.0`. Everything in this 
 ### Task 1.1: Bump core dependency
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Edit `peerDependencies` and `devDependencies`**
@@ -81,9 +82,11 @@ Expected: `node_modules/@proposit/proposit-core/package.json` reports version `0
 - [ ] **Step 3: Confirm the new core exports the symbols we'll reach for**
 
 Run:
+
 ```bash
 grep -E "emptyClaimConnectionLookup|CoreClaimCitationSchema|ClaimCitationLibrary|ArgumentEngine" node_modules/@proposit/proposit-core/dist/lib/index.d.ts | head
 ```
+
 Expected: at least one match per symbol. If `emptyClaimConnectionLookup` or `CoreClaimCitationSchema` is missing, stop — the dep didn't actually land.
 
 - [ ] **Step 4: Run typecheck and capture the failure surface**
@@ -96,6 +99,7 @@ This list of errors becomes our checklist for the remaining tasks. Do not move o
 ### Task 1.2: Replace `EMPTY_CLAIM_CITATION_LOOKUP` with the factory
 
 **Files:**
+
 - Modify: `src/engine/library-adapters.ts`
 
 The constant is gone from core; `emptyClaimConnectionLookup<TConn>()` is the replacement factory. However, the bigger v0.12 change is that `ArgumentEngine` no longer takes a `claimCitationLookup` argument at all (Task 1.3 below). After Task 1.3 lands, shared has **zero** callers that need an empty citation lookup. So the right move is to delete the re-export entirely, not replace it.
@@ -133,6 +137,7 @@ Diff vs. existing file: removes the import of `EMPTY_CLAIM_CITATION_LOOKUP` and 
 ### Task 1.3: Strip `claimCitationLookup` from `PropositArgumentEngine`'s constructor and `fromServerData`
 
 **Files:**
+
 - Modify: `src/engine/engine.ts`
 
 Core's `ArgumentEngine` constructor is now `(argument, claimLibrary, options?)` — three parameters. `PropositArgumentEngine` currently destructures four (`argument, claimLookup, claimCitationLookup, options`) from `ConstructorParameters<typeof ArgumentEngine<...>>`. The TypeScript inference will now produce a 3-tuple, so the destructure shrinks.
@@ -168,16 +173,12 @@ super(argument, mutableLookup, options)
 Find `fromServerData` (`engine.ts:367-453`). Remove the `EMPTY_CLAIM_CITATION_LOOKUP` import line at the top of the file (line ~23) and update the `new PropositArgumentEngine(...)` call (currently `engine.ts:373-383`) to drop the third argument:
 
 ```ts
-const engine = new PropositArgumentEngine(
-    snapshot.argument,
-    claimLookup,
-    {
-        checksumConfig: CHECKSUM_CONFIG,
-        positionConfig: snapshot.config?.positionConfig,
-        grammarConfig: RUNTIME_GRAMMAR,
-        generateId: () => crypto.randomUUID(),
-    }
-)
+const engine = new PropositArgumentEngine(snapshot.argument, claimLookup, {
+    checksumConfig: CHECKSUM_CONFIG,
+    positionConfig: snapshot.config?.positionConfig,
+    grammarConfig: RUNTIME_GRAMMAR,
+    generateId: () => crypto.randomUUID(),
+})
 ```
 
 - [ ] **Step 3: Drop the `EMPTY_CLAIM_CITATION_LOOKUP` import line at the top of `engine.ts`**
@@ -200,6 +201,7 @@ import { createClaimLookup } from "./library-adapters.js"
 ### Task 1.4: Update `TClaimCitation` field accesses in the engine map
 
 **Files:**
+
 - Modify: `src/engine/engine.ts`
 
 `CoreClaimCitationSchema` v0.12 carries `claimId` / `claimVersion` / `supportingClaimId` / `supportingClaimVersion`. Every `cc.citingClaimId` and `cc.sourceClaimId` reference fails typecheck. We use `claimId` (the dependent endpoint) for keying — same semantic as the old `citingClaimId`.
@@ -236,22 +238,23 @@ Defer until Task 1.5.
 ### Task 1.5: Rename `PropositArgumentEngine` citation accessors to v0.12 vocabulary
 
 **Files:**
+
 - Modify: `src/engine/engine.ts`
 
 Per the naming-authority rule, shared's accessors mirror core's `citations` / `getConnectionsForClaim` / `add` / `remove` vocabulary. Shared's `PropositArgumentEngine` wraps a `Record<claimId, TClaimCitation[]>` map (keyed by the dependent claim) — different shape than core's flat library, but the same semantic operations.
 
 Rename map:
 
-| Old (`PropositArgumentEngine`)                 | New                                            |
-| ---------------------------------------------- | ---------------------------------------------- |
-| `private claimCitationsMap`                    | `private citationsMap`                         |
-| `private claimCitationsDirty`                  | `private citationsDirty`                       |
-| `private cachedClaimCitations`                 | `private cachedCitations`                      |
-| `private getClaimCitationsRecord()`            | `private getCitationsRecord()`                 |
+| Old (`PropositArgumentEngine`)                 | New                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------- |
+| `private claimCitationsMap`                    | `private citationsMap`                                                    |
+| `private claimCitationsDirty`                  | `private citationsDirty`                                                  |
+| `private cachedClaimCitations`                 | `private cachedCitations`                                                 |
+| `private getClaimCitationsRecord()`            | `private getCitationsRecord()`                                            |
 | `getSourceClaimsForCitingClaim(citingClaimId)` | `getCitationsForClaim(claimId)` (mirrors core's `getConnectionsForClaim`) |
-| `getClaimCitations()`                          | `getCitations()`                               |
-| `addClaimCitation(cc)`                         | `addCitation(cc)`                              |
-| `removeClaimCitation(edgeId)`                  | `removeCitation(edgeId)`                       |
+| `getClaimCitations()`                          | `getCitations()`                                                          |
+| `addClaimCitation(cc)`                         | `addCitation(cc)`                                                         |
+| `removeClaimCitation(edgeId)`                  | `removeCitation(edgeId)`                                                  |
 
 - [ ] **Step 1: Apply the renames inside `engine.ts`**
 
@@ -264,6 +267,7 @@ The block comment at `engine.ts:48-50` and `engine.ts:62-66` calls these "claim-
 ### Task 1.6: Rename `TProjectReactiveSnapshot.claimCitations` to `citations`
 
 **Files:**
+
 - Modify: `src/engine/engine.ts`
 - Modify: `src/engine/__tests__/text-tree.test.ts`
 
@@ -302,6 +306,7 @@ At `src/engine/__tests__/text-tree.test.ts:25`, change `claimCitations: {},` to 
 ### Task 1.7: Rename `ClaimCitationSchema` field accesses in the citation-schema test
 
 **Files:**
+
 - Modify: `src/schemas/__tests__/citations.test.ts`
 
 The test fixture builds an edge with `citingClaimId` / `citingClaimVersion` / `sourceClaimId` / `sourceClaimVersion`. Under v0.12 these are `claimId` / `claimVersion` / `supportingClaimId` / `supportingClaimVersion`.
@@ -370,6 +375,7 @@ describe("ClaimCitationSchema", () => {
 ### Task 1.8: Rename `claimCitations` wire-format field on `FullArgumentSchema` and `ArgumentDiffSchema`
 
 **Files:**
+
 - Modify: `src/schemas/model/arguments.ts`
 - Modify: `src/schemas/api/argument/index.ts`
 
@@ -412,6 +418,7 @@ citations: Type.Array(ClaimCitationSchema),
 ### Task 1.9: Update the verification engine builder
 
 **Files:**
+
 - Modify: `src/engine/optimistic/verification.ts`
 
 `detectDivergence` builds a throwaway `ArgumentEngine` to compute checksums. The constructor argument list shrunk; the `EMPTY_CLAIM_CITATION_LOOKUP` import is also dead.
@@ -470,6 +477,7 @@ const serverEngine = new ArgumentEngine<
 ### Task 1.10: Update the review-engine test fixture
 
 **Files:**
+
 - Modify: `src/engine/review/__tests__/fixtures.ts`
 
 - [ ] **Step 1: Drop the citation-lookup import**
@@ -505,11 +513,9 @@ const engine = new PropositArgumentEngine(
 to:
 
 ```ts
-const engine = new PropositArgumentEngine(
-    makeArgument(),
-    claimLookup,
-    { checksumConfig: CHECKSUM_CONFIG }
-)
+const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+    checksumConfig: CHECKSUM_CONFIG,
+})
 ```
 
 ### Task 1.11: Run typecheck and resolve remaining errors
@@ -547,15 +553,18 @@ A lint failure here most likely means a rename left a JSDoc reference pointing a
 - [ ] **Step 1: Stage and review the diff**
 
 Run:
+
 ```bash
 git status
 git diff --stat
 ```
+
 Expected: ~10–12 modified files, no untracked files except `docs/release-notes/upcoming.md` and `docs/changelogs/upcoming.md` (those come in Commit 2).
 
 - [ ] **Step 2: Commit**
 
 Run:
+
 ```bash
 git add package.json pnpm-lock.yaml src/
 git commit -m "feat(deps): upgrade @proposit/proposit-core to ^0.12.0
@@ -582,6 +591,7 @@ Goal: capture the breaking-change surface for server's and mobile's future depen
 ### Task 2.1: Write the upcoming release notes
 
 **Files:**
+
 - Modify: `docs/release-notes/upcoming.md`
 
 - [ ] **Step 1: Replace the placeholder file**
@@ -607,12 +617,12 @@ follows core's vocabulary throughout — the rename surfaces are listed under
 
 ### `PropositArgumentEngine` accessor renames
 
-| Before                                              | After                              |
-| --------------------------------------------------- | ---------------------------------- |
-| `getSourceClaimsForCitingClaim(citingClaimId)`      | `getCitationsForClaim(claimId)`    |
-| `getClaimCitations()`                               | `getCitations()`                   |
-| `addClaimCitation(cc)`                              | `addCitation(cc)`                  |
-| `removeClaimCitation(edgeId)`                       | `removeCitation(edgeId)`           |
+| Before                                         | After                           |
+| ---------------------------------------------- | ------------------------------- |
+| `getSourceClaimsForCitingClaim(citingClaimId)` | `getCitationsForClaim(claimId)` |
+| `getClaimCitations()`                          | `getCitations()`                |
+| `addClaimCitation(cc)`                         | `addCitation(cc)`               |
+| `removeClaimCitation(edgeId)`                  | `removeCitation(edgeId)`        |
 
 The internal `claimCitationsMap` field is now `citationsMap`. (Private — listed
 for completeness only.)
@@ -637,12 +647,12 @@ Inherited from core: `TClaimCitation` (`Static<typeof ClaimCitationSchema>`)
 field names changed from `citingClaim*`/`sourceClaim*` to
 `claim*`/`supportingClaim*`. Concretely:
 
-| Before                  | After                       |
-| ----------------------- | --------------------------- |
-| `citingClaimId`         | `claimId`                   |
-| `citingClaimVersion`    | `claimVersion`              |
-| `sourceClaimId`         | `supportingClaimId`         |
-| `sourceClaimVersion`    | `supportingClaimVersion`    |
+| Before               | After                    |
+| -------------------- | ------------------------ |
+| `citingClaimId`      | `claimId`                |
+| `citingClaimVersion` | `claimVersion`           |
+| `sourceClaimId`      | `supportingClaimId`      |
+| `sourceClaimVersion` | `supportingClaimVersion` |
 
 The `argumentId` and `createdOn` app-level fields are unchanged.
 
@@ -711,6 +721,7 @@ breaking renames; consumers should pin caret and expect a coordinated update.
 ### Task 2.2: Write the upcoming changelog
 
 **Files:**
+
 - Modify: `docs/changelogs/upcoming.md`
 
 - [ ] **Step 1: Replace the placeholder file**
@@ -773,6 +784,7 @@ Replace the contents of `docs/changelogs/upcoming.md` with:
 - [ ] **Step 1: Stage and commit**
 
 Run:
+
 ```bash
 git add docs/release-notes/upcoming.md docs/changelogs/upcoming.md
 git commit -m "docs: release notes and changelog for proposit-core v0.12 upgrade"
@@ -794,10 +806,12 @@ Expected: green.
 - [ ] **Step 2: Inspect the branch**
 
 Run:
+
 ```bash
 git log --oneline main..HEAD
 git diff --stat main..HEAD
 ```
+
 Expected: 2 commits, ~12 files changed.
 
 Report back to the user with: branch name, commits, file count, and the green `pnpm run check` exit. They'll choose what to do next (PR, version bump, or further iteration).
