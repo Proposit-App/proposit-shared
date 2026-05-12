@@ -466,7 +466,7 @@ export function clearDerivationAntecedent(
  * naked derivation premise. For `n=1`, produces `IMPLIES(citation_var_1, Q)`.
  * For `n=0`, returns an empty changeset.
  *
- * Caller-supplied `sourceClaimIds` ordering determines the OR's child positions
+ * Caller-supplied `supportingClaimIds` ordering determines the OR's child positions
  * (or the single-source antecedent for n=1).
  *
  * @throws InvariantViolationError(DERIVATION_TYPE_MISMATCH) when `premiseId`
@@ -478,7 +478,7 @@ export function clearDerivationAntecedent(
 export function populateDerivationFromCitations(
     engine: ProjectEngine,
     premiseId: string,
-    sourceClaimIds: string[]
+    supportingClaimIds: string[]
 ): { changes: ProjectChangeset } {
     const pm = engine.getPremise(premiseId)
     if (!pm) {
@@ -522,7 +522,7 @@ export function populateDerivationFromCitations(
             },
         ])
     }
-    if (sourceClaimIds.length === 0) return { changes: {} }
+    if (supportingClaimIds.length === 0) return { changes: {} }
 
     const consequentExpr = root
     if (consequentExpr.variableId == null) {
@@ -545,8 +545,8 @@ export function populateDerivationFromCitations(
     //    mutation surface and produces no changeset of its own).
     const variablesBefore = new Set(engine.getVariables().map((v) => v.id))
     const sourceVariables: TPropositionalVariable[] = []
-    for (const sourceClaimId of sourceClaimIds) {
-        const v = engine.ensureClaimBoundVariable(sourceClaimId)
+    for (const supportingClaimId of supportingClaimIds) {
+        const v = engine.ensureClaimBoundVariable(supportingClaimId)
         sourceVariables.push(v as unknown as TPropositionalVariable)
     }
     const newlyAddedVariables = sourceVariables.filter(

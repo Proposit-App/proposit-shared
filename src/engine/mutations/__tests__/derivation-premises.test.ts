@@ -347,7 +347,7 @@ describe("mutateCreateDerivationPremise — adopt existing consequent variable",
         )
     })
 
-    test("adopt-path supports the full clear/populate round-trip after reload (mirrors server addClaimCitation flow)", () => {
+    test("adopt-path supports the full clear/populate round-trip after reload (mirrors server addCitation flow)", () => {
         const engine = setupEngineWithClaims(["claim-q", "src-a"])
         const existingVarId = "existing-q-var"
         mutateCreateVariable(engine, existingVarId, {
@@ -452,8 +452,8 @@ describe("clearDerivationAntecedent", () => {
         expect(() => clearDerivationAntecedent(reloaded, "p-1")).not.toThrow()
     })
 
-    test("after reload, clear → populate cycle works (mirrors server addClaimCitation flow)", () => {
-        // Server's addClaimCitation reloads the engine each request and calls
+    test("after reload, clear → populate cycle works (mirrors server addCitation flow)", () => {
+        // Server's addCitation reloads the engine each request and calls
         // clear → populate to rebuild IMPLIES with the next citation set. The
         // n=1 → n=2 reshape was the originally-reported failure.
         const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
@@ -639,7 +639,7 @@ describe("populateDerivationFromCitations", () => {
         expect(orNode.parentId).toBe(antecedent.id)
     })
 
-    test("with empty sourceClaimIds is a no-op", () => {
+    test("with empty supportingClaimIds is a no-op", () => {
         const engine = setupEngineWithClaims(["claim-q"])
         const { premise } = createNakedDerivationPremise(engine, "claim-q")
         const { changes } = populateDerivationFromCitations(
