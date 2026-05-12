@@ -2,7 +2,7 @@
 
 Tracks `@proposit/proposit-core` v0.12.0 — the rename of citation-edge endpoint
 vocabulary (`citingClaim*` / `sourceClaim*` → `claim*` / `supportingClaim*`),
-the rename of `core.claimCitations` to `core.citations`, and the
+the rename of `PropositCore`'s `claimCitations` field to `citations`, and the
 `ArgumentEngine` constructor's dropped `claimCitationLookup` parameter. Shared
 follows core's vocabulary throughout — the rename surfaces are listed under
 "Breaking changes" below so server and mobile can sequence their own bumps.
@@ -88,6 +88,13 @@ locations: the API route handlers that load an argument with its claim
 citations and the diff-computation utility. Engine callers that read
 `engine.getSourceClaimsForCitingClaim` etc. rename per the table above.
 
+Note: the `src/api-client/argument/claims.ts` helper `createClaimCitationImpl`
+still has a parameter named `citingClaimId`. That's intentional — it's a URL
+path segment identifying the claim a new citation attaches to, not a
+`TClaimCitation` schema field. Server callers do not need to rename it; a
+later cleanup pass on the api-client surface will revisit that name in
+isolation.
+
 ### `proposit-mobile`
 
 Likely no engine-accessor callers today, but verify any code that reads
@@ -113,5 +120,6 @@ breaking renames; consumers should pin caret and expect a coordinated update.
 
 ## See also
 
+- `docs/changelogs/upcoming.md` — machine-parseable rename table accompanying this release.
 - `proposit-core` v0.12.0 release notes — full upstream rename and the
   axiomatic-claim feature this upgrade chooses not to surface yet.
