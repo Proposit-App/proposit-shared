@@ -44,12 +44,13 @@ describe("PropositArgumentEngine", () => {
     }
 
     function makeClaim(overrides: Partial<TClaim> = {}): TClaim {
-        return {
+        const normalDefault: TClaim = {
             id: v4(),
             argumentId,
             version: argumentVersion,
             title: "Test Claim",
             body: "Test body",
+            titleContentHash: "test-hash",
             kind: "claim" as const,
             type: "normal" as const,
             creatorId,
@@ -57,8 +58,12 @@ describe("PropositArgumentEngine", () => {
             digest: "stmt-digest",
             parentId: null,
             claimForkId: null,
-            ...overrides,
+            url: null,
+            citation: null,
+            citationContentHash: null,
+            axiom: null,
         }
+        return { ...normalDefault, ...overrides } as TClaim
     }
 
     function makeClaimCitation(
