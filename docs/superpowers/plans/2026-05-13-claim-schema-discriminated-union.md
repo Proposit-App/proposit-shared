@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-05-13-claim-schema-discriminated-union-design.md`
 
 **Pre-flight notes:**
+
 - The worktree has three uncommitted changes from the brainstorming session: a re-export aliases edit in `src/schemas/model/claims.ts` (gets superseded by Task 2), and edits to `docs/release-notes/upcoming.md` and `docs/changelogs/upcoming.md` (folded into Task 9). The plan handles these explicitly.
 - There is a known pre-existing typecheck failure at `src/engine/text-tree.ts:121` (the `claim.type` widening from commit c442af4). Task 4 fixes it.
 
@@ -19,6 +20,7 @@
 ### Task 1: Add the new test cases to `claims.test.ts` (red phase)
 
 **Files:**
+
 - Modify: `src/schemas/__tests__/claims.test.ts`
 
 This is the test-first step for the variant schemas. The new tests reference exports (`NormalClaimSchema`, `CitationClaimSchema`, `AxiomaticClaimSchema`, type guards) that don't exist yet — they will fail to compile until Task 2.
@@ -170,7 +172,9 @@ describe("AxiomaticClaimSchema", () => {
             "background-assumption",
         ] as const
         for (const axiom of kinds) {
-            expect(Value.Check(AxiomaticClaimSchema, { ...axiomaticBase, axiom })).toBe(true)
+            expect(
+                Value.Check(AxiomaticClaimSchema, { ...axiomaticBase, axiom })
+            ).toBe(true)
         }
     })
 
@@ -246,6 +250,7 @@ The tests compile-fail by design. Commit at the end of Task 2 when the schema is
 ### Task 2: Implement the new `claims.ts` module (green phase)
 
 **Files:**
+
 - Modify (wholesale replace): `src/schemas/model/claims.ts`
 
 - [ ] **Step 1: Replace `claims.ts` wholesale**
@@ -324,18 +329,15 @@ export const NormalClaimKindsSchema = Type.Union([
 export type TNormalClaimKinds = Static<typeof NormalClaimKindsSchema>
 
 // Identity / lineage fields shared by all variants, with digest inherited.
-const ClaimSharedFieldsSchema = Type.Interface(
-    [ClaimMetadataFieldsSchema],
-    {
-        id: UUID,
-        argumentId: UUID,
-        version: Type.Number(),
-        claimForkId: Nullable(UUID),
-        creatorId: UUID,
-        createdOn: EncodableDate,
-        parentId: Nullable(UUID),
-    }
-)
+const ClaimSharedFieldsSchema = Type.Interface([ClaimMetadataFieldsSchema], {
+    id: UUID,
+    argumentId: UUID,
+    version: Type.Number(),
+    claimForkId: Nullable(UUID),
+    creatorId: UUID,
+    createdOn: EncodableDate,
+    parentId: Nullable(UUID),
+})
 
 export const NormalClaimSchema = Type.Interface(
     [ClaimSharedFieldsSchema, MutableClaimFieldsSchema],
@@ -350,36 +352,30 @@ export const NormalClaimSchema = Type.Interface(
 )
 export type TNormalClaim = Static<typeof NormalClaimSchema>
 
-export const CitationClaimSchema = Type.Interface(
-    [ClaimSharedFieldsSchema],
-    {
-        type: CoreClaimCitationTypeSchema,
-        kind: Type.Null(),
-        title: Type.Null(),
-        body: Type.Null(),
-        titleContentHash: Type.Null(),
-        url: Type.String(),
-        citation: IEEEReferenceSchema,
-        citationContentHash: Type.String(),
-        axiom: Type.Null(),
-    }
-)
+export const CitationClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
+    type: CoreClaimCitationTypeSchema,
+    kind: Type.Null(),
+    title: Type.Null(),
+    body: Type.Null(),
+    titleContentHash: Type.Null(),
+    url: Type.String(),
+    citation: IEEEReferenceSchema,
+    citationContentHash: Type.String(),
+    axiom: Type.Null(),
+})
 export type TCitationClaim = Static<typeof CitationClaimSchema>
 
-export const AxiomaticClaimSchema = Type.Interface(
-    [ClaimSharedFieldsSchema],
-    {
-        type: CoreClaimAxiomaticTypeSchema,
-        kind: Type.Null(),
-        title: Type.Null(),
-        body: Type.Null(),
-        titleContentHash: Type.Null(),
-        url: Type.Null(),
-        citation: Type.Null(),
-        citationContentHash: Type.Null(),
-        axiom: AxiomKindSchema,
-    }
-)
+export const AxiomaticClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
+    type: CoreClaimAxiomaticTypeSchema,
+    kind: Type.Null(),
+    title: Type.Null(),
+    body: Type.Null(),
+    titleContentHash: Type.Null(),
+    url: Type.Null(),
+    citation: Type.Null(),
+    citationContentHash: Type.Null(),
+    axiom: AxiomKindSchema,
+})
 export type TAxiomaticClaim = Static<typeof AxiomaticClaimSchema>
 
 export const ClaimSchema = Type.Union([
@@ -402,13 +398,10 @@ export function isAxiomaticClaim(claim: TClaim): claim is TAxiomaticClaim {
 // Re-based on NormalClaimSchema. Server's getClaims() filters by
 // type='normal' before populating childClaimIds/childCitationIds, so this
 // type accurately describes only Normal-with-children rows.
-export const ClaimWithChildrenSchema = Type.Interface(
-    [NormalClaimSchema],
-    {
-        childClaimIds: Type.Array(UUID),
-        childCitationIds: Type.Array(UUID),
-    }
-)
+export const ClaimWithChildrenSchema = Type.Interface([NormalClaimSchema], {
+    childClaimIds: Type.Array(UUID),
+    childCitationIds: Type.Array(UUID),
+})
 export type TClaimWithChildren = Static<typeof ClaimWithChildrenSchema>
 ```
 
@@ -453,6 +446,7 @@ EOF
 ### Task 3: Add `consts/axioms.ts` with labels and descriptions
 
 **Files:**
+
 - Create: `src/consts/axioms.ts`
 - Create: `src/consts/__tests__/axioms.test.ts`
 - Modify: `src/consts/index.ts`
@@ -508,8 +502,8 @@ Expected: FAIL with a compile error about a missing module `../axioms.js`.
 import type { TAxiomKind } from "../schemas/model/claims.js"
 
 export const AXIOM_KIND_LABELS: Readonly<Record<TAxiomKind, string>> = {
-    "definition": "True by definition or meaning",
-    "stipulation": "Assumed for this argument",
+    definition: "True by definition or meaning",
+    stipulation: "Assumed for this argument",
     "logical-principle": "Basic logical principle",
     "mathematical-principle": "Basic mathematical principle",
     "domain-rule": "Rule or authority within a system",
@@ -517,9 +511,9 @@ export const AXIOM_KIND_LABELS: Readonly<Record<TAxiomKind, string>> = {
 } as const
 
 export const AXIOM_KIND_DESCRIPTIONS: Readonly<Record<TAxiomKind, string>> = {
-    "definition":
+    definition:
         "Use when the claim is treated as true because of what the relevant words, categories, or concepts mean. Example: 'A bachelor is unmarried.'",
-    "stipulation":
+    stipulation:
         "Use when the argument explicitly defines or assumes something for its own purposes. Example: 'For this argument, an active user means someone who logs in weekly.'",
     "logical-principle":
         "Use for basic principles of valid reasoning. Example: 'If P implies Q, and P is true, then Q follows.'",
@@ -557,6 +551,7 @@ git commit -m "feat(consts): add AXIOM_KIND_LABELS and AXIOM_KIND_DESCRIPTIONS"
 ### Task 4: Fix `text-tree.ts` narrowing and update its tests
 
 **Files:**
+
 - Modify: `src/engine/text-tree.ts` (top-level imports, `TTextTreeItem.claimType` field around line 33, the `claimType` local around line 114)
 - Modify: `src/engine/__tests__/text-tree.test.ts` (the `CLAIM_DEFAULTS` const, the citation test, and a new axiomatic test)
 
@@ -629,7 +624,7 @@ const AXIOMATIC_CLAIM_DEFAULTS = {
 
 - [ ] **Step 2: Update every existing reference to `CLAIM_DEFAULTS`**
 
-Search-and-replace within the test file: every `...CLAIM_DEFAULTS` in a *normal-claim* fixture becomes `...NORMAL_CLAIM_DEFAULTS`. There are multiple — at minimum the ones around lines 74, 141, 232, 240, 308, 320 (the line numbers may shift after Step 1; just replace all occurrences). The citation-claim test around line 137-188 is special; handle it in the next step.
+Search-and-replace within the test file: every `...CLAIM_DEFAULTS` in a _normal-claim_ fixture becomes `...NORMAL_CLAIM_DEFAULTS`. There are multiple — at minimum the ones around lines 74, 141, 232, 240, 308, 320 (the line numbers may shift after Step 1; just replace all occurrences). The citation-claim test around line 137-188 is special; handle it in the next step.
 
 - [ ] **Step 3: Rewrite the citation test to use the new defaults**
 
@@ -784,6 +779,7 @@ git commit -m "fix(text-tree): narrow claim variant via isNormalClaim; widen cla
 ### Task 5: Update `mutations/__tests__/helpers.ts:mkTestClaim`
 
 **Files:**
+
 - Modify: `src/engine/mutations/__tests__/helpers.ts:25-39`
 
 `mkTestClaim` currently returns a partial `TClaim` cast with `as TClaim`. Under the new schema it must return a complete `TNormalClaim` with all the new null fields and a non-null `titleContentHash`. Also note: the existing helper has `forkId: null`, but the actual field name on `TClaim` is `claimForkId` — a pre-existing typo masked by the `as TClaim` cast. Fix it as part of the same edit.
@@ -834,6 +830,7 @@ git commit -m "test(mutations): update mkTestClaim helper for new ClaimSchema sh
 ### Task 6: Update `engine/__tests__/engine.test.ts:makeClaim`
 
 **Files:**
+
 - Modify: `src/engine/__tests__/engine.test.ts:46-62` (the inner `makeClaim` factory)
 
 - [ ] **Step 1: Update the `makeClaim` factory**
@@ -882,6 +879,7 @@ git commit -m "test(engine): update inline makeClaim factory for new ClaimSchema
 ### Task 7: Update `review/__tests__/fixtures.ts:makeClaim`
 
 **Files:**
+
 - Modify: `src/engine/review/__tests__/fixtures.ts:83-98`
 
 - [ ] **Step 1: Update the `makeClaim` factory**
@@ -960,6 +958,7 @@ If no fixes were needed, skip the commit.
 ### Task 9: Update `docs/release-notes/upcoming.md` and `docs/changelogs/upcoming.md`
 
 **Files:**
+
 - Modify: `docs/release-notes/upcoming.md`
 - Modify: `docs/changelogs/upcoming.md`
 
@@ -989,13 +988,13 @@ New exports from `@proposit/shared/schemas`:
 
 Renames (breaking):
 
-| Before | After |
-| --- | --- |
-| `ClaimKinds` | `NormalClaimKinds` |
-| `ChildClaimKinds` | `NormalClaimChildKindsSchema` |
+| Before              | After                           |
+| ------------------- | ------------------------------- |
+| `ClaimKinds`        | `NormalClaimKinds`              |
+| `ChildClaimKinds`   | `NormalClaimChildKindsSchema`   |
 | `LogicalClaimKinds` | `NormalClaimLogicalKindsSchema` |
-| `ClaimKindsSchema` | `NormalClaimKindsSchema` |
-| `TClaimKindsSchema` | `TNormalClaimKinds` |
+| `ClaimKindsSchema`  | `NormalClaimKindsSchema`        |
+| `TClaimKindsSchema` | `TNormalClaimKinds`             |
 
 `MutableClaimFieldsSchema` is now Normal-only with non-null `title` / `body` / `titleContentHash`. `TClaimUpdateFields` therefore requires `titleContentHash: string` — every caller of the api-client's `updateClaim` must compute and pass the title hash, or `strictFetch` rejects the request body client-side. The orchestrator's per-repo briefings for server and mobile call this out as an explicit caller-update item.
 

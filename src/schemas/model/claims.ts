@@ -71,18 +71,15 @@ export const NormalClaimKindsSchema = Type.Union([
 export type TNormalClaimKinds = Static<typeof NormalClaimKindsSchema>
 
 // Identity / lineage fields shared by all variants, with digest inherited.
-const ClaimSharedFieldsSchema = Type.Interface(
-    [ClaimMetadataFieldsSchema],
-    {
-        id: UUID,
-        argumentId: UUID,
-        version: Type.Number(),
-        claimForkId: Nullable(UUID),
-        creatorId: UUID,
-        createdOn: EncodableDate,
-        parentId: Nullable(UUID),
-    }
-)
+const ClaimSharedFieldsSchema = Type.Interface([ClaimMetadataFieldsSchema], {
+    id: UUID,
+    argumentId: UUID,
+    version: Type.Number(),
+    claimForkId: Nullable(UUID),
+    creatorId: UUID,
+    createdOn: EncodableDate,
+    parentId: Nullable(UUID),
+})
 
 export const NormalClaimSchema = Type.Interface(
     [ClaimSharedFieldsSchema, MutableClaimFieldsSchema],
@@ -97,36 +94,30 @@ export const NormalClaimSchema = Type.Interface(
 )
 export type TNormalClaim = Static<typeof NormalClaimSchema>
 
-export const CitationClaimSchema = Type.Interface(
-    [ClaimSharedFieldsSchema],
-    {
-        type: CoreClaimCitationTypeSchema,
-        kind: Type.Null(),
-        title: Type.Null(),
-        body: Type.Null(),
-        titleContentHash: Type.Null(),
-        url: Type.String(),
-        citation: IEEEReferenceSchema,
-        citationContentHash: Type.String(),
-        axiom: Type.Null(),
-    }
-)
+export const CitationClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
+    type: CoreClaimCitationTypeSchema,
+    kind: Type.Null(),
+    title: Type.Null(),
+    body: Type.Null(),
+    titleContentHash: Type.Null(),
+    url: Type.String(),
+    citation: IEEEReferenceSchema,
+    citationContentHash: Type.String(),
+    axiom: Type.Null(),
+})
 export type TCitationClaim = Static<typeof CitationClaimSchema>
 
-export const AxiomaticClaimSchema = Type.Interface(
-    [ClaimSharedFieldsSchema],
-    {
-        type: CoreClaimAxiomaticTypeSchema,
-        kind: Type.Null(),
-        title: Type.Null(),
-        body: Type.Null(),
-        titleContentHash: Type.Null(),
-        url: Type.Null(),
-        citation: Type.Null(),
-        citationContentHash: Type.Null(),
-        axiom: AxiomKindSchema,
-    }
-)
+export const AxiomaticClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
+    type: CoreClaimAxiomaticTypeSchema,
+    kind: Type.Null(),
+    title: Type.Null(),
+    body: Type.Null(),
+    titleContentHash: Type.Null(),
+    url: Type.Null(),
+    citation: Type.Null(),
+    citationContentHash: Type.Null(),
+    axiom: AxiomKindSchema,
+})
 export type TAxiomaticClaim = Static<typeof AxiomaticClaimSchema>
 
 export const ClaimSchema = Type.Union([
@@ -149,11 +140,8 @@ export function isAxiomaticClaim(claim: TClaim): claim is TAxiomaticClaim {
 // Re-based on NormalClaimSchema. Server's getClaims() filters by
 // type='normal' before populating childClaimIds/childCitationIds, so this
 // type accurately describes only Normal-with-children rows.
-export const ClaimWithChildrenSchema = Type.Interface(
-    [NormalClaimSchema],
-    {
-        childClaimIds: Type.Array(UUID),
-        childCitationIds: Type.Array(UUID),
-    }
-)
+export const ClaimWithChildrenSchema = Type.Interface([NormalClaimSchema], {
+    childClaimIds: Type.Array(UUID),
+    childCitationIds: Type.Array(UUID),
+})
 export type TClaimWithChildren = Static<typeof ClaimWithChildrenSchema>

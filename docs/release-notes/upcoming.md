@@ -120,7 +120,7 @@ the case is impossible for that flow). Shared's own
 as a follow-up below.
 
 Shared's engine surface still has no axiom-specific accessors — see "Out
-of scope" below for what is *not* in this bump.
+of scope" below for what is _not_ in this bump.
 
 ## Why the wire-format rename is in this bump
 

@@ -111,18 +111,15 @@ export type TNormalClaimKinds = Static<typeof NormalClaimKindsSchema>
 
 // ── Shared identity / lineage fields, inheriting digest from metadata ──
 
-const ClaimSharedFieldsSchema = Type.Interface(
-    [ClaimMetadataFieldsSchema],
-    {
-        id: UUID,
-        argumentId: UUID,
-        version: Type.Number(),
-        claimForkId: Nullable(UUID),
-        creatorId: UUID,
-        createdOn: EncodableDate,
-        parentId: Nullable(UUID),
-    }
-)
+const ClaimSharedFieldsSchema = Type.Interface([ClaimMetadataFieldsSchema], {
+    id: UUID,
+    argumentId: UUID,
+    version: Type.Number(),
+    claimForkId: Nullable(UUID),
+    creatorId: UUID,
+    createdOn: EncodableDate,
+    parentId: Nullable(UUID),
+})
 
 // ── Per-variant schemas ──
 
@@ -139,36 +136,30 @@ export const NormalClaimSchema = Type.Interface(
 )
 export type TNormalClaim = Static<typeof NormalClaimSchema>
 
-export const CitationClaimSchema = Type.Interface(
-    [ClaimSharedFieldsSchema],
-    {
-        type: CoreClaimCitationTypeSchema,
-        kind: Type.Null(),
-        title: Type.Null(),
-        body: Type.Null(),
-        titleContentHash: Type.Null(),
-        url: Type.String(),
-        citation: IEEEReferenceSchema,
-        citationContentHash: Type.String(),
-        axiom: Type.Null(),
-    }
-)
+export const CitationClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
+    type: CoreClaimCitationTypeSchema,
+    kind: Type.Null(),
+    title: Type.Null(),
+    body: Type.Null(),
+    titleContentHash: Type.Null(),
+    url: Type.String(),
+    citation: IEEEReferenceSchema,
+    citationContentHash: Type.String(),
+    axiom: Type.Null(),
+})
 export type TCitationClaim = Static<typeof CitationClaimSchema>
 
-export const AxiomaticClaimSchema = Type.Interface(
-    [ClaimSharedFieldsSchema],
-    {
-        type: CoreClaimAxiomaticTypeSchema,
-        kind: Type.Null(),
-        title: Type.Null(),
-        body: Type.Null(),
-        titleContentHash: Type.Null(),
-        url: Type.Null(),
-        citation: Type.Null(),
-        citationContentHash: Type.Null(),
-        axiom: AxiomKindSchema,
-    }
-)
+export const AxiomaticClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
+    type: CoreClaimAxiomaticTypeSchema,
+    kind: Type.Null(),
+    title: Type.Null(),
+    body: Type.Null(),
+    titleContentHash: Type.Null(),
+    url: Type.Null(),
+    citation: Type.Null(),
+    citationContentHash: Type.Null(),
+    axiom: AxiomKindSchema,
+})
 export type TAxiomaticClaim = Static<typeof AxiomaticClaimSchema>
 
 // ── The union and its narrowing helpers ──
@@ -194,23 +185,20 @@ export function isAxiomaticClaim(claim: TClaim): claim is TAxiomaticClaim {
 // See "Wire format and database expectations" for the server-side smell this
 // surfaces in `getEntireArgument`.
 
-export const ClaimWithChildrenSchema = Type.Interface(
-    [NormalClaimSchema],
-    {
-        childClaimIds: Type.Array(UUID),
-        childCitationIds: Type.Array(UUID),
-    }
-)
+export const ClaimWithChildrenSchema = Type.Interface([NormalClaimSchema], {
+    childClaimIds: Type.Array(UUID),
+    childCitationIds: Type.Array(UUID),
+})
 export type TClaimWithChildren = Static<typeof ClaimWithChildrenSchema>
 ```
 
 **Why `Type.Interface([Parent], { ... })` and not `Type.Composite` or `Type.Intersect`:**
 
 - `Type.Composite` does not exist on the public surface of `typebox@^1.1.14` (the package this repo uses; this is `typebox`, not `@sinclair/typebox` — different libraries). It's an internal evaluator only, not on the `Type` namespace.
-- `Type.Intersect([A, B])` produces an `allOf` JSON Schema requiring values to satisfy both members simultaneously. In *this* spec it happens to work (the variant overrides moved title/body/titleContentHash out of `ClaimSharedFieldsSchema` precisely so there's no field overlap), but it's a fragile basis — anyone who later moves a shared field back will silently produce an impossible schema.
+- `Type.Intersect([A, B])` produces an `allOf` JSON Schema requiring values to satisfy both members simultaneously. In _this_ spec it happens to work (the variant overrides moved title/body/titleContentHash out of `ClaimSharedFieldsSchema` precisely so there's no field overlap), but it's a fragile basis — anyone who later moves a shared field back will silently produce an impossible schema.
 - `Type.Interface([Parent], { ... })` is the codebase's existing pattern (used in `tasks.ts`, `arguments.ts`, `forks.ts`, current `claims.ts`). It produces a flat object schema and has clean override semantics. **This is the choice.**
 
-**Wire-format contract (explicit):** every claim on the wire carries *every* field; fields that don't apply to the variant serialize as JSON `null`. Consumers must not strip nulls before sending or validating. This is what makes `Value.Check(ClaimSchema, row)` work as a discriminated union — the `type` literal disambiguates, and the field-shape constraints validate.
+**Wire-format contract (explicit):** every claim on the wire carries _every_ field; fields that don't apply to the variant serialize as JSON `null`. Consumers must not strip nulls before sending or validating. This is what makes `Value.Check(ClaimSchema, row)` work as a discriminated union — the `type` literal disambiguates, and the field-shape constraints validate.
 
 ### Axiom-kind labels and descriptions
 
@@ -222,8 +210,8 @@ A new module `src/consts/axioms.ts` carries the user-facing strings, re-exported
 import type { TAxiomKind } from "../schemas/model/claims.js"
 
 export const AXIOM_KIND_LABELS: Readonly<Record<TAxiomKind, string>> = {
-    "definition": "True by definition or meaning",
-    "stipulation": "Assumed for this argument",
+    definition: "True by definition or meaning",
+    stipulation: "Assumed for this argument",
     "logical-principle": "Basic logical principle",
     "mathematical-principle": "Basic mathematical principle",
     "domain-rule": "Rule or authority within a system",
@@ -231,9 +219,9 @@ export const AXIOM_KIND_LABELS: Readonly<Record<TAxiomKind, string>> = {
 } as const
 
 export const AXIOM_KIND_DESCRIPTIONS: Readonly<Record<TAxiomKind, string>> = {
-    "definition":
+    definition:
         "Use when the claim is treated as true because of what the relevant words, categories, or concepts mean. Example: 'A bachelor is unmarried.'",
-    "stipulation":
+    stipulation:
         "Use when the argument explicitly defines or assumes something for its own purposes. Example: 'For this argument, an active user means someone who logs in weekly.'",
     "logical-principle":
         "Use for basic principles of valid reasoning. Example: 'If P implies Q, and P is true, then Q follows.'",
@@ -248,19 +236,19 @@ export const AXIOM_KIND_DESCRIPTIONS: Readonly<Record<TAxiomKind, string>> = {
 
 ### Internal shared impact
 
-| File | Change |
-|---|---|
-| `src/schemas/model/claims.ts` | Replaced wholesale with the module shape above. The renamed `NormalClaimKinds` / `NormalClaimKindsSchema` / `NormalClaimChildKindsSchema` / `NormalClaimLogicalKindsSchema` exports replace the previous `ClaimKinds` / `ClaimKindsSchema` / `ChildClaimKinds` / `LogicalClaimKinds` names. |
-| `src/schemas/model/arguments.ts` | `ArgumentDiffSchema.added` / `.removed` are typed `Type.Array(ClaimSchema)`. After the bump, those arrays carry heterogeneous variants. No file edit needed — TypeBox handles the swap automatically — but server code that iterates these arrays needs to narrow before reading variant-specific fields. Call out in the server briefing. |
-| `src/schemas/model/index.ts` | No change — re-exports `./claims.js` already. |
-| `src/consts/axioms.ts` | New file with `AXIOM_KIND_LABELS` and `AXIOM_KIND_DESCRIPTIONS`. |
-| `src/consts/index.ts` | Add `export * from "./axioms.js"`. |
-| `src/engine/text-tree.ts` | Fix the existing typecheck failure at line 121. Narrow `claim` via `isNormalClaim` before reading `claim.title` / `claim.body`. Widen the `claimType` local from `"normal" \| "citation"` to `TClaimType` (and update `TextTreeItem.claimType` similarly). For Citation/Axiomatic claims in this bump, fall back to empty `claimTitle` / `claimBody` — proper rendering for those variants is a follow-up. |
-| `src/engine/engine.ts` | No field-narrowing changes needed; the engine shuttles `TClaim` records and never reads variant-specific fields directly. |
-| `src/engine/mutations/claims.ts` | No field-narrowing changes needed for the same reason. |
-| `src/engine/library-adapters.ts` | No change — only touches `id` and `version`. |
-| `src/api-client/argument/claims.ts` | `TClaimUpdateFields` now requires `titleContentHash: string` (was implicitly optional before). See the dedicated "PATCH-body break" call-out below the table. |
-| Tests under `src/**/__tests__/` | Per-test fixture sweep — five files identified, enumerated in the "Testing" section below. |
+| File                                | Change                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/schemas/model/claims.ts`       | Replaced wholesale with the module shape above. The renamed `NormalClaimKinds` / `NormalClaimKindsSchema` / `NormalClaimChildKindsSchema` / `NormalClaimLogicalKindsSchema` exports replace the previous `ClaimKinds` / `ClaimKindsSchema` / `ChildClaimKinds` / `LogicalClaimKinds` names.                                                                                                                |
+| `src/schemas/model/arguments.ts`    | `ArgumentDiffSchema.added` / `.removed` are typed `Type.Array(ClaimSchema)`. After the bump, those arrays carry heterogeneous variants. No file edit needed — TypeBox handles the swap automatically — but server code that iterates these arrays needs to narrow before reading variant-specific fields. Call out in the server briefing.                                                                 |
+| `src/schemas/model/index.ts`        | No change — re-exports `./claims.js` already.                                                                                                                                                                                                                                                                                                                                                              |
+| `src/consts/axioms.ts`              | New file with `AXIOM_KIND_LABELS` and `AXIOM_KIND_DESCRIPTIONS`.                                                                                                                                                                                                                                                                                                                                           |
+| `src/consts/index.ts`               | Add `export * from "./axioms.js"`.                                                                                                                                                                                                                                                                                                                                                                         |
+| `src/engine/text-tree.ts`           | Fix the existing typecheck failure at line 121. Narrow `claim` via `isNormalClaim` before reading `claim.title` / `claim.body`. Widen the `claimType` local from `"normal" \| "citation"` to `TClaimType` (and update `TextTreeItem.claimType` similarly). For Citation/Axiomatic claims in this bump, fall back to empty `claimTitle` / `claimBody` — proper rendering for those variants is a follow-up. |
+| `src/engine/engine.ts`              | No field-narrowing changes needed; the engine shuttles `TClaim` records and never reads variant-specific fields directly.                                                                                                                                                                                                                                                                                  |
+| `src/engine/mutations/claims.ts`    | No field-narrowing changes needed for the same reason.                                                                                                                                                                                                                                                                                                                                                     |
+| `src/engine/library-adapters.ts`    | No change — only touches `id` and `version`.                                                                                                                                                                                                                                                                                                                                                               |
+| `src/api-client/argument/claims.ts` | `TClaimUpdateFields` now requires `titleContentHash: string` (was implicitly optional before). See the dedicated "PATCH-body break" call-out below the table.                                                                                                                                                                                                                                              |
+| Tests under `src/**/__tests__/`     | Per-test fixture sweep — five files identified, enumerated in the "Testing" section below.                                                                                                                                                                                                                                                                                                                 |
 
 **PATCH-body break (top-level call-out, not a one-line table entry):**
 
@@ -277,21 +265,21 @@ Shared's spec defines what the wire format demands; shared has no DB and runs no
 
 **`getEntireArgument` semantic smell to address in the server briefing.** Server's `proposit-server/src/model/argument/queries.ts:237-274` runs `getClaims()` with `.andWhere("s.type", "normal")` — that's the source of the "normal-only" framing that lets us re-base `ClaimWithChildrenSchema` on `NormalClaimSchema`. But further down in the same file (`getEntireArgument` at ~line 396-404), the bare citation `TClaim` records from `getCitations()` are appended into the same `claims: TClaimWithChildren[]` array — a static-type lie that the current wide `TClaim` permits. Under the new discriminated union those entries will be `TCitationClaim` values lacking `childClaimIds` / `childCitationIds`. The server briefing must include either (a) splitting the response so citations live on their own slot rather than mixed into `claims`, or (b) widening the response type so citation entries aren't pretending to be `TClaimWithChildren`. Either is fine; the current code is lying about types.
 
-Separately, `childCitationIds` on `TClaimWithChildren` is populated from `claimCitations.id` (citation-edge IDs), not claim IDs. The field name reads as if those are IDs of citation-typed *claims*. Worth flagging for a future rename — out of scope for this bump.
+Separately, `childCitationIds` on `TClaimWithChildren` is populated from `claimCitations.id` (citation-edge IDs), not claim IDs. The field name reads as if those are IDs of citation-typed _claims_. Worth flagging for a future rename — out of scope for this bump.
 
 Required wire-format shape per variant after this bump:
 
-| Field | Normal | Citation | Axiomatic |
-|---|---|---|---|
-| `type` | `"normal"` | `"citation"` | `"axiomatic"` |
-| `kind` | one of `NormalClaimKinds` | `null` | `null` |
-| `title` | `string` | `null` | `null` |
-| `body` | `string` | `null` | `null` |
-| `titleContentHash` | `string` | `null` | `null` |
-| `url` | `null` | `string` | `null` |
-| `citation` | `null` | `IEEEReference` | `null` |
-| `citationContentHash` | `null` | `string` | `null` |
-| `axiom` | `null` | `null` | one of `AxiomKind` |
+| Field                 | Normal                    | Citation        | Axiomatic          |
+| --------------------- | ------------------------- | --------------- | ------------------ |
+| `type`                | `"normal"`                | `"citation"`    | `"axiomatic"`      |
+| `kind`                | one of `NormalClaimKinds` | `null`          | `null`             |
+| `title`               | `string`                  | `null`          | `null`             |
+| `body`                | `string`                  | `null`          | `null`             |
+| `titleContentHash`    | `string`                  | `null`          | `null`             |
+| `url`                 | `null`                    | `string`        | `null`             |
+| `citation`            | `null`                    | `IEEEReference` | `null`             |
+| `citationContentHash` | `null`                    | `string`        | `null`             |
+| `axiom`               | `null`                    | `null`          | one of `AxiomKind` |
 
 Server's likely audit before deciding migration path:
 
@@ -316,13 +304,13 @@ Note: existing tests in that file (lines 6, 24, 51, 69, 93 in the pre-refactor f
 
 **Fixture sweep — five files need updating** (identified during spec review, not an open-ended search):
 
-| File | Issue |
-|---|---|
-| `src/engine/__tests__/engine.test.ts:41` | Builds a `TClaim`-shaped fixture; needs the four new null fields and a non-null `titleContentHash`. |
+| File                                              | Issue                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/engine/__tests__/engine.test.ts:41`          | Builds a `TClaim`-shaped fixture; needs the four new null fields and a non-null `titleContentHash`.                                                                                                                                                                                                                   |
 | `src/engine/mutations/__tests__/helpers.ts:25-39` | `mkTestClaim` helper returns a partial `TClaim` cast with `as TClaim`. Becomes wrong under the new shape — the cast escape hatch silences the type error but the fixture is still semantically incorrect. Update to construct a full `TNormalClaim` (or accept a variant arg). Used by all mutation tests downstream. |
-| `src/engine/review/__tests__/fixtures.ts:83-98` | `makeClaim` factory — same problem as the mutations helper. |
-| `src/schemas/__tests__/snapshot.test.ts:23` | Currently passes `titleContentHash: null` on what is implicitly a Normal claim. Under the new schema, Normal claims require `titleContentHash: string`. Either supply a real hash or switch the fixture to a Citation/Axiomatic claim. |
-| `src/engine/__tests__/text-tree.test.ts` | Add a case per variant to verify the new `isNormalClaim` narrowing branch in `text-tree.ts`. Existing cases need their fixtures updated to the new shape. |
+| `src/engine/review/__tests__/fixtures.ts:83-98`   | `makeClaim` factory — same problem as the mutations helper.                                                                                                                                                                                                                                                           |
+| `src/schemas/__tests__/snapshot.test.ts:23`       | Currently passes `titleContentHash: null` on what is implicitly a Normal claim. Under the new schema, Normal claims require `titleContentHash: string`. Either supply a real hash or switch the fixture to a Citation/Axiomatic claim.                                                                                |
+| `src/engine/__tests__/text-tree.test.ts`          | Add a case per variant to verify the new `isNormalClaim` narrowing branch in `text-tree.ts`. Existing cases need their fixtures updated to the new shape.                                                                                                                                                             |
 
 Out of scope for testing here: wire/DB round-trip, engine behavior for axiomatic claims (no engine surface yet).
 
@@ -331,7 +319,7 @@ Out of scope for testing here: wire/DB round-trip, engine behavior for axiomatic
 - Bump: pre-1.0 minor (`0.7.2` → `0.8.0`), same minor that ships the proposit-core v0.12 upgrade. Bundling avoids two coordinated breaking-changes bumps for server and mobile.
 - After shared cuts `v0.8.0`:
     1. Orchestrator writes the per-repo briefing for `proposit-server` covering (a) the audit queries above, (b) the migration path the server agent picks, (c) the rename table for `claimCitations` → `citations` that's already part of the v0.12 work, (d) the `getEntireArgument` semantic smell flagged above.
-    2. Server agent bumps `@proposit/shared`, runs the audit, picks a migration path, ships. *(Spec-review note: `proposit-server/src/` was confirmed to have zero usages of the renamed kind constants — `ClaimKinds`, `ChildClaimKinds`, `LogicalClaimKinds`, `ClaimKindsSchema`, `TClaimKindsSchema` — so the rename has no server impact beyond consuming the new schema.)*
+    2. Server agent bumps `@proposit/shared`, runs the audit, picks a migration path, ships. _(Spec-review note: `proposit-server/src/` was confirmed to have zero usages of the renamed kind constants — `ClaimKinds`, `ChildClaimKinds`, `LogicalClaimKinds`, `ClaimKindsSchema`, `TClaimKindsSchema` — so the rename has no server impact beyond consuming the new schema.)_
     3. Mobile agent bumps when convenient — mobile mostly reads the engine snapshot rather than raw claim records, so the impact is smaller. The mobile briefing **must** include an explicit grep step for the five renamed identifiers above; the spec-review subagent could not access the mobile tree from this workspace, so the assumption "mobile has zero usages" remains unverified until the mobile agent confirms.
 
 ### Out of scope (deferred to later bumps)

@@ -159,7 +159,9 @@ describe("AxiomaticClaimSchema", () => {
             "background-assumption",
         ] as const
         for (const axiom of kinds) {
-            expect(Value.Check(AxiomaticClaimSchema, { ...axiomaticBase, axiom })).toBe(true)
+            expect(
+                Value.Check(AxiomaticClaimSchema, { ...axiomaticBase, axiom })
+            ).toBe(true)
         }
     })
 
