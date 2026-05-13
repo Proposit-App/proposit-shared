@@ -1,109 +1,227 @@
 import { describe, expect, it } from "vitest"
 import { Value } from "typebox/value"
-import { ClaimSchema } from "../model/claims.js"
+import {
+    AxiomaticClaimSchema,
+    CitationClaimSchema,
+    ClaimSchema,
+    isAxiomaticClaim,
+    isCitationClaim,
+    isNormalClaim,
+    NormalClaimSchema,
+    type TAxiomaticClaim,
+    type TCitationClaim,
+    type TNormalClaim,
+} from "../model/claims.js"
 
-describe("ClaimSchema citation discriminator", () => {
-    it("accepts a normal claim without citation extras", () => {
-        const claim = {
-            id: "11111111-1111-1111-1111-111111111111",
-            argumentId: "22222222-2222-2222-2222-222222222222",
-            version: 1,
-            claimForkId: null,
-            creatorId: "33333333-3333-3333-3333-333333333333",
-            createdOn: new Date("2026-05-06T00:00:00Z"),
-            kind: "claim",
-            type: "normal",
-            parentId: null,
-            title: "Cats are mammals",
-            body: "All cats are mammals.",
-            digest: "digest-1",
-        }
-        expect(Value.Check(ClaimSchema, claim)).toBe(true)
+const ID = "11111111-1111-1111-1111-111111111111"
+const ARG_ID = "22222222-2222-2222-2222-222222222222"
+const CREATOR_ID = "33333333-3333-3333-3333-333333333333"
+const NOW = new Date("2026-05-06T00:00:00Z")
+
+const normalBase = {
+    id: ID,
+    argumentId: ARG_ID,
+    version: 1,
+    claimForkId: null,
+    creatorId: CREATOR_ID,
+    createdOn: NOW,
+    parentId: null,
+    digest: "digest-normal",
+    type: "normal" as const,
+    kind: "claim" as const,
+    title: "Cats are mammals",
+    body: "All cats are mammals.",
+    titleContentHash: "hash-of-title",
+    url: null,
+    citation: null,
+    citationContentHash: null,
+    axiom: null,
+}
+
+const citationBase = {
+    id: ID,
+    argumentId: ARG_ID,
+    version: 1,
+    claimForkId: null,
+    creatorId: CREATOR_ID,
+    createdOn: NOW,
+    parentId: null,
+    digest: "digest-citation",
+    type: "citation" as const,
+    kind: null,
+    title: null,
+    body: null,
+    titleContentHash: null,
+    url: "https://example.com/paper",
+    // Schema-valid IEEE shape; not a complete reference. If IEEEReferenceSchema
+    // changes shape, update this fixture.
+    citation: {
+        type: "JournalArticle",
+        authors: [{ givenNames: "A", familyName: "Author" }],
+        year: "2024",
+        title: "An IEEE-style title",
+        journalTitle: "Journal of Examples",
+    },
+    citationContentHash: "hash-of-citation",
+    axiom: null,
+}
+
+const axiomaticBase = {
+    id: ID,
+    argumentId: ARG_ID,
+    version: 1,
+    claimForkId: null,
+    creatorId: CREATOR_ID,
+    createdOn: NOW,
+    parentId: null,
+    digest: "digest-axiomatic",
+    type: "axiomatic" as const,
+    kind: null,
+    title: null,
+    body: null,
+    titleContentHash: null,
+    url: null,
+    citation: null,
+    citationContentHash: null,
+    axiom: "definition" as const,
+}
+
+describe("NormalClaimSchema", () => {
+    it("accepts a well-formed normal claim", () => {
+        expect(Value.Check(NormalClaimSchema, normalBase)).toBe(true)
     })
 
-    it("accepts a citation-typed claim with URL and IEEE reference extras", () => {
-        const claim = {
-            id: "11111111-1111-1111-1111-111111111111",
-            argumentId: "22222222-2222-2222-2222-222222222222",
-            version: 1,
-            claimForkId: null,
-            creatorId: "33333333-3333-3333-3333-333333333333",
-            createdOn: new Date("2026-05-06T00:00:00Z"),
-            kind: "claim",
-            type: "citation",
-            parentId: null,
-            title: "Smith 2024",
-            body: "Smith, J. 2024. Cat taxonomy. Nature.",
-            digest: "digest-2",
-            url: "https://example.com/smith-2024",
-            citation: {
-                type: "JournalArticle",
-                title: "Cat taxonomy",
-                year: "2024",
-                authors: [{ givenNames: "J.", familyName: "Smith" }],
-                journalTitle: "Nature",
-            },
-            citationContentHash: "sha256-abc123",
-        }
-        expect(Value.Check(ClaimSchema, claim)).toBe(true)
+    it("rejects a normal claim with a non-null citation field", () => {
+        const bad = { ...normalBase, url: "https://wrong.example.com" }
+        expect(Value.Check(NormalClaimSchema, bad)).toBe(false)
     })
 
-    it("rejects a claim missing the type discriminator (legacy data)", () => {
-        const legacyClaim = {
-            id: "11111111-1111-1111-1111-111111111111",
-            argumentId: "22222222-2222-2222-2222-222222222222",
-            version: 1,
-            claimForkId: null,
-            creatorId: "33333333-3333-3333-3333-333333333333",
-            createdOn: new Date("2026-05-06T00:00:00Z"),
-            kind: "claim",
-            // type omitted
-            parentId: null,
-            title: "Legacy",
-            body: "Legacy claim shape.",
-            digest: "digest-3",
-        }
-        expect(Value.Check(ClaimSchema, legacyClaim)).toBe(false)
+    it("rejects a normal claim with a non-null axiom field", () => {
+        const bad = { ...normalBase, axiom: "definition" }
+        expect(Value.Check(NormalClaimSchema, bad)).toBe(false)
     })
 
-    it("accepts a normal claim with citation explicitly set to null", () => {
-        // Postgres stores `citation: NULL` for normal-type claims; the
-        // wire payload that comes back from the server therefore carries
-        // `citation: null`, not an absent field. Schema must accept that.
-        const claim = {
-            id: "11111111-1111-1111-1111-111111111111",
-            argumentId: "22222222-2222-2222-2222-222222222222",
-            version: 1,
-            claimForkId: null,
-            creatorId: "33333333-3333-3333-3333-333333333333",
-            createdOn: new Date("2026-05-06T00:00:00Z"),
-            kind: "claim",
-            type: "normal",
-            parentId: null,
-            title: "Cats are mammals",
-            body: "All cats are mammals.",
-            digest: "digest-null-citation",
-            url: null,
-            citation: null,
-            citationContentHash: null,
-        }
-        expect(Value.Check(ClaimSchema, claim)).toBe(true)
+    it("rejects a normal claim with null titleContentHash", () => {
+        const bad = { ...normalBase, titleContentHash: null }
+        expect(Value.Check(NormalClaimSchema, bad)).toBe(false)
     })
 
-    it("rejects a claim using the old 'type' field for category", () => {
-        const oldShape = {
-            id: "11111111-1111-1111-1111-111111111111",
-            argumentId: "22222222-2222-2222-2222-222222222222",
-            version: 1,
-            claimForkId: null,
-            creatorId: "33333333-3333-3333-3333-333333333333",
-            createdOn: new Date("2026-05-06T00:00:00Z"),
-            type: "claim", // old shape: category in `type`
-            parentId: null,
-            title: "Old",
-            body: "Old shape.",
-            digest: "digest-4",
+    it("rejects a normal claim with null title", () => {
+        const bad = { ...normalBase, title: null }
+        expect(Value.Check(NormalClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a normal claim with null body", () => {
+        const bad = { ...normalBase, body: null }
+        expect(Value.Check(NormalClaimSchema, bad)).toBe(false)
+    })
+})
+
+describe("CitationClaimSchema", () => {
+    it("accepts a well-formed citation claim", () => {
+        expect(Value.Check(CitationClaimSchema, citationBase)).toBe(true)
+    })
+
+    it("rejects a citation claim whose title is non-null", () => {
+        const bad = { ...citationBase, title: "Some title" }
+        expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a citation claim whose kind is non-null", () => {
+        const bad = { ...citationBase, kind: "claim" }
+        expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a citation claim missing the URL", () => {
+        const bad = { ...citationBase, url: null }
+        expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a citation claim with a non-null axiom field", () => {
+        const bad = { ...citationBase, axiom: "definition" }
+        expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a citation claim with null citation", () => {
+        const bad = { ...citationBase, citation: null }
+        expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
+    })
+})
+
+describe("AxiomaticClaimSchema", () => {
+    it("accepts a well-formed axiomatic claim for each axiom kind", () => {
+        const kinds = [
+            "definition",
+            "stipulation",
+            "logical-principle",
+            "mathematical-principle",
+            "domain-rule",
+            "background-assumption",
+        ] as const
+        for (const axiom of kinds) {
+            expect(Value.Check(AxiomaticClaimSchema, { ...axiomaticBase, axiom })).toBe(true)
         }
-        expect(Value.Check(ClaimSchema, oldShape)).toBe(false)
+    })
+
+    it("rejects an axiomatic claim with a non-null title", () => {
+        const bad = { ...axiomaticBase, title: "Some title" }
+        expect(Value.Check(AxiomaticClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects an axiomatic claim with a non-null citation field", () => {
+        const bad = { ...axiomaticBase, url: "https://example.com" }
+        expect(Value.Check(AxiomaticClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects an axiomatic claim whose axiom is null", () => {
+        const bad = { ...axiomaticBase, axiom: null }
+        expect(Value.Check(AxiomaticClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects an axiomatic claim whose axiom is an unrecognised literal", () => {
+        const bad = { ...axiomaticBase, axiom: "made-up-kind" }
+        expect(Value.Check(AxiomaticClaimSchema, bad)).toBe(false)
+    })
+})
+
+describe("ClaimSchema (union)", () => {
+    it("accepts a normal-variant claim", () => {
+        expect(Value.Check(ClaimSchema, normalBase)).toBe(true)
+    })
+
+    it("accepts a citation-variant claim", () => {
+        expect(Value.Check(ClaimSchema, citationBase)).toBe(true)
+    })
+
+    it("accepts an axiomatic-variant claim", () => {
+        expect(Value.Check(ClaimSchema, axiomaticBase)).toBe(true)
+    })
+
+    it("rejects an object whose type is not one of the three literals", () => {
+        const bad = { ...normalBase, type: "unknown" }
+        expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+})
+
+describe("Claim type guards", () => {
+    it("isNormalClaim narrows correctly", () => {
+        const c = normalBase as TNormalClaim
+        expect(isNormalClaim(c)).toBe(true)
+        expect(isCitationClaim(c)).toBe(false)
+        expect(isAxiomaticClaim(c)).toBe(false)
+    })
+
+    it("isCitationClaim narrows correctly", () => {
+        const c = citationBase as TCitationClaim
+        expect(isCitationClaim(c)).toBe(true)
+        expect(isNormalClaim(c)).toBe(false)
+        expect(isAxiomaticClaim(c)).toBe(false)
+    })
+
+    it("isAxiomaticClaim narrows correctly", () => {
+        const c = axiomaticBase as TAxiomaticClaim
+        expect(isAxiomaticClaim(c)).toBe(true)
+        expect(isNormalClaim(c)).toBe(false)
+        expect(isCitationClaim(c)).toBe(false)
     })
 })
