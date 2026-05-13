@@ -23,20 +23,26 @@ export function mkTestArgument(overrides?: Partial<TArgument>): TArgument {
 
 /** Minimal claim for test engines. */
 export function mkTestClaim(overrides?: Partial<TClaim>): TClaim {
-    return {
+    const normalDefault: TClaim = {
         id: crypto.randomUUID(),
         argumentId: "test-arg-id",
         version: 1,
         creatorId: "test-user-id",
+        createdOn: new Date("2026-01-01"),
         title: "Test claim",
         body: "",
+        titleContentHash: "test-hash",
         digest: "test-digest",
         kind: "claim",
         type: "normal",
         parentId: null,
-        forkId: null,
-        ...overrides,
-    } as TClaim
+        claimForkId: null,
+        url: null,
+        citation: null,
+        citationContentHash: null,
+        axiom: null,
+    }
+    return { ...normalDefault, ...overrides } as TClaim
 }
 
 /** Build a PropositArgumentEngine from a minimal snapshot with no premises/variables. */
