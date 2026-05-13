@@ -87,6 +87,7 @@ function makeClaim(id: string, title: string): TClaim {
         version: ARGUMENT_VERSION,
         title,
         body: `Body of ${title}`,
+        titleContentHash: `hash-of-${id}`,
         kind: "claim",
         type: "normal",
         creatorId: CREATOR_ID,
@@ -94,6 +95,10 @@ function makeClaim(id: string, title: string): TClaim {
         digest: `digest-${id}`,
         parentId: null,
         claimForkId: null,
+        url: null,
+        citation: null,
+        citationContentHash: null,
+        axiom: null,
     }
 }
 
