@@ -73,8 +73,25 @@
   this release — see release notes "Out of scope" for what is still
   deferred.
 
+## Breaking changes — `ClaimSchema` discriminated union
+
+- `ClaimSchema` is now `Type.Union([NormalClaimSchema, CitationClaimSchema, AxiomaticClaimSchema])`. Each variant is a `Type.Interface` with the `type` field as the literal discriminant and every variant-specific field declared (with `Type.Null()` on inapplicable fields).
+- New exports: `NormalClaimSchema`, `CitationClaimSchema`, `AxiomaticClaimSchema`, `AxiomKindSchema`, `TNormalClaim`, `TCitationClaim`, `TAxiomaticClaim`, `TAxiomKind`, `isNormalClaim`, `isCitationClaim`, `isAxiomaticClaim`.
+- Renames: `ClaimKinds` → `NormalClaimKinds`, `ChildClaimKinds` → `NormalClaimChildKindsSchema`, `LogicalClaimKinds` → `NormalClaimLogicalKindsSchema`, `ClaimKindsSchema` → `NormalClaimKindsSchema`, `TClaimKindsSchema` → `TNormalClaimKinds`. Note: the renamed `*ChildKindsSchema` / `*LogicalKindsSchema` symbols were previously module-internal `const`s; the rename only affects users who had grepped into `claims.ts` for them.
+- `MutableClaimFieldsSchema` is now Normal-only with non-null `title: string`, `body: string`, `titleContentHash: string`. This makes `titleContentHash` required on every `TClaimUpdateFields` PATCH body.
+- `ClaimWithChildrenSchema` re-based on `NormalClaimSchema`.
+- `digest` deduplicated via a new internal `ClaimMetadataFieldsSchema` parent inherited by both `ClaimUpdateRequestSchema` and `ClaimSharedFieldsSchema`.
+- `kind` is now `Type.Null()` on Citation and Axiomatic variants.
+- New module `src/consts/axioms.ts` exports `AXIOM_KIND_LABELS` and `AXIOM_KIND_DESCRIPTIONS`.
+
+## Breaking changes — caller updates required
+
+- Every caller of the api-client's `updateClaim` must compute and pass `titleContentHash: string` on the PATCH body. Previously implicit-optional; now required by `MutableClaimFieldsSchema`. Affected callers: `proposit-server` internal call sites, `proposit-mobile` claim-edit UI.
+
 ## Internal
 
+- `src/engine/text-tree.ts` narrows `claim` via `isNormalClaim` before reading `title` / `body`; `claimType` local and `TTextTreeItem.claimType` widened from `"normal" | "citation"` to `TClaimType`. Citation and Axiomatic claims fall back to empty `claimTitle` / `claimBody` in this bump — proper rendering for those variants is a follow-up.
+- Test fixtures updated in `src/engine/__tests__/engine.test.ts`, `src/engine/__tests__/text-tree.test.ts`, `src/engine/mutations/__tests__/helpers.ts`, `src/engine/review/__tests__/fixtures.ts`, and `src/schemas/__tests__/claims.test.ts`.
 - `PropositArgumentEngine`'s private `claimCitationsMap` and related
   cache/dirty fields renamed to `citationsMap` / `citationsDirty` /
   `cachedCitations`.

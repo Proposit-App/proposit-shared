@@ -122,6 +122,41 @@ as a follow-up below.
 Shared's engine surface still has no axiom-specific accessors — see "Out
 of scope" below for what is _not_ in this bump.
 
+### `ClaimSchema` discriminated union
+
+`ClaimSchema` is now a `Type.Union` of three per-variant schemas:
+
+- `NormalClaimSchema` — `type: "normal"`, required `title` / `body` / `titleContentHash`, all citation/axiom fields are `null`.
+- `CitationClaimSchema` — `type: "citation"`, all `MutableClaimFields` and `kind` are `null`, required `url` / `citation` / `citationContentHash`.
+- `AxiomaticClaimSchema` — `type: "axiomatic"`, all `MutableClaimFields` / `kind` / citation fields are `null`, required `axiom` (one of six `TAxiomKind` literals).
+
+The wire format guarantees every claim carries every field; inapplicable fields serialize as JSON `null`. Consumers must not strip nulls before sending or validating.
+
+New exports from `@proposit/shared/schemas`:
+
+- Variant schemas: `NormalClaimSchema`, `CitationClaimSchema`, `AxiomaticClaimSchema`.
+- Variant types: `TNormalClaim`, `TCitationClaim`, `TAxiomaticClaim`.
+- Axiom-kind schema and type: `AxiomKindSchema`, `TAxiomKind`.
+- Type guards: `isNormalClaim`, `isCitationClaim`, `isAxiomaticClaim`.
+
+Renames (breaking):
+
+| Before              | After                           |
+| ------------------- | ------------------------------- |
+| `ClaimKinds`        | `NormalClaimKinds`              |
+| `ChildClaimKinds`   | `NormalClaimChildKindsSchema`   |
+| `LogicalClaimKinds` | `NormalClaimLogicalKindsSchema` |
+| `ClaimKindsSchema`  | `NormalClaimKindsSchema`        |
+| `TClaimKindsSchema` | `TNormalClaimKinds`             |
+
+`MutableClaimFieldsSchema` is now Normal-only with non-null `title` / `body` / `titleContentHash`. `TClaimUpdateFields` therefore requires `titleContentHash: string` — every caller of the api-client's `updateClaim` must compute and pass the title hash, or `strictFetch` rejects the request body client-side. The orchestrator's per-repo briefings for server and mobile call this out as an explicit caller-update item.
+
+`ClaimWithChildrenSchema` is re-based on `NormalClaimSchema` (server's `getClaims` filters by `type='normal'`).
+
+A new `@proposit/shared/consts` module — `AXIOM_KIND_LABELS` and `AXIOM_KIND_DESCRIPTIONS` — ships human-readable strings for the six axiom kinds.
+
+Engine-side axiomatic support (`axiomsMap`, `getAxiomsForClaim`, `addAxiom`, `removeAxiom` on `PropositArgumentEngine`; `axioms` slot on `FullArgumentSchema` / `ArgumentDiffSchema`) is still deferred to a later bump.
+
 ## Why the wire-format rename is in this bump
 
 The naming-authority rule (`@proposit/shared` follows
@@ -156,16 +191,16 @@ Likely no engine-accessor callers today, but verify any code that reads
 
 ## Out of scope (deferred)
 
-- **Engine and wire-level axiomatic-claim support.** Core v0.12 adds a
+- **Engine and wire-level axiomatic-claim accessors.** Core v0.12 adds a
   parallel `ClaimAxiomLibrary` alongside the schema-level `"axiomatic"`
-  member. Shared's `ClaimSchema.type` now accepts `"axiomatic"` (via the
-  switch to `CoreClaimTypeSchema` — see above), so the type-shape side of
-  axiomatic claims is in this bump. The engine side is not:
-  `PropositArgumentEngine` still has no `axiomsMap` / `getAxiomsForClaim` /
-  `addAxiom` / `removeAxiom` accessors, and `FullArgumentSchema` /
-  `ArgumentDiffSchema` still have no `axioms` slot. A follow-up bump will
-  add these once a server flow or mobile UI needs them; that follow-up also
-  decides how `text-tree.ts` should render axiomatic claims.
+  member. Shared's `ClaimSchema` discriminated union now includes
+  `AxiomaticClaimSchema` (see above), so the schema slot for axiomatic claims
+  is in this bump. The engine side is not: `PropositArgumentEngine` still has
+  no `axiomsMap` / `getAxiomsForClaim` / `addAxiom` / `removeAxiom`
+  accessors, and `FullArgumentSchema` / `ArgumentDiffSchema` still have no
+  `axioms` slot. A follow-up bump will add these once a server flow or mobile
+  UI needs them; that follow-up also decides how `text-tree.ts` should render
+  axiomatic claims beyond the current empty-string fallback.
 
 ## Versioning intent
 
