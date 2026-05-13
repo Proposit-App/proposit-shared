@@ -14,12 +14,30 @@ export const ClaimTypeSchema = CoreClaimTypeSchema
 export type TClaimType = Static<typeof ClaimTypeSchema>
 
 export const AxiomKindSchema = Type.Union([
-    Type.Literal("definition"),
-    Type.Literal("stipulation"),
-    Type.Literal("logical-principle"),
-    Type.Literal("mathematical-principle"),
-    Type.Literal("domain-rule"),
-    Type.Literal("background-assumption"),
+    Type.Literal("definition", {
+        description:
+            "The claim is true because of what the relevant words, categories, or concepts mean.",
+    }),
+    Type.Literal("stipulation", {
+        description:
+            "Assumed locally for this argument; the argument defines or postulates it for its own purposes.",
+    }),
+    Type.Literal("logical-principle", {
+        description:
+            "A basic principle of valid reasoning (for example, modus ponens or non-contradiction).",
+    }),
+    Type.Literal("mathematical-principle", {
+        description:
+            "A basic mathematical identity, axiom, or quantitative rule.",
+    }),
+    Type.Literal("domain-rule", {
+        description:
+            "Comes from a rule, standard, contract, doctrine, protocol, or authority internal to a system.",
+    }),
+    Type.Literal("background-assumption", {
+        description:
+            "A foundational premise the argument relies on but does not prove.",
+    }),
 ])
 export type TAxiomKind = Static<typeof AxiomKindSchema>
 
