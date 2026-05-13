@@ -8,7 +8,11 @@ dropped `claimCitationLookup` parameter, and (v0.12.2) the unification of
 `CoreClaimCitationSchema` / `CoreClaimAxiomSchema` into a single
 `CoreClaimConnectionSchema`. Shared follows core's vocabulary throughout — the
 rename surfaces are listed under "Breaking changes" below so server and mobile
-can sequence their own bumps.
+can sequence their own bumps. Also re-points shared's `ClaimTypeSchema` /
+`TClaimType` exports at core's `CoreClaimTypeSchema` (the symbol names
+stay), which widens `ClaimSchema.type` to include `"axiomatic"` at the
+schema level (engine-side axiom support remains deferred — see "Out of
+scope" below).
 
 ## What changed
 
@@ -98,6 +102,26 @@ downstream consumers that import shared's names. Consumers that imported
 `CoreClaimConnectionSchema` / `TCoreClaimConnection` themselves; shared
 does not re-export either.
 
+### `ClaimTypeSchema` / `TClaimType` widened to core's union
+
+`src/schemas/model/claims.ts` previously defined a local
+`ClaimTypeSchema = Type.Union([Type.Literal("normal"), Type.Literal("citation")])`
+and exported its inferred `TClaimType`. The local definition is gone;
+`ClaimTypeSchema` and `TClaimType` are now thin re-export aliases for
+core's `CoreClaimTypeSchema` / `TCoreClaimType`, so existing imports from
+`@proposit/shared/schemas` keep working without code edits. The
+shape change is the union widening from `"normal" | "citation"` to
+`"normal" | "citation" | "axiomatic"`.
+
+Code change required on the consumer side: exhaustive switches over
+`claim.type` need an `"axiomatic"` arm (or an explicit guard that asserts
+the case is impossible for that flow). Shared's own
+`src/engine/text-tree.ts` has one such site that needs widening — tracked
+as a follow-up below.
+
+Shared's engine surface still has no axiom-specific accessors — see "Out
+of scope" below for what is *not* in this bump.
+
 ## Why the wire-format rename is in this bump
 
 The naming-authority rule (`@proposit/shared` follows
@@ -132,14 +156,15 @@ Likely no engine-accessor callers today, but verify any code that reads
 
 ## Out of scope (deferred)
 
-- **Axiomatic claim type support.** Core v0.12 adds a third
-  `ClaimTypeSchema` member (`"axiomatic"`) plus a parallel `ClaimAxiomLibrary`.
-  Shared's `ClaimTypeSchema` is unchanged in this release (still
-  `"normal" | "citation"`). Once a server flow or mobile UI needs axiomatic
-  claims, a follow-up bump will widen the union and add parallel
-  `axiomsMap` / `getAxiomsForClaim` / `addAxiom` / `removeAxiom` accessors
-  on `PropositArgumentEngine` plus an `axioms` slot on
-  `FullArgumentSchema` / `ArgumentDiffSchema`. The follow-up plan also
+- **Engine and wire-level axiomatic-claim support.** Core v0.12 adds a
+  parallel `ClaimAxiomLibrary` alongside the schema-level `"axiomatic"`
+  member. Shared's `ClaimSchema.type` now accepts `"axiomatic"` (via the
+  switch to `CoreClaimTypeSchema` — see above), so the type-shape side of
+  axiomatic claims is in this bump. The engine side is not:
+  `PropositArgumentEngine` still has no `axiomsMap` / `getAxiomsForClaim` /
+  `addAxiom` / `removeAxiom` accessors, and `FullArgumentSchema` /
+  `ArgumentDiffSchema` still have no `axioms` slot. A follow-up bump will
+  add these once a server flow or mobile UI needs them; that follow-up also
   decides how `text-tree.ts` should render axiomatic claims.
 
 ## Versioning intent
@@ -151,7 +176,8 @@ breaking renames; consumers should pin caret and expect a coordinated update.
 
 - `docs/changelogs/upcoming.md` — machine-parseable rename table accompanying this release.
 - `proposit-core` v0.12.0 release notes — full upstream rename and the
-  axiomatic-claim feature this upgrade chooses not to surface yet.
+  axiomatic-claim feature; this upgrade surfaces the schema-level widening
+  but not the engine accessors or wire-format axiom slots.
 - `proposit-core` v0.12.2 release notes — `CoreClaimCitationSchema` /
   `CoreClaimAxiomSchema` consolidation into `CoreClaimConnectionSchema`,
   plus parser-builder and parser changes (parser changes are no-impact

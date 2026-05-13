@@ -58,6 +58,21 @@
   `@proposit/proposit-core` must switch to `CoreClaimConnectionSchema` /
   `TCoreClaimConnection` themselves; shared does not re-export them.
 
+## Breaking changes — `ClaimTypeSchema` widened to core's union
+
+- `ClaimTypeSchema` and `TClaimType` in `src/schemas/model/claims.ts` are
+  now thin re-export aliases for `CoreClaimTypeSchema` /
+  `TCoreClaimType` from `@proposit/proposit-core`. Imports from
+  `@proposit/shared/schemas` resolve without code edits, but the union
+  widens from `"normal" | "citation"` to
+  `"normal" | "citation" | "axiomatic"` — exhaustive switches over
+  `claim.type` need an `"axiomatic"` arm (or an explicit guard that
+  asserts the case is impossible for that flow). `ClaimSchema.type` is
+  the same widened union. No engine-side axiom accessors or `axioms`
+  slot on `FullArgumentSchema` / `ArgumentDiffSchema` are introduced in
+  this release — see release notes "Out of scope" for what is still
+  deferred.
+
 ## Internal
 
 - `PropositArgumentEngine`'s private `claimCitationsMap` and related
@@ -65,3 +80,10 @@
   `cachedCitations`.
 - JSDoc and code comments updated to use the `claim` / `supportingClaim`
   vocabulary throughout.
+- `eslint.config.mjs`: promoted `@typescript-eslint/no-explicit-any`,
+  `@typescript-eslint/require-await`, and
+  `@typescript-eslint/no-unsafe-assignment` from `warn` to `error`. One
+  test (`src/ui/__tests__/shadows.test.ts`) picks up the new
+  `no-unsafe-assignment` rule with explicit `as unknown` casts on Vitest
+  `expect.any(...)` matcher results inside `toMatchObject`. No runtime
+  changes.
