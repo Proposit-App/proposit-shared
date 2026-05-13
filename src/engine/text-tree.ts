@@ -3,6 +3,8 @@ import type {
     TPropositionalExpressionCombined,
     TLogicalOperatorType,
 } from "../schemas/logic.js"
+import type { TClaim, TClaimType } from "../schemas/model/claims.js"
+import { isNormalClaim } from "../schemas/model/claims.js"
 
 /** Operator display labels for the text view. */
 export const OPERATOR_LABELS: Record<
@@ -30,7 +32,7 @@ export type TTextTreeItem =
           claimId: string | null
           claimTitle: string
           claimBody: string
-          claimType: "normal" | "citation"
+          claimType: TClaimType
           negated: boolean
           isConclusion: boolean
           depth: number
@@ -111,14 +113,18 @@ function walkPremiseExpression(args: {
         let claimId: string | null = null
         let claimTitle = ""
         let claimBody = ""
-        let claimType: "normal" | "citation" = "normal"
+        let claimType: TClaimType = "normal"
         if (variable && "claimId" in variable) {
             claimId = variable.claimId
-            const claim = claims[variable.claimId]
+            const claim = claims[variable.claimId] as TClaim | undefined
             if (claim) {
-                claimTitle = claim.title
-                claimBody = claim.body
-                claimType = claim.type ?? "normal"
+                claimType = claim.type
+                if (isNormalClaim(claim)) {
+                    claimTitle = claim.title
+                    claimBody = claim.body
+                }
+                // Citation and Axiomatic claims have no user-authored title or
+                // body in this schema; rendering for those variants is a follow-up.
             }
         }
         items.push({

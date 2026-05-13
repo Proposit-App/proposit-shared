@@ -49,7 +49,7 @@ const VAR_DEFAULTS = {
     argumentVersion: 1,
 }
 
-const CLAIM_DEFAULTS = {
+const NORMAL_CLAIM_DEFAULTS = {
     argumentId: "arg-1",
     version: 1,
     claimForkId: null,
@@ -59,6 +59,55 @@ const CLAIM_DEFAULTS = {
     type: "normal" as const,
     parentId: null,
     digest: "digest",
+    titleContentHash: "hash",
+    url: null,
+    citation: null,
+    citationContentHash: null,
+    axiom: null,
+}
+
+const CITATION_CLAIM_DEFAULTS = {
+    argumentId: "arg-1",
+    version: 1,
+    claimForkId: null,
+    creatorId: "user-1",
+    createdOn: new Date(),
+    kind: null,
+    type: "citation" as const,
+    parentId: null,
+    digest: "digest",
+    title: null,
+    body: null,
+    titleContentHash: null,
+    url: "https://example.com/source",
+    citation: {
+        type: "JournalArticle" as const,
+        authors: [{ givenNames: "A", familyName: "Author" }],
+        year: "2024",
+        title: "Cited Title",
+        journalTitle: "Journal",
+    },
+    citationContentHash: "citation-hash",
+    axiom: null,
+}
+
+const AXIOMATIC_CLAIM_DEFAULTS = {
+    argumentId: "arg-1",
+    version: 1,
+    claimForkId: null,
+    creatorId: "user-1",
+    createdOn: new Date(),
+    kind: null,
+    type: "axiomatic" as const,
+    parentId: null,
+    digest: "digest",
+    title: null,
+    body: null,
+    titleContentHash: null,
+    url: null,
+    citation: null,
+    citationContentHash: null,
+    axiom: "definition" as const,
 }
 
 describe("buildTextTree", () => {
@@ -71,7 +120,7 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-1": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-1",
                     title: "Claim Title",
                     body: "Claim Body",
@@ -138,11 +187,8 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-cite": {
-                    ...CLAIM_DEFAULTS,
+                    ...CITATION_CLAIM_DEFAULTS,
                     id: "claim-cite",
-                    title: "Cited Source",
-                    body: "Body",
-                    type: "citation",
                 },
             },
             variables: {
@@ -184,6 +230,58 @@ describe("buildTextTree", () => {
             type: "claim",
             claimId: "claim-cite",
             claimType: "citation",
+        })
+    })
+
+    test("populates claimType='axiomatic' from snapshot claim type and falls back to empty title/body", () => {
+        const snapshot = makeSnapshot({
+            claims: {
+                "claim-ax": {
+                    ...AXIOMATIC_CLAIM_DEFAULTS,
+                    id: "claim-ax",
+                },
+            },
+            variables: {
+                "var-1": {
+                    ...VAR_DEFAULTS,
+                    id: "var-1",
+                    symbol: "X",
+                    claimId: "claim-ax",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+            },
+            premises: {
+                "premise-1": {
+                    premise: {
+                        id: "premise-1",
+                        title: null,
+                        type: "freeform",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "expr-1",
+                    expressions: {
+                        "expr-1": {
+                            ...EXPR_DEFAULTS,
+                            id: "expr-1",
+                            type: "variable",
+                            variableId: "var-1",
+                            operator: null,
+                            premiseId: "premise-1",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+            },
+        })
+
+        const result = buildTextTree(snapshot)
+        const claimItem = result.find((i) => i.type === "claim")
+        expect(claimItem).toMatchObject({
+            type: "claim",
+            claimId: "claim-ax",
+            claimType: "axiomatic",
+            claimTitle: "",
+            claimBody: "",
         })
     })
 
@@ -230,13 +328,13 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-a": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-a",
                     title: "Claim A",
                     body: "Body A",
                 },
                 "claim-b": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-b",
                     title: "Claim B",
                     body: "Body B",
@@ -326,13 +424,13 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-ant": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-ant",
                     title: "Antecedent",
                     body: "Body Ant",
                 },
                 "claim-con": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-con",
                     title: "Consequent",
                     body: "Body Con",
@@ -422,7 +520,7 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-1": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-1",
                     title: "Some Claim",
                     body: "Body",
@@ -484,7 +582,7 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-1": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-1",
                     title: "Inner Claim",
                     body: "Body",
@@ -546,13 +644,13 @@ describe("buildTextTree", () => {
         const snapshot = makeSnapshot({
             claims: {
                 "claim-q": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-q",
                     title: "Q",
                     body: "Body Q",
                 },
                 "claim-free": {
-                    ...CLAIM_DEFAULTS,
+                    ...NORMAL_CLAIM_DEFAULTS,
                     id: "claim-free",
                     title: "F",
                     body: "Body F",
