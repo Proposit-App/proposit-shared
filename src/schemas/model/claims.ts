@@ -3,6 +3,9 @@ import { EncodableDate, Nullable, UUID } from "../common.js"
 import { IEEEReferenceSchema } from "./references.js"
 import { CoreClaimTypeSchema } from "@proposit/proposit-core"
 
+export const ClaimTypeSchema = CoreClaimTypeSchema
+export type TClaimType = Static<typeof ClaimTypeSchema>
+
 export const MutableClaimFieldsSchema = Type.Object({
     title: Type.String(),
     body: Type.String(),
