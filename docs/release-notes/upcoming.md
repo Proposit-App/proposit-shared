@@ -1,24 +1,32 @@
 # Upcoming release notes
 
-Tracks `@proposit/proposit-core` v0.12.0 — the rename of citation-edge endpoint
-vocabulary (`citingClaim*` / `sourceClaim*` → `claim*` / `supportingClaim*`),
-the rename of `PropositCore`'s `claimCitations` field to `citations`, and the
-`ArgumentEngine` constructor's dropped `claimCitationLookup` parameter. Shared
-follows core's vocabulary throughout — the rename surfaces are listed under
-"Breaking changes" below so server and mobile can sequence their own bumps.
+Tracks `@proposit/proposit-core` v0.12.0 through v0.12.3 — the rename of
+citation-edge endpoint vocabulary (`citingClaim*` / `sourceClaim*` →
+`claim*` / `supportingClaim*`), the rename of `PropositCore`'s
+`claimCitations` field to `citations`, the `ArgumentEngine` constructor's
+dropped `claimCitationLookup` parameter, and (v0.12.2) the unification of
+`CoreClaimCitationSchema` / `CoreClaimAxiomSchema` into a single
+`CoreClaimConnectionSchema`. Shared follows core's vocabulary throughout — the
+rename surfaces are listed under "Breaking changes" below so server and mobile
+can sequence their own bumps.
 
 ## What changed
 
 ### Dependency
 
 - `peerDependencies` for `@proposit/proposit-core` bumped from `^0.11.2` to
-  `^0.12.0`; `devDependencies` bumped to `^0.12.1` (this repo's tests and
-  builds run against the latest 0.12.x). The v0.12.1 follow-up bug fixes —
-  `populateFromSupports` dedup, stricter axiom-assignment guard, and the new
-  `CITATION_NOT_FOUND` / `AXIOM_NOT_FOUND` invariant codes on
-  `ClaimCitationLibrary.remove` / `ClaimAxiomLibrary.remove` — were audited
-  as no-impact for shared: zero references to those APIs and the existing
-  `InvariantViolationError` catches don't switch on `.code`.
+  `^0.12.3`; `devDependencies` bumped from `^0.12.1` to `^0.12.3` (this
+  repo's tests and builds run against the latest 0.12.x). The v0.12.1
+  follow-up bug fixes — `populateFromSupports` dedup, stricter
+  axiom-assignment guard, and the new `CITATION_NOT_FOUND` /
+  `AXIOM_NOT_FOUND` invariant codes on `ClaimCitationLibrary.remove` /
+  `ClaimAxiomLibrary.remove` — were audited as no-impact for shared: zero
+  references to those APIs and the existing `InvariantViolationError`
+  catches don't switch on `.code`. The v0.12.2 schema-surface cleanup
+  deleted the empty `CoreClaimCitationSchema` and `CoreClaimAxiomSchema`
+  wrappers in favor of the unified `CoreClaimConnectionSchema` — see
+  "Citation schema source" below. The v0.12.3 release is documentation
+  and internal cleanup only.
 
 ### `PropositArgumentEngine` accessor renames
 
@@ -73,7 +81,22 @@ external callers don't pass a citation lookup anymore.
 The `EMPTY_CLAIM_CITATION_LOOKUP` re-export is gone from
 `src/engine/library-adapters.ts`. Shared no longer has any callers that need
 it; consumers who imported it via `@proposit/proposit-core` should use core's
-new `emptyClaimConnectionLookup<TCoreClaimCitation>()` factory.
+new `emptyClaimConnectionLookup<TCoreClaimConnection>()` factory.
+(`TCoreClaimCitation` was removed in core v0.12.2.)
+
+### Citation schema source (core v0.12.2)
+
+`src/schemas/model/citations.ts` now intersects `CoreClaimConnectionSchema`
+instead of the deleted `CoreClaimCitationSchema`. The two schemas carried
+identical fields — `CoreClaimCitationSchema` was an empty wrapper that core
+removed in v0.12.2 alongside `CoreClaimAxiomSchema`. Shared's
+`ClaimCitationSchema` and `TClaimCitation` keep their names and shape;
+this is a source-level cleanup with no wire-format or type-shape impact for
+downstream consumers that import shared's names. Consumers that imported
+`CoreClaimCitationSchema` or `TCoreClaimCitation` directly from
+`@proposit/proposit-core` (not via shared) must switch to
+`CoreClaimConnectionSchema` / `TCoreClaimConnection` themselves; shared
+does not re-export either.
 
 ## Why the wire-format rename is in this bump
 
@@ -129,3 +152,10 @@ breaking renames; consumers should pin caret and expect a coordinated update.
 - `docs/changelogs/upcoming.md` — machine-parseable rename table accompanying this release.
 - `proposit-core` v0.12.0 release notes — full upstream rename and the
   axiomatic-claim feature this upgrade chooses not to surface yet.
+- `proposit-core` v0.12.2 release notes — `CoreClaimCitationSchema` /
+  `CoreClaimAxiomSchema` consolidation into `CoreClaimConnectionSchema`,
+  plus parser-builder and parser changes (parser changes are no-impact
+  for shared; the schema consolidation is sourced under "Citation schema
+  source" above).
+- `proposit-core` v0.12.3 release notes — documentation-only follow-up
+  (no shared-side surface).

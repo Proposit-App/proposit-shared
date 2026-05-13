@@ -1,9 +1,9 @@
 import Type, { type Static } from "typebox"
-import { CoreClaimCitationSchema } from "@proposit/proposit-core"
+import { CoreClaimConnectionSchema } from "@proposit/proposit-core"
 import { EncodableDate, UUID } from "../common.js"
 
 export const ClaimCitationSchema = Type.Intersect([
-    CoreClaimCitationSchema,
+    CoreClaimConnectionSchema,
     Type.Object({
         argumentId: UUID,
         createdOn: EncodableDate,

@@ -21,7 +21,7 @@ describe("ClaimCitationSchema", () => {
 
     it("does not require a top-level version field", () => {
         // Citation edges carry claimVersion + supportingClaimVersion (both
-        // inherited from CoreClaimCitationSchema); they do NOT have a
+        // inherited from CoreClaimConnectionSchema); they do NOT have a
         // standalone top-level `version`. The server's citations table
         // similarly has no `version` column. Validation must succeed when
         // the field is absent.
