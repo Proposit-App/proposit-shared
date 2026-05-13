@@ -11,14 +11,14 @@ describe("shadow", () => {
             expect(typeof level.css).toBe("string")
             expect(level.css.length).toBeGreaterThan(0)
             expect(level.native).toMatchObject({
-                shadowColor: expect.any(String),
+                shadowColor: expect.any(String) as unknown,
                 shadowOffset: {
-                    width: expect.any(Number),
-                    height: expect.any(Number),
+                    width: expect.any(Number) as unknown,
+                    height: expect.any(Number) as unknown,
                 },
-                shadowOpacity: expect.any(Number),
-                shadowRadius: expect.any(Number),
-                elevation: expect.any(Number),
+                shadowOpacity: expect.any(Number) as unknown,
+                shadowRadius: expect.any(Number) as unknown,
+                elevation: expect.any(Number) as unknown,
             })
         }
     })
