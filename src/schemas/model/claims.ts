@@ -1,6 +1,7 @@
 import Type, { type Static } from "typebox"
 import { EncodableDate, Nullable, UUID } from "../common.js"
 import { IEEEReferenceSchema } from "./references.js"
+import { CoreClaimTypeSchema } from "@proposit/proposit-core"
 
 export const MutableClaimFieldsSchema = Type.Object({
     title: Type.String(),
@@ -36,12 +37,6 @@ const LogicalClaimKinds = Type.Union([
 export const ClaimKindsSchema = Type.Union([ChildClaimKinds, LogicalClaimKinds])
 export type TClaimKindsSchema = Static<typeof ClaimKindsSchema>
 
-export const ClaimTypeSchema = Type.Union([
-    Type.Literal("normal"),
-    Type.Literal("citation"),
-])
-export type TClaimType = Static<typeof ClaimTypeSchema>
-
 export const ClaimSchema = Type.Interface([ClaimUpdateRequestSchema], {
     id: UUID,
     argumentId: UUID,
@@ -50,7 +45,7 @@ export const ClaimSchema = Type.Interface([ClaimUpdateRequestSchema], {
     creatorId: UUID,
     createdOn: EncodableDate,
     kind: Type.Union([ChildClaimKinds, LogicalClaimKinds]),
-    type: ClaimTypeSchema,
+    type: CoreClaimTypeSchema,
     parentId: Nullable(UUID),
     titleContentHash: Type.Optional(Nullable(Type.String())),
     // Citation-extra fields. Optional at the schema level; consumer code
