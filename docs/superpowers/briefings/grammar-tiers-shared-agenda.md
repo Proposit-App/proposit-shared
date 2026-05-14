@@ -2,7 +2,7 @@
 
 **Cross-repo spec:** `/Users/brian/Projects/Proposit-App/docs/superpowers/specs/2026-05-13-grammar-tiers-design.md` — read first. This briefing is shared's slice.
 
-**Initiative status:** planning → in-flight (shared publishes first; see §10.5 of the spec).
+**Initiative status:** PAUSED 2026-05-14 pending core 1.0.0 publish. Design was restructured — types now live in `@proposit/proposit-core` (single source of truth: defs + schemas + validators co-located), shared re-exports them. Publish order flipped to **core → shared**. See the updated cross-repo spec §10.5.
 
 ## Capability changes
 
@@ -10,25 +10,27 @@ Shared exposes no user-facing capabilities directly. Its part of this initiative
 
 ## Where shared fits
 
-You publish first. Server, mobile, and core all import the wire-format types and rule-code namespace you own. The cross-repo publish order is **shared → core → (server + mobile in parallel)** per spec §10.5.
+You publish **second** after core 1.0.0 lands. Core owns the wire-format types and rule-code namespace; you re-export them from `@proposit/shared/schemas/grammar` for consumer ergonomics, and add the 422 response envelope composing core's `TViolation`. The cross-repo publish order is **core → shared → (server + mobile in parallel)** per spec §10.5. _(Pre-2026-05-14 drafts had shared publishing first — that was rolled back when the dep direction (shared depends on core via peerDeps) was reconciled. See §10.5 of the spec.)_
 
 Current baseline: `@proposit/shared@0.8.0` on main + public npm. `@proposit/proposit-core@0.12.3` is the pinned peer dep — _do not bump core's peer here_; core will publish a new major after you ship.
 
 ## Work items
 
-### 1. Add the grammar-rules wire format
+### 1. Re-export the grammar wire format from core
 
-Create new schema files for the rule-code namespace, tier enum, and violation envelope.
+After `@proposit/proposit-core@^1.0.0` publishes (it ships `TGrammarTier`, `TGrammarRuleCode`, `TViolation` as TypeBox schemas + derived types from core's own source), add a re-export module under `src/schemas/grammar/`:
 
-Likely placement (confirm during implementation):
+- `src/schemas/grammar/index.ts` — re-export the wire-format module from `@proposit/proposit-core`. Server and mobile import from `@proposit/shared/schemas/grammar` for the ergonomic wire-format path; the re-export keeps consumers from having to switch import paths.
 
-- `src/schemas/grammar/tier.ts` — `TGrammarTier = 'structural' | 'evaluable' | 'derivable' | 'presentable'` (TypeBox `Type.Union` of literals).
-- `src/schemas/grammar/rule-code.ts` — `TGrammarRuleCode` union exactly as listed in spec §7.1. Codes `'E-2'` and `'D-7'` are intentionally absent (reserved, not reused) — preserve this in a code comment with a pointer to spec §4.2 / §4.3.
-- `src/schemas/grammar/violation.ts` — `TViolation` object schema with `tier`, `code`, `message`, optional `argumentId` / `premiseId` / `expressionId` / `variableId` / `claimId`, plus an open extension slot for rule-specific context fields.
-- `src/schemas/grammar/index.ts` — barrel exporting all three.
-- `src/schemas/api/grammar-violations.ts` (or similar) — the standardized 422-equivalent response shape returned by submit/publish endpoints when they reject due to grammar violations.
+Add a new exports-map entry `./schemas/grammar` with `types` + `import` + `default` conditions pointing at the re-export file.
 
-Add a new exports-map entry `./schemas/grammar` pointing at `src/schemas/grammar/index.ts` with `types` + `import` + `default` conditions (every entry has all three — see existing pattern).
+*The TypeBox schemas authored on the `grammar-tiers/shared` branch in the original (pre-restructure) `src/schemas/grammar/{tier,rule-code,violation,index}.ts` should be deleted — those concepts now live in core. The work isn't lost; core-dev pulled the schemas directly from that branch into core's source.*
+
+### 1.5. Add the 422 response envelope
+
+Create `src/schemas/api/grammar-violations.ts` exporting `GrammarViolationsResponseSchema` (TypeBox) and `TGrammarViolationsResponse` — the standardized 422 envelope for grammar-rejected submit/publish requests. The envelope **composes `TViolation` imported from `@proposit/proposit-core`** (this fits the existing dep direction: shared depends on core for types it uses in composition). Add an exports-map entry `./schemas/api/grammar-violations`.
+
+Tests in `src/schemas/__tests__/grammar-violations-response.test.ts`.
 
 ### 2. Align mutation-generator commentary with the new contract (audit finding: minimal code-level change)
 
@@ -65,13 +67,13 @@ An earlier draft of the design spec added an `intendedForm: 'citation' | 'axioma
 5. `pnpm publish --access public` (human completes OTP).
 6. Push branch + tag.
 7. PR → main, merge.
-8. Post on the broker (initiative thread `grammar-tiers`): `READY: @proposit/shared@0.9.0 published with /schemas/grammar wire format + structural-only mutation generators. Core can bump.`
+8. Post on the broker (initiative thread `grammar-tiers`): `READY: @proposit/shared@0.9.0 published — re-exports core's grammar wire format under /schemas/grammar + adds 422 response envelope. Server and mobile can bump.`
 
 ## Coordination
 
 - **Broker thread:** `grammar-tiers` (post `READY:` / `BLOCKED:` / `DECISION:` / `QUESTION:` signals there).
-- **Dependency on others:** none. You publish first.
-- **Downstream consumers waiting on you:** core (won't start its publish work until you ship), server + mobile (won't bump their shared dep until you ship).
+- **Dependency on others:** `@proposit/proposit-core@^1.0.0` must publish first — your re-exports import from it.
+- **Downstream consumers waiting on you:** server + mobile (both bump shared in parallel after your publish; they also bump core to `^1.0.0` in the same change).
 
 ## What good progress looks like
 
