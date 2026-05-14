@@ -474,6 +474,14 @@ export function clearDerivationAntecedent(
  * @throws InvariantViolationError(DERIVATION_ANTECEDENT_NON_EMPTY) when the
  *         premise's root expression is already an IMPLIES (caller forgot to
  *         call `clearDerivationAntecedent` first).
+ *
+ * @deprecated since `@proposit/shared@0.9.0`. The grammar-tiers initiative
+ *   moves equivalent functionality onto the core engine as
+ *   `populateFromCitations` and `populateFromAxioms` (see cross-repo spec
+ *   2026-05-13-grammar-tiers-design §10.1, §12). Once
+ *   `@proposit/proposit-core@^1.0.0` is the peer dep, prefer calling the
+ *   engine method directly and delete this helper in a subsequent shared
+ *   minor. The helper continues to function correctly against core ≤ 0.12.x.
  */
 export function populateDerivationFromCitations(
     engine: ProjectEngine,
@@ -569,9 +577,11 @@ export function populateDerivationFromCitations(
     //    consequent appears in the wrap's changeset as `modified` (its
     //    parentId/position changed).
     //
-    // Standard grammar drives construction throughout. For n ≥ 2 the engine's
-    // wrapInsertFormula auto-normalize rule inserts a formula buffer between
-    // IMPLIES and OR, producing the canonical
+    // Standard grammar drives construction throughout. For n ≥ 2 the engine
+    // inserts a formula buffer between IMPLIES and OR (in core ≤ 0.12.x this
+    // is the `wrapInsertFormula` auto-normalize rule; in core ≥ 1.0.0 it is
+    // the AN post-hook in assistive behavior — see cross-repo spec
+    // 2026-05-13-grammar-tiers-design §5). The result is the canonical
     // `IMPLIES(formula(OR(c1, …, cn)), Q)` shape. n = 0 and n = 1 have no
     // operator-under-operator nesting so no formula gets inserted.
     const impliesId = generateId()
@@ -602,7 +612,9 @@ export function populateDerivationFromCitations(
         return { changes: mergeChangesetSequence(collected) }
     }
     // n ≥ 2: wrap with IMPLIES(OR, Q) and append citation children to OR.
-    // wrapInsertFormula slips a formula expression between IMPLIES and OR.
+    // The engine slips a formula expression between IMPLIES and OR
+    // (auto-normalize in core ≤ 0.12.x; AN post-hook in core ≥ 1.0.0
+    // assistive behavior).
     const orId = generateId()
     const orSibling = {
         id: orId,

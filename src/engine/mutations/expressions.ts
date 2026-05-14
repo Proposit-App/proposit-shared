@@ -382,9 +382,11 @@ export function mutateWrapExpression(
         data.direction === "before" ? data.targetExpressionId : undefined
     )
 
-    // Auto-generated expressions (formula buffers from wrapInsertFormula)
-    // only have core fields. Patch both the engine's internal state AND the
-    // changeset copies with the missing application-level fields.
+    // Auto-generated expressions (formula buffers inserted by the engine's
+    // post-mutation AN pass when running in assistive behavior; see cross-repo
+    // spec 2026-05-13-grammar-tiers-design §5) only have core fields. Patch
+    // both the engine's internal state AND the changeset copies with the
+    // missing application-level fields.
     // pm.getExpression() returns the actual Map-stored object, so
     // Object.assign mutates the engine's internal expression in-place.
     const appFields = {
