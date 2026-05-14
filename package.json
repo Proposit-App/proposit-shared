@@ -38,6 +38,11 @@
             "import": "./dist/schemas/api/auth/index.js",
             "default": "./dist/schemas/api/auth/index.js"
         },
+        "./schemas/api/grammar-violations": {
+            "types": "./dist/schemas/api/grammar-violations.d.ts",
+            "import": "./dist/schemas/api/grammar-violations.js",
+            "default": "./dist/schemas/api/grammar-violations.js"
+        },
         "./schemas/api/reaction": {
             "types": "./dist/schemas/api/reaction/index.d.ts",
             "import": "./dist/schemas/api/reaction/index.js",
@@ -52,6 +57,11 @@
             "types": "./dist/schemas/api/user/index.d.ts",
             "import": "./dist/schemas/api/user/index.js",
             "default": "./dist/schemas/api/user/index.js"
+        },
+        "./schemas/grammar": {
+            "types": "./dist/schemas/grammar/index.d.ts",
+            "import": "./dist/schemas/grammar/index.js",
+            "default": "./dist/schemas/grammar/index.js"
         },
         "./schemas/*": {
             "types": "./dist/schemas/*.d.ts",
