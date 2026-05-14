@@ -45,6 +45,18 @@ Sub-entry exports only — no flat root import. `package.json` `exports`:
 - **TypeBox for schema validation.** Re-exported as-needed from `schemas/` sub-entry.
 - **Exports map declares `default` alongside `import`.** Every subpath in `package.json`'s `exports` declares `types`, `import`, AND `default` (pointing to the same `.js` file as `import`). Needed so non-`import`-aware resolvers (Jest's CJS resolver, older bundlers) can locate dist files. When adding a new subpath, include all three conditions.
 
+## Grammar rule-code coordination protocol
+
+`@proposit/shared/schemas/grammar` owns the `TGrammarRuleCode` union as wire format. `@proposit/proposit-core` owns the validator _implementations_ — the code that determines what triggers each code at runtime. Adding, renaming, or removing a rule code is a **coordinated shared + core publish**:
+
+1. **Bump shared minor**, extending (or modifying) the union in `src/schemas/grammar/rule-code.ts`. Tests in `src/schemas/__tests__/grammar-rule-code.test.ts` should be updated to cover the new state. Publish `@proposit/shared` to npm.
+2. **Bump `@proposit/proposit-core`**, shipping the validator implementation that references the new code. Core's validator must `import type` the updated `TGrammarRuleCode` from `@proposit/shared/schemas/grammar` — the TypeScript build will refuse to ship a code that isn't in shared's union (this is the contract enforcement point; do not rely on runtime checks alone).
+3. **Bump server + mobile deps** to pick up both new versions in lockstep. Mobile and server both consume `TViolation` and the codes via shared, not via core directly.
+
+**Reserved codes** stay out of the union forever. As of `0.9.0`, `E-2` and `D-7` are reserved (their rules were promoted/restated in the 2026-05-13 grammar-tiers redesign; see spec §4.2 / §4.3). Code comments in `rule-code.ts` document the reservations — leave them in place.
+
+**Do not let core ship a code that isn't in shared's union.** TypeScript catches this at build time once the dep is wired through, but the publish-order rule above is the proximate guard.
+
 ## Naming conventions
 
 Defined in the `brain-style` skill. Enforced by ESLint (`@typescript-eslint/naming-convention` and `check-file/filename-naming-convention`).
