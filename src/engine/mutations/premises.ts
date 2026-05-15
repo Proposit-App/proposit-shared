@@ -584,13 +584,36 @@ export function populateDerivationFromCitations(
     //    consequent appears in the wrap's changeset as `modified` (its
     //    parentId/position changed).
     //
-    // Standard grammar drives construction throughout. For n ≥ 2 the engine
-    // inserts a formula buffer between IMPLIES and OR (in core ≤ 0.12.x this
-    // is the `wrapInsertFormula` auto-normalize rule; in core ≥ 1.0.0 it is
-    // the AN post-hook in assistive behavior — see cross-repo spec
-    // 2026-05-13-grammar-tiers-design §5). The result is the canonical
-    // `IMPLIES(formula(OR(c1, …, cn)), Q)` shape. n = 0 and n = 1 have no
-    // operator-under-operator nesting so no formula gets inserted.
+    // For n ≥ 2 the pre-1.0 helper produced an `IMPLIES(OR(c1, …, cn), Q)`
+    // tree and relied on the engine's `wrapInsertFormula` flag to slip a
+    // formula buffer between IMPLIES and OR for P-1 compliance (then known
+    // as `enforceFormulaBetweenOperators`). The buffer landed inside the
+    // captured changeset because the auto-rule fired during the
+    // `wrapExpression` call itself, on the same mutation surface.
+    //
+    // Core 1.0 separates the two concerns: the AN post-hook (which inserts
+    // the formula buffer in `assistive` behavior) runs as an independent
+    // pass *after* the mutation, and crucially also runs AN-3 (delete
+    // 0-child operators / formulas). If we build the tree in `assistive`
+    // the AN-3 sweep fires between `wrapExpression(IMPLIES, OR)` and the
+    // subsequent `appendExpression(orId, …)` calls, sees a transient
+    // 0-child OR, and deletes it — leaving the next iteration unable to
+    // find its parent.
+    //
+    // Build the tree in `permissive` so the AN post-hook is suppressed
+    // throughout the construction. The final shape produced is
+    // `IMPLIES(OR(c1, …, cn), Q)` — Structural-valid, but P-1-noncompliant
+    // (a Presentable rule). Consumers that care about the formula buffer
+    // run `engine.normalize()` after this helper returns, capture the
+    // additional changeset themselves (e.g., via snapshot diffing), or
+    // rely on the canonical-shape canonicalization migration to materialize
+    // the formula buffer at the storage layer. Restore the caller's prior
+    // behavior on exit so the helper is transparent w.r.t. the engine's
+    // mode.
+    //
+    // For n = 1 we don't need the flip: `IMPLIES(citvar, Q)` has no
+    // operator-under-operator nesting, so AN-1 doesn't fire and AN-3 has
+    // nothing to delete. Build under whatever behavior the caller set.
     const impliesId = generateId()
     const impliesOp = {
         id: impliesId,
@@ -618,10 +641,7 @@ export function populateDerivationFromCitations(
         collected.push(wrap)
         return { changes: mergeChangesetSequence(collected) }
     }
-    // n ≥ 2: wrap with IMPLIES(OR, Q) and append citation children to OR.
-    // The engine slips a formula expression between IMPLIES and OR
-    // (auto-normalize in core ≤ 0.12.x; AN post-hook in core ≥ 1.0.0
-    // assistive behavior).
+    // n ≥ 2: see the two-stage commentary above.
     const orId = generateId()
     const orSibling = {
         id: orId,
@@ -631,23 +651,33 @@ export function populateDerivationFromCitations(
         operator: "or" as const,
         variableId: null,
     }
-    const { changes: wrap } = pm.wrapExpression(
-        impliesOp as Parameters<typeof pm.wrapExpression>[0],
-        orSibling as Parameters<typeof pm.wrapExpression>[1],
-        undefined,
-        consequentExpr.id
-    )
-    collected.push(wrap)
-    for (const sourceVar of sourceVariables) {
-        const { changes: appendChanges } = pm.appendExpression(orId, {
-            id: generateId(),
-            ...sharedMeta,
-            parentId: orId,
-            type: "variable" as const,
-            variableId: sourceVar.id,
-            operator: null,
-        } as Parameters<typeof pm.appendExpression>[1])
-        collected.push(appendChanges)
+    const priorBehavior = engine.behavior
+    if (priorBehavior !== "permissive") {
+        engine.setBehavior("permissive")
+    }
+    try {
+        const { changes: wrap } = pm.wrapExpression(
+            impliesOp as Parameters<typeof pm.wrapExpression>[0],
+            orSibling as Parameters<typeof pm.wrapExpression>[1],
+            undefined,
+            consequentExpr.id
+        )
+        collected.push(wrap)
+        for (const sourceVar of sourceVariables) {
+            const { changes: appendChanges } = pm.appendExpression(orId, {
+                id: generateId(),
+                ...sharedMeta,
+                parentId: orId,
+                type: "variable" as const,
+                variableId: sourceVar.id,
+                operator: null,
+            } as Parameters<typeof pm.appendExpression>[1])
+            collected.push(appendChanges)
+        }
+    } finally {
+        if (priorBehavior !== "permissive") {
+            engine.setBehavior(priorBehavior)
+        }
     }
 
     return { changes: mergeChangesetSequence(collected) }

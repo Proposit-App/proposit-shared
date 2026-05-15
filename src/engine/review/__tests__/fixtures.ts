@@ -149,6 +149,13 @@ function makeVariable(
  * Builds a minimal PropositArgumentEngine:
  *   - Supporting premise `pSupport`: single variable referencing claim `sA` (no operators)
  *   - Conclusion premise `pConclusion`: implies(A, B) where A → cA, B → cB
+ *
+ * Construction uses `permissive` engine behavior so the AN post-hook
+ * doesn't fire between consecutive `addExpression` calls — AN-3 would
+ * delete the transient 0-child IMPLIES root before its children land
+ * (core 1.0 spec §11 incremental tree-build pattern). The engine flips
+ * to the default `'assistive'` behavior before returning so test
+ * assertions see the runtime contract that production callers get.
  */
 export function buildEngineWithTwoPremises(): PropositArgumentEngine {
     const claims = [
@@ -160,6 +167,7 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
 
     const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
         checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
     })
 
     // Variables — two bound to sA so pSupport can be an implies(S1, S2) inference
@@ -277,6 +285,10 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
 
     engine.setConclusionPremise(PREMISE_IDS.pConclusion)
     for (const c of claims) engine.setClaim(c)
+
+    // Restore the production-default behavior so review tests see the same
+    // assistive AN post-hook semantics that real callers get.
+    engine.setBehavior("assistive")
 
     return engine
 }
