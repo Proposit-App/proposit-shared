@@ -47,15 +47,17 @@ Sub-entry exports only — no flat root import. `package.json` `exports`:
 
 ## Grammar rule-code coordination protocol
 
-`@proposit/shared/schemas/grammar` owns the `TGrammarRuleCode` union as wire format. `@proposit/proposit-core` owns the validator _implementations_ — the code that determines what triggers each code at runtime. Adding, renaming, or removing a rule code is a **coordinated shared + core publish**:
+`@proposit/proposit-core` owns the wire format — both the `TGrammarRuleCode` union and the validator implementations that emit each code at runtime. `@proposit/shared/schemas/grammar` is a re-export module so server and mobile have a single import path for the grammar wire-format types. The 422-equivalent response envelope at `@proposit/shared/schemas/api/grammar-violations` (composing `TViolation`) is the only grammar-related artifact authored in shared.
 
-1. **Bump shared minor**, extending (or modifying) the union in `src/schemas/grammar/rule-code.ts`. Tests in `src/schemas/__tests__/grammar-rule-code.test.ts` should be updated to cover the new state. Publish `@proposit/shared` to npm.
-2. **Bump `@proposit/proposit-core`**, shipping the validator implementation that references the new code. Core's validator must `import type` the updated `TGrammarRuleCode` from `@proposit/shared/schemas/grammar` — the TypeScript build will refuse to ship a code that isn't in shared's union (this is the contract enforcement point; do not rely on runtime checks alone).
-3. **Bump server + mobile deps** to pick up both new versions in lockstep. Mobile and server both consume `TViolation` and the codes via shared, not via core directly.
+Adding or renaming a rule code is a coordinated **core → shared → consumers** publish chain:
 
-**Reserved codes** stay out of the union forever. As of `0.9.0`, `E-2` and `D-7` are reserved (their rules were promoted/restated in the 2026-05-13 grammar-tiers redesign; see spec §4.2 / §4.3). Code comments in `rule-code.ts` document the reservations — leave them in place.
+1. **Bump core** (extend `TGrammarRuleCode` union in `src/lib/grammar/types.ts` + ship the validator emitting the new code). Major if any consumer-visible behavior changes; minor if purely additive.
+2. **Bump shared minor** — the re-export at `src/schemas/grammar/index.ts` automatically reflects core's union via the dep range. No shared code changes are needed unless the 422 envelope shape itself changes.
+3. **Bump server + mobile** to pick up both new versions in lockstep. Server and mobile may import the types from either `@proposit/proposit-core` or `@proposit/shared/schemas/grammar` — both resolve to the same TypeBox schemas + derived types.
 
-**Do not let core ship a code that isn't in shared's union.** TypeScript catches this at build time once the dep is wired through, but the publish-order rule above is the proximate guard.
+**Reserved codes** stay out of the union forever. As of `0.9.0`, `E-2` and `D-7` are reserved (their rules were promoted/restated in the 2026-05-13 grammar-tiers redesign; see spec §4.2 / §4.3). Comments in core's `types.ts` document the reservations — leave them in place.
+
+The dep range plus core's exhaustive union types make TypeScript the enforcement point: a build against a shared whose peer-dep range admits a core that doesn't yet ship a referenced code would fail at the type-check step.
 
 ## Naming conventions
 
