@@ -475,13 +475,20 @@ export function clearDerivationAntecedent(
  *         premise's root expression is already an IMPLIES (caller forgot to
  *         call `clearDerivationAntecedent` first).
  *
- * @deprecated since `@proposit/shared@0.9.0`. The grammar-tiers initiative
- *   moves equivalent functionality onto the core engine as
- *   `populateFromCitations` and `populateFromAxioms` (see cross-repo spec
- *   2026-05-13-grammar-tiers-design §10.1, §12). Once
- *   `@proposit/proposit-core@^1.0.0` is the peer dep, prefer calling the
- *   engine method directly and delete this helper in a subsequent shared
- *   minor. The helper continues to function correctly against core ≤ 0.12.x.
+ * @deprecated since `@proposit/shared@0.9.0`. Core 1.0 ships
+ *   `engine.populateFromCitations(claimId, lookup)` and
+ *   `engine.populateFromAxioms(claimId, lookup)` on `ArgumentEngine` —
+ *   first-class antecedent-population factories that integrate with the
+ *   four-tier grammar model, return a structured `{ kind, state }`
+ *   result instead of throwing on already-populated premises, and
+ *   enforce the D-3 no-mixing rule via the grammar tier rather than
+ *   ad-hoc invariant throws. Migrate to the engine methods at your next
+ *   convenient checkpoint. This helper continues to function correctly
+ *   against `@proposit/proposit-core@^1.0.0` (its IMPLIES/OR tree
+ *   construction uses the unchanged `wrapExpression`/`appendExpression`
+ *   mutation surface), but the parallel implementation no longer earns
+ *   its keep — scheduled for removal in shared `^1.0.0`. See cross-repo
+ *   spec 2026-05-13-grammar-tiers-design §10.1, §12.
  */
 export function populateDerivationFromCitations(
     engine: ProjectEngine,
