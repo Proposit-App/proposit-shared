@@ -12,8 +12,12 @@ export const UsernameSearchResponse = Type.Object({
     imageURI: Nullable(Type.String()),
 })
 
+// Body for `PUT /api/v1/user/me`. Both fields are optional — the request shape
+// is "any one writable field" rather than always-username. Server validates
+// that at least one writable field was provided (out-of-schema concern).
 export const UserModifyRequest = Type.Object({
-    username: Type.String(),
+    username: Type.Optional(Type.String()),
+    advancedMode: Type.Optional(Type.Boolean()),
 })
 
 export type TUserModifyRequest = Static<typeof UserModifyRequest>
