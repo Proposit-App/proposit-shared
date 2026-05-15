@@ -5,7 +5,6 @@ import {
     type TClaimLookup,
     type TCoreClaim,
     type TCoreValidationIssue,
-    type TGrammarConfig,
     type TReactiveSnapshot,
 } from "@proposit/proposit-core"
 
@@ -20,19 +19,13 @@ import type { TClaimCitation } from "../schemas/model/citations.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
 import { createClaimLookup } from "./library-adapters.js"
 
-// Grammar configs used by fromServerData. Wave-2 derivation premises produced
-// by populateDerivationFromCitations carry an `IMPLIES(OR(c1, c2), Q)` shape
-// that violates the strict runtime rule banning a non-not operator as a direct
-// child of another operator. Loading must therefore tolerate that shape, while
-// runtime mutations after the load must still be disciplined.
-const RUNTIME_GRAMMAR: TGrammarConfig = {
-    autoNormalize: false,
-    enforceFormulaBetweenOperators: true,
-}
-const LOADING_GRAMMAR: TGrammarConfig = {
-    ...RUNTIME_GRAMMAR,
-    enforceFormulaBetweenOperators: false,
-}
+// Core 1.0 dropped the per-engine `grammarConfig` knob in favor of a single
+// `behavior: 'assistive' | 'permissive'` setting. Snapshot loading (rollback,
+// fromSnapshot, fromData) now accepts any Structural-valid snapshot regardless
+// of higher-tier state, so the old `enforceFormulaBetweenOperators: false`
+// loading window is unnecessary. Wave-2 derivation premises with the
+// `IMPLIES(OR(c1, c2), Q)` shape now load fine — the P-1 formula-buffer rule
+// surfaces via `validate('presentable')` rather than rejecting at load time.
 
 /** Project-parameterized snapshot type used to bridge TypeBox schemas and core engine. */
 export type TProjectSnapshot = TArgumentEngineSnapshot<
@@ -122,11 +115,12 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 const orig = claimLookup.get(id, version)
                 if (orig) return toCoreClaim(orig)
                 // During snapshot rollback (restoring from server data), return
-                // a stub so validate() passes for claim references not present
-                // in the supplied claims array. This allows fromServerData to
-                // work when claims are omitted or incomplete. Normal mutations
-                // (addVariable) still check the lookup — but addVariable is not
-                // called during rollbackInternal, only validate() is.
+                // a stub so validateInvariants() passes for claim references
+                // not present in the supplied claims array. This allows
+                // fromServerData to work when claims are omitted or incomplete.
+                // Normal mutations (addVariable) still check the lookup — but
+                // addVariable is not called during rollbackInternal, only
+                // validateInvariants() is.
                 if (claimContext.permissiveForRestore) {
                     return {
                         id,
@@ -155,17 +149,19 @@ export class PropositArgumentEngine extends ArgumentEngine<
 
     /**
      * Overrides base rollback() to temporarily enable permissive claim stubs
-     * during the validate() call that rollback() performs internally.
+     * during the validateInvariants() call that rollback() performs internally.
      *
-     * In proposit-core 0.8.0+, rollback() calls validate() which checks that
-     * every claim-bound variable's (claimId, claimVersion) exists in the claim
-     * library. When the engine is loaded from a server snapshot and the caller
-     * does not supply the full claims array (common in tests), this would fail.
+     * In proposit-core 1.0.0+, rollback() calls validateInvariants() which
+     * checks that every claim-bound variable's (claimId, claimVersion) exists
+     * in the claim library. When the engine is loaded from a server snapshot
+     * and the caller does not supply the full claims array (common in tests),
+     * this would fail.
      *
-     * Permissive stubs are ONLY active during rollback's validate() pass:
+     * Permissive stubs are ONLY active during rollback's validateInvariants()
+     * pass:
      * - addVariable() explicit check: claimContext.permissiveForRestore = false
      *   (addVariable is not called inside rollbackInternal)
-     * - validate() inside rollback(): permissiveForRestore = true
+     * - validateInvariants() inside rollback(): permissiveForRestore = true
      */
     override rollback(
         snapshot: Parameters<
@@ -232,7 +228,18 @@ export class PropositArgumentEngine extends ArgumentEngine<
 
     // ──── Claim accessors ────
 
-    getClaim(id: string): TClaim | undefined {
+    // NOTE: this is `getProjectClaim`, not `getClaim`, because core 1.0
+    // promoted `getClaim(claimId, claimVersion)` to the `ArgumentEngine` base
+    // surface (returns `TCoreClaim`, the minimal `{ id, version, type, frozen,
+    // checksum }` shape used by the engine's claim-bound-variable validation).
+    // Shared's domain method returns the richer `TClaim` (a discriminated
+    // union over normal / citation / axiomatic with `createdOn`, `creatorId`,
+    // `title`, etc.) drawn from the per-engine `claimsMap`, so it cannot be
+    // an override — the return types are incompatible. Both methods coexist
+    // on the engine: callers wanting the wire-format minimal shape use
+    // `getClaim(id, version)`; callers wanting the full project-claim record
+    // use `getProjectClaim(id)`.
+    getProjectClaim(id: string): TClaim | undefined {
         return this.claimsMap.get(id)
     }
 
@@ -311,7 +318,14 @@ export class PropositArgumentEngine extends ArgumentEngine<
         let validationIssues: TCoreValidationIssue[]
         if (base !== this.lastBaseSnapshot) {
             const evaluability = this.validateEvaluability().issues
-            const invariants = this.validate()
+            // Core 1.0 split the legacy `validate()` into two methods:
+            // `validateInvariants()` is the engine-invariant sweep returning
+            // `{ ok, violations }` with `TCoreValidationIssue`-shaped entries
+            // (legacy semantics — what this wrapper has always consumed);
+            // `validate(tier)` is the new four-tier grammar query returning a
+            // `readonly TViolation[]`. Reactive snapshot consumers expect the
+            // invariant view here.
+            const invariants = this.validateInvariants()
             const mappedViolations: TCoreValidationIssue[] = invariants.ok
                 ? []
                 : invariants.violations.map(
@@ -371,7 +385,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
             {
                 checksumConfig: CHECKSUM_CONFIG,
                 positionConfig: snapshot.config?.positionConfig,
-                grammarConfig: RUNTIME_GRAMMAR,
                 generateId: () => crypto.randomUUID(),
             }
         )
@@ -384,17 +397,17 @@ export class PropositArgumentEngine extends ArgumentEngine<
         // the server's CHECKSUM_CONFIG includes extra fields (createdOn, etc.).
         //
         // NOTE: rollback() is overridden in PropositArgumentEngine to set
-        // claimContext.permissiveForRestore = true during the validate() call,
+        // claimContext.permissiveForRestore = true during the validateInvariants() call,
         // so unknown claim references in the snapshot don't cause failures when
         // the caller provides an incomplete claims array.
         //
-        // The per-premise expression configs are also rewritten to LOADING_GRAMMAR
-        // so that rollback's `validate()` pass tolerates wave-2 derivation shapes
-        // (`IMPLIES(OR(c1, c2), Q)`) — those are produced intentionally by
-        // populateDerivationFromCitations and bypass the normal
-        // enforceFormulaBetweenOperators rule. After rollback, each PremiseEngine
-        // is re-tightened to RUNTIME_GRAMMAR so subsequent runtime mutations
-        // remain disciplined.
+        // Core 1.0 dropped the per-premise `grammarConfig` knob and the
+        // legacy `LOAD_GRAMMAR` / `STRICT_GRAMMAR` snapshot-loading split:
+        // snapshot loading now accepts any Structural-valid state, and the
+        // P-1 formula-buffer rule is queried via `validate('presentable')`
+        // rather than rejecting at load time. Wave-2 derivation premises
+        // with the `IMPLIES(OR(c1, c2), Q)` shape therefore load without
+        // any per-premise config rewrite or post-load re-tightening loop.
         const snapshotWithVariableConfig: TProjectSnapshot = {
             ...snapshot,
             variables: {
@@ -403,16 +416,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
                     checksumConfig: CHECKSUM_CONFIG,
                 },
             },
-            premises: snapshot.premises.map((premiseSnap) => ({
-                ...premiseSnap,
-                expressions: {
-                    ...premiseSnap.expressions,
-                    config: {
-                        ...premiseSnap.expressions.config,
-                        grammarConfig: LOADING_GRAMMAR,
-                    },
-                },
-            })),
         }
         try {
             engine.rollback(snapshotWithVariableConfig)
@@ -424,12 +427,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 )
             }
             throw error
-        }
-
-        // Re-tighten so subsequent mutations (addExpression, wrapExpression, …)
-        // respect the explicit-formula-between-operators discipline.
-        for (const pe of engine.listPremises()) {
-            pe.setGrammarConfig(RUNTIME_GRAMMAR)
         }
 
         // Load domain data into internal maps (no notifications)

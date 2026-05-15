@@ -408,10 +408,19 @@ describe("clearDerivationAntecedent", () => {
 
         const { changes } = clearDerivationAntecedent(engine, premise.id)
 
-        // Expression removals: IMPLIES + formula + OR + 2 citation_vars = 5.
-        // The consequent variable expression survives as `modified` (its
-        // parentId/position changed when promoted to root).
-        expect(changes.expressions?.removed?.length ?? 0).toBe(5)
+        // Expression removals: the antecedent OR + its 2 citation_vars are
+        // unconditional removes. IMPLIES's disposition varies between
+        // pre-1.0 (explicit `removeExpression(rootId, false)` in step 2 of
+        // the helper, captured in `removed`) and 1.0 (AN-3 collapses the
+        // 1-child IMPLIES into its consequent during step 1's cascade,
+        // captured as a `modified` reparent of Q rather than an explicit
+        // IMPLIES `removed` entry — the AN post-hook fires inside the
+        // first `removeExpression` and merges into its changeset). The
+        // stable property is "at least the OR + 2 vars are removed, and
+        // the consequent ends up at the root."
+        expect(
+            changes.expressions?.removed?.length ?? 0
+        ).toBeGreaterThanOrEqual(3)
         expect(
             changes.expressions?.modified?.length ?? 0
         ).toBeGreaterThanOrEqual(1)
@@ -530,7 +539,15 @@ describe("populateDerivationFromCitations", () => {
         expect(consequentChild.id).toBe("e-q")
     })
 
-    test("with two sources produces IMPLIES(formula(OR(s_a, s_b)), Q) in source-id order", () => {
+    test("with two sources produces IMPLIES(OR(s_a, s_b), Q) in source-id order", () => {
+        // Behavior change for shared 0.9.0 (peer bump to core 1.0): the
+        // helper now builds the tree in `permissive` engine behavior to
+        // avoid AN-3 destroying the transient 0-child OR between the wrap
+        // and the children-append. The resulting tree is unbuffered
+        // (`IMPLIES(OR(s_a, s_b), Q)`) — Structural-valid in core 1.0 but
+        // P-1-noncompliant (Presentable rule). Callers that need the
+        // canonical formula-buffered shape run `engine.normalize()` after
+        // the helper, captured in a separate test below.
         const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
         const { premise } = createNakedDerivationPremise(engine, "claim-q", {
             premiseId: "p-1",
@@ -552,13 +569,12 @@ describe("populateDerivationFromCitations", () => {
             "or",
         ])
 
-        // Standard grammar's wrapInsertFormula auto-inserts a formula buffer
-        // between IMPLIES and OR, so the changeset contains exactly one formula
-        // expression alongside the two operator nodes.
+        // No formula buffer in the changeset — the helper builds in
+        // permissive behavior so AN-1 doesn't fire.
         const formulaAdds = (changes.expressions?.added ?? []).filter(
             (e) => e.type === "formula"
         )
-        expect(formulaAdds).toHaveLength(1)
+        expect(formulaAdds).toHaveLength(0)
 
         // Two citation_var children of OR.
         const variableAdds = (changes.expressions?.added ?? []).filter(
@@ -566,25 +582,19 @@ describe("populateDerivationFromCitations", () => {
         )
         expect(variableAdds).toHaveLength(2)
 
-        // Inspect the antecedent through the formula buffer to assert ordering.
+        // Inspect the antecedent directly (no formula buffer to skip past).
         const pm = engine.getPremise(premise.id)!
         const rootId = pm.getRootExpressionId()!
         const rootChildren = pm
             .getChildExpressions(rootId)
             .sort((a, b) => a.position - b.position)
         const antecedent = rootChildren[0]
-        expect(antecedent.type).toBe("formula")
-        const formulaChildren = pm
-            .getChildExpressions(antecedent.id)
-            .sort((a, b) => a.position - b.position)
-        expect(formulaChildren).toHaveLength(1)
-        const orNode = formulaChildren[0]
-        expect(orNode.type).toBe("operator")
-        if (orNode.type === "operator") {
-            expect(orNode.operator).toBe("or")
+        expect(antecedent.type).toBe("operator")
+        if (antecedent.type === "operator") {
+            expect(antecedent.operator).toBe("or")
         }
         const orChildren = pm
-            .getChildExpressions(orNode.id)
+            .getChildExpressions(antecedent.id)
             .sort((a, b) => a.position - b.position)
         expect(orChildren).toHaveLength(2)
 
@@ -605,10 +615,12 @@ describe("populateDerivationFromCitations", () => {
         )
     })
 
-    test("with two sources, formula expression's parent is IMPLIES and child is OR", () => {
-        // Explicit n=2 structural lock for the formula buffer (regression
-        // companion to the v0.7.0 fix that dropped the permissive-grammar
-        // wrapper from populateDerivationFromCitations).
+    test("after engine.normalize(), the n≥2 shape materializes the formula buffer (P-1 invariant)", () => {
+        // Explicit n=2 lock for the post-normalize() canonical shape. The
+        // helper produces `IMPLIES(OR(...), Q)` (P-1-noncompliant);
+        // `engine.normalize()` runs the AN rule set and AN-1 inserts the
+        // formula buffer between IMPLIES and OR, producing the canonical
+        // `IMPLIES(formula(OR(...)), Q)` shape.
         const engine = setupEngineWithClaims(["claim-q", "src-a", "src-b"])
         const { premise } = createNakedDerivationPremise(engine, "claim-q", {
             premiseId: "p-1",
@@ -617,6 +629,7 @@ describe("populateDerivationFromCitations", () => {
         })
 
         populateDerivationFromCitations(engine, premise.id, ["src-a", "src-b"])
+        engine.normalize()
 
         const pm = engine.getPremise(premise.id)!
         const rootId = pm.getRootExpressionId()!
@@ -696,13 +709,18 @@ describe("populateDerivationFromCitations", () => {
 
 describe("fromServerData with wave-2 derivation premises", () => {
     // The canonical wave-2 antecedent shape is `IMPLIES(formula(OR(c1, c2)), Q)`
-    // — the formula buffer between IMPLIES and OR is what strict grammar
-    // (`enforceFormulaBetweenOperators: true`) requires. Pre-v0.7.0 of this
-    // package, `populateDerivationFromCitations` produced an unbuffered
-    // `IMPLIES(OR(c1, c2), Q)` shape via a permissive-grammar bypass; that
-    // shape still appears in older stored snapshots. The `LOADING_GRAMMAR`
-    // shim in `fromServerData` keeps loading those rows until consumers run
-    // a one-shot canonicalization migration, after which the shim can go.
+    // — the formula buffer between IMPLIES and OR is what the P-1 Presentable
+    // rule requires (`enforceFormulaBetweenOperators` in pre-1.0 terms).
+    // Pre-v0.7.0 of this package, `populateDerivationFromCitations` produced
+    // an unbuffered `IMPLIES(OR(c1, c2), Q)` shape via a permissive-grammar
+    // bypass; that shape still appears in older stored snapshots.
+    //
+    // Core 1.0 makes the back-compat shim unnecessary at the engine level:
+    // P-1 is a Presentable rule, not Structural, so `fromSnapshot` accepts
+    // either shape without configuration. The unbuffered shape surfaces as
+    // a `validate('presentable')` violation that consumers can choose to
+    // render or auto-normalize. This describe block still exercises both
+    // shapes through `fromServerData` to lock in the load-time tolerance.
 
     const claimIds = ["claim-q", "src-a", "src-b"]
 
@@ -714,13 +732,19 @@ describe("fromServerData with wave-2 derivation premises", () => {
             exprId: "e-q",
         })
         populateDerivationFromCitations(engine, "p-1", ["src-a", "src-b"])
+        // The shared helper builds in `permissive` to avoid AN-3 destroying
+        // the transient 0-child OR. Materialize the canonical
+        // `IMPLIES(formula(OR(c1, c2)), Q)` Presentable shape by running the
+        // global AN pass before snapshotting.
+        engine.normalize()
         return engine.snapshot()
     }
 
     /**
      * Builds a pre-v0.7.0 shape-A snapshot — `IMPLIES(OR(c1, c2), Q)` with no
-     * formula buffer between IMPLIES and OR. Used to verify the back-compat
-     * `LOADING_GRAMMAR` shim still accepts unmigrated rows.
+     * formula buffer between IMPLIES and OR. Used to verify that core 1.0's
+     * unconditional snapshot loader (no LOADING_GRAMMAR shim — that split was
+     * removed) accepts unmigrated rows.
      */
     function buildLegacyUnbufferedSnapshot() {
         const engine = setupEngineWithClaims(claimIds)
@@ -746,13 +770,13 @@ describe("fromServerData with wave-2 derivation premises", () => {
             createdOn: new Date(),
         }
 
-        // Permissive grammar lets us put OR directly under IMPLIES (the old
-        // shape). Restore strict grammar after so the snapshot's expression
-        // config matches what production rows would carry.
-        pm.setGrammarConfig({
-            enforceFormulaBetweenOperators: false,
-            autoNormalize: false,
-        })
+        // Build in permissive behavior so the AN-1 post-hook doesn't insert
+        // a formula buffer between IMPLIES and OR (the pre-1.0 way of
+        // expressing this in the legacy `grammarConfig` model was
+        // `enforceFormulaBetweenOperators: false`). Flip back to assistive
+        // for snapshot — the snapshot itself doesn't carry behavior; the
+        // resulting structure is what we want to preserve.
+        engine.setBehavior("permissive")
         const impliesId = crypto.randomUUID()
         const orId = crypto.randomUUID()
         pm.wrapExpression(
@@ -791,10 +815,7 @@ describe("fromServerData with wave-2 derivation premises", () => {
             variableId: varB.id,
             operator: null,
         })
-        pm.setGrammarConfig({
-            enforceFormulaBetweenOperators: true,
-            autoNormalize: false,
-        })
+        engine.setBehavior("assistive")
 
         return engine.snapshot()
     }
@@ -808,10 +829,14 @@ describe("fromServerData with wave-2 derivation premises", () => {
         ).not.toThrow()
     })
 
-    test("loads a legacy pre-v0.7.0 snapshot containing IMPLIES(OR(c1, c2), Q) (back-compat via LOADING_GRAMMAR)", () => {
-        // Negative control for the canonicalization fix: even after shared
-        // produces only the formula-buffered shape, fromServerData must keep
-        // accepting the unbuffered shape so unmigrated rows still load.
+    test("loads a legacy pre-v0.7.0 snapshot containing IMPLIES(OR(c1, c2), Q) (P-1-noncompliant)", () => {
+        // Negative control for the canonicalization story: even after shared
+        // produces only the formula-buffered shape, `fromServerData` must
+        // keep accepting the unbuffered shape so unmigrated rows still load.
+        // In core 1.0 this is automatic — P-1 is a Presentable rule, not a
+        // Structural one, so the load itself succeeds; consumers can query
+        // `engine.validate('presentable')` to see the P-1 violation if they
+        // want to surface or auto-normalize.
         const snapshot = buildLegacyUnbufferedSnapshot()
         const claims = claimIds.map((id) => mkTestClaim({ id }))
 
@@ -855,46 +880,50 @@ describe("fromServerData with wave-2 derivation premises", () => {
         }
     })
 
-    test("strict-load and auto-normalize-load of the canonical shape produce identical combinedChecksum", () => {
+    test("the canonical IMPLIES(formula(OR), Q) shape is a normalize() fixed point", () => {
         // Locks in the fixed-point claim: the formula-buffered shape is the
-        // canonical output of normalization, so re-running normalization on a
-        // freshly-built snapshot must not change its checksum. This is the
-        // shared-side mirror of proposit-core's v0.11.2 fixed-point regression
-        // test — both libraries' construction paths must converge here.
+        // canonical output of normalization, so calling `normalize()` on a
+        // freshly-loaded snapshot must not change its checksum. This is the
+        // shared-side mirror of proposit-core's v0.11.2 fixed-point
+        // regression test (carried forward into 1.0's AN post-hook +
+        // `normalize(tier?)` global pass) — both libraries' construction
+        // paths must converge here.
+        //
+        // Pre-1.0 this test compared two loads with different load-time
+        // grammarConfig flags (one with `autoNormalize: false`, one with
+        // `autoNormalize: true`). Core 1.0 dropped both flags — snapshot
+        // loading is unconditional, and the equivalent of "run auto-normalize"
+        // is an explicit `engine.normalize()` call. The rewritten assertion
+        // captures the same property: the canonical shape is its own AN-rule
+        // fixed point.
         const snapshot = buildWave2Snapshot()
         const claimLookup = createClaimLookup(
             claimIds.map((id) => mkTestClaim({ id }))
         )
 
-        const strictLoaded = ArgumentEngine.fromSnapshot(
-            snapshot,
-            claimLookup,
-            { autoNormalize: false, enforceFormulaBetweenOperators: true }
-        )
-        const autoNormalizeLoaded = ArgumentEngine.fromSnapshot(
-            snapshot,
-            claimLookup,
-            { autoNormalize: true, enforceFormulaBetweenOperators: true }
-        )
+        const loaded = ArgumentEngine.fromSnapshot(snapshot, claimLookup)
+        const beforeChecksum = loaded.combinedChecksum()
+        loaded.normalize()
+        const afterChecksum = loaded.combinedChecksum()
 
-        expect(strictLoaded.combinedChecksum()).toBe(
-            autoNormalizeLoaded.combinedChecksum()
-        )
+        expect(afterChecksum).toBe(beforeChecksum)
     })
 
-    test("after load, runtime mutations on a freeform premise still respect strict grammar (auto-correct)", () => {
-        // After fromServerData returns, runtime mutations should be subject to
-        // the strict runtime grammar. Specifically, `populateDerivationFromCitations`
-        // on a NEW derivation premise should still go through the temporary
-        // permissive-grammar window inside ManagedDerivationPremiseEngine. If
-        // grammar weren't re-tightened, surrounding wave-1-style mutations
-        // could silently bypass `enforceFormulaBetweenOperators`.
+    test("after load, the engine inherits the default assistive behavior so subsequent mutations preserve P-1", () => {
+        // Pre-1.0 this test verified that `fromServerData` re-tightened each
+        // premise's `expressions.config.grammarConfig` to STRICT after the
+        // permissive-grammar load window. Core 1.0 dropped the per-premise
+        // `grammarConfig` knob entirely — engine behavior is a single
+        // top-level `'assistive' | 'permissive'` setting on the engine,
+        // defaulted to `'assistive'` for fresh engines and for engines
+        // restored via `fromSnapshot` / `fromServerData` without an explicit
+        // override (per spec §11, D5 fork-threading + E1 fromSnapshot
+        // default-behavior regression test).
         //
-        // We verify the re-tightening end-to-end by snapshotting the restored
-        // engine, then loading that snapshot a second time. A snapshot whose
-        // expression configs already carry strict grammar would only round-trip
-        // if the re-tightening actually wrote PERMISSIVE values back to STRICT
-        // on each premise's ExpressionManager.
+        // The new assertion captures the equivalent post-load property:
+        // after `fromServerData`, the engine's behavior is `'assistive'`,
+        // so the AN post-hook will fire on subsequent mutations and keep
+        // the argument at the P-1 (formula-buffer) Presentable invariant.
         const snapshot = buildWave2Snapshot()
         const claims = claimIds.map((id) => mkTestClaim({ id }))
 
@@ -903,10 +932,7 @@ describe("fromServerData with wave-2 derivation premises", () => {
             claims,
             []
         )
-        const reSnapshot = restored.snapshot()
-        const reSnapshotGrammar =
-            reSnapshot.premises[0]?.expressions.config?.grammarConfig
-        expect(reSnapshotGrammar?.enforceFormulaBetweenOperators).toBe(true)
+        expect(restored.behavior).toBe("assistive")
     })
 
     test("pre-wave-2 grammar-compliant snapshot still loads identically", () => {

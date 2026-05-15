@@ -45,6 +45,20 @@ Sub-entry exports only — no flat root import. `package.json` `exports`:
 - **TypeBox for schema validation.** Re-exported as-needed from `schemas/` sub-entry.
 - **Exports map declares `default` alongside `import`.** Every subpath in `package.json`'s `exports` declares `types`, `import`, AND `default` (pointing to the same `.js` file as `import`). Needed so non-`import`-aware resolvers (Jest's CJS resolver, older bundlers) can locate dist files. When adding a new subpath, include all three conditions.
 
+## Grammar rule-code coordination protocol
+
+`@proposit/proposit-core` owns the wire format — both the `TGrammarRuleCode` union and the validator implementations that emit each code at runtime. `@proposit/shared/schemas/grammar` is a re-export module so server and mobile have a single import path for the grammar wire-format types. The 422-equivalent response envelope at `@proposit/shared/schemas/api/grammar-violations` (composing `TViolation`) is the only grammar-related artifact authored in shared.
+
+Adding or renaming a rule code is a coordinated **core → shared → consumers** publish chain:
+
+1. **Bump core** (extend `TGrammarRuleCode` union in `src/lib/grammar/types.ts` + ship the validator emitting the new code). Major if any consumer-visible behavior changes; minor if purely additive.
+2. **Bump shared minor** — the re-export at `src/schemas/grammar/index.ts` automatically reflects core's union via the dep range. No shared code changes are needed unless the 422 envelope shape itself changes.
+3. **Bump server + mobile** to pick up both new versions in lockstep. Server and mobile may import the types from either `@proposit/proposit-core` or `@proposit/shared/schemas/grammar` — both resolve to the same TypeBox schemas + derived types.
+
+**Reserved codes** stay out of the union forever. As of `0.9.0`, `E-2` and `D-7` are reserved (their rules were promoted/restated in the 2026-05-13 grammar-tiers redesign; see spec §4.2 / §4.3). Comments in core's `types.ts` document the reservations — leave them in place.
+
+The dep range plus core's exhaustive union types make TypeScript the enforcement point: a build against a shared whose peer-dep range admits a core that doesn't yet ship a referenced code would fail at the type-check step.
+
 ## Naming conventions
 
 Defined in the `brain-style` skill. Enforced by ESLint (`@typescript-eslint/naming-convention` and `check-file/filename-naming-convention`).

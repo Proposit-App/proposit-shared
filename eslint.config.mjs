@@ -121,6 +121,12 @@ export default tseslint.config(
         },
     },
     {
-        ignores: ["dist/**", "node_modules/**", ".worktrees/**"],
+        ignores: [
+            "dist/**",
+            "node_modules/**",
+            ".worktrees/**",
+            ".claude/**",
+            ".broker/**",
+        ],
     }
 )

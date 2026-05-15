@@ -45,7 +45,17 @@ export function mkTestClaim(overrides?: Partial<TClaim>): TClaim {
     return { ...normalDefault, ...overrides } as TClaim
 }
 
-/** Build a PropositArgumentEngine from a minimal snapshot with no premises/variables. */
+/**
+ * Build a PropositArgumentEngine from a minimal snapshot with no
+ * premises/variables.
+ *
+ * Returned in `permissive` behavior so incremental tree-build patterns
+ * common to these tests — create the operator root, then add children
+ * one at a time — don't trip core 1.0's AN-3 (which would delete the
+ * 0-child operator before its children land). Tests that exercise the
+ * AN post-hook explicitly flip to `'assistive'` via `engine.setBehavior`.
+ * See the cross-repo spec §11 "incremental tree-build" pattern.
+ */
 export function createTestEngine(
     overrides?: Partial<TProjectSnapshot>,
     claims: TClaim[] = []
@@ -58,5 +68,7 @@ export function createTestEngine(
         config: { checksumConfig: CHECKSUM_CONFIG },
         ...overrides,
     }
-    return PropositArgumentEngine.fromServerData(snapshot, claims, [])
+    const engine = PropositArgumentEngine.fromServerData(snapshot, claims, [])
+    engine.setBehavior("permissive")
+    return engine
 }

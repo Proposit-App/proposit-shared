@@ -142,19 +142,19 @@ describe("PropositArgumentEngine", () => {
     }
 
     describe("claim accessors", () => {
-        test("setClaim / getClaim — set a claim and retrieve by ID", () => {
+        test("setClaim / getProjectClaim — set a claim and retrieve by ID", () => {
             const engine = buildEngine()
             const claim = makeClaim()
 
             engine.setClaim(claim)
 
-            expect(engine.getClaim(claim.id)).toEqual(claim)
+            expect(engine.getProjectClaim(claim.id)).toEqual(claim)
         })
 
-        test("getClaim returns undefined for missing ID", () => {
+        test("getProjectClaim returns undefined for missing ID", () => {
             const engine = buildEngine()
 
-            expect(engine.getClaim(v4())).toBeUndefined()
+            expect(engine.getProjectClaim(v4())).toBeUndefined()
         })
 
         test("getClaims returns all claims", () => {
@@ -176,10 +176,10 @@ describe("PropositArgumentEngine", () => {
             const claim = makeClaim()
 
             engine.setClaim(claim)
-            expect(engine.getClaim(claim.id)).toEqual(claim)
+            expect(engine.getProjectClaim(claim.id)).toEqual(claim)
 
             engine.removeClaim(claim.id)
-            expect(engine.getClaim(claim.id)).toBeUndefined()
+            expect(engine.getProjectClaim(claim.id)).toBeUndefined()
         })
     })
 
@@ -276,7 +276,7 @@ describe("PropositArgumentEngine", () => {
             )
 
             // Claims
-            expect(engine.getClaim(claims[0].id)).toEqual(claims[0])
+            expect(engine.getProjectClaim(claims[0].id)).toEqual(claims[0])
             expect(Object.keys(engine.getClaims())).toHaveLength(2)
 
             // Citations

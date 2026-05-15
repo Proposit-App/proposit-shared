@@ -8,8 +8,13 @@ import type {
 import type { ProjectEngine, ProjectChangeset } from "./types.js"
 import { mergeChangesets } from "./types.js"
 
-// Error codes mirrored from `@proposit/proposit-core`. Surfaced in messages so
-// callers (server, tests) can match on string codes without importing core.
+// Helper-throw error codes scoped to shared's populateDerivationFromCitations.
+// Pre-1.0 these mirrored constants in `@proposit/proposit-core`; core 1.0
+// removed those constants (the corresponding D-tier violations now surface via
+// `engine.validate('derivable')`). Shared retains these local codes for
+// backward-compat with the helper's own throw contract until the helper is
+// removed in shared `^1.0.0`. Surfaced in messages so callers (server, tests)
+// can match on string codes without importing core.
 const DERIVATION_TYPE_MISMATCH = "DERIVATION_TYPE_MISMATCH"
 const DERIVATION_ANTECEDENT_NON_EMPTY = "DERIVATION_ANTECEDENT_NON_EMPTY"
 
@@ -392,8 +397,9 @@ export function clearDerivationAntecedent(
     //   - n ≥ 2 (canonical, post-v0.7.0): antecedent is a `formula` node
     //     whose only child is an OR; the OR's children are citation vars.
     //   - n ≥ 2 (legacy pre-v0.7.0 snapshots): antecedent is the OR directly
-    //     (no formula buffer), reached only via a load through
-    //     `LOADING_GRAMMAR`.
+    //     (no formula buffer). Core 1.0 loads such snapshots unconditionally;
+    //     no `LOADING_GRAMMAR` shim is involved (the snapshot-loading split was
+    //     removed in core 1.0).
     const citationVariableIds: string[] = []
     if (antecedent.type === "variable") {
         if (antecedent.variableId != null) {
@@ -474,6 +480,21 @@ export function clearDerivationAntecedent(
  * @throws InvariantViolationError(DERIVATION_ANTECEDENT_NON_EMPTY) when the
  *         premise's root expression is already an IMPLIES (caller forgot to
  *         call `clearDerivationAntecedent` first).
+ *
+ * @deprecated since `@proposit/shared@0.9.0`. Core 1.0 ships
+ *   `engine.populateFromCitations(claimId, lookup)` and
+ *   `engine.populateFromAxioms(claimId, lookup)` on `ArgumentEngine` —
+ *   first-class antecedent-population factories that integrate with the
+ *   four-tier grammar model, return a structured `{ kind, state }`
+ *   result instead of throwing on already-populated premises, and
+ *   enforce the D-3 no-mixing rule via the grammar tier rather than
+ *   ad-hoc invariant throws. Migrate to the engine methods at your next
+ *   convenient checkpoint. This helper continues to function correctly
+ *   against `@proposit/proposit-core@^1.0.0` (its IMPLIES/OR tree
+ *   construction uses the unchanged `wrapExpression`/`appendExpression`
+ *   mutation surface), but the parallel implementation no longer earns
+ *   its keep — scheduled for removal in shared `^1.0.0`. See cross-repo
+ *   spec 2026-05-13-grammar-tiers-design §10.1, §12.
  */
 export function populateDerivationFromCitations(
     engine: ProjectEngine,
@@ -569,11 +590,38 @@ export function populateDerivationFromCitations(
     //    consequent appears in the wrap's changeset as `modified` (its
     //    parentId/position changed).
     //
-    // Standard grammar drives construction throughout. For n ≥ 2 the engine's
-    // wrapInsertFormula auto-normalize rule inserts a formula buffer between
-    // IMPLIES and OR, producing the canonical
-    // `IMPLIES(formula(OR(c1, …, cn)), Q)` shape. n = 0 and n = 1 have no
-    // operator-under-operator nesting so no formula gets inserted.
+    // For n ≥ 2 the pre-1.0 helper produced an `IMPLIES(OR(c1, …, cn), Q)`
+    // tree and relied on the engine's `wrapInsertFormula` flag to slip a
+    // formula buffer between IMPLIES and OR for P-1 compliance (then known
+    // as `enforceFormulaBetweenOperators`). The buffer landed inside the
+    // captured changeset because the auto-rule fired during the
+    // `wrapExpression` call itself, on the same mutation surface.
+    //
+    // Core 1.0 separates the two concerns: the AN post-hook (which inserts
+    // the formula buffer in `assistive` behavior) runs as an independent
+    // pass *after* the mutation, and crucially also runs AN-3 (delete
+    // 0-child operators / formulas). If we build the tree in `assistive`
+    // the AN-3 sweep fires between `wrapExpression(IMPLIES, OR)` and the
+    // subsequent `appendExpression(orId, …)` calls, sees a transient
+    // 0-child OR, and deletes it — leaving the next iteration unable to
+    // find its parent.
+    //
+    // Build the tree in `permissive` so the AN post-hook is suppressed
+    // throughout the construction. The final shape produced is
+    // `IMPLIES(OR(c1, …, cn), Q)` — Structural-valid, but P-1-noncompliant
+    // (a Presentable rule). Consumers that care about the formula buffer
+    // run `engine.normalize()` after this helper returns, capture the
+    // additional changeset themselves (e.g., via snapshot diffing), or
+    // rely on the canonical-shape canonicalization migration to materialize
+    // the formula buffer at the storage layer. The caller's prior behavior
+    // is restored on exit. Note: the helper is synchronous, so the window
+    // during which `engine.behavior === 'permissive'` is observable to any
+    // concurrent subscriber is narrow but non-zero — it's not strictly
+    // transparent w.r.t. the engine's mode.
+    //
+    // For n = 1 we don't need the flip: `IMPLIES(citvar, Q)` has no
+    // operator-under-operator nesting, so AN-1 doesn't fire and AN-3 has
+    // nothing to delete. Build under whatever behavior the caller set.
     const impliesId = generateId()
     const impliesOp = {
         id: impliesId,
@@ -601,8 +649,7 @@ export function populateDerivationFromCitations(
         collected.push(wrap)
         return { changes: mergeChangesetSequence(collected) }
     }
-    // n ≥ 2: wrap with IMPLIES(OR, Q) and append citation children to OR.
-    // wrapInsertFormula slips a formula expression between IMPLIES and OR.
+    // n ≥ 2: see the two-stage commentary above.
     const orId = generateId()
     const orSibling = {
         id: orId,
@@ -612,23 +659,33 @@ export function populateDerivationFromCitations(
         operator: "or" as const,
         variableId: null,
     }
-    const { changes: wrap } = pm.wrapExpression(
-        impliesOp as Parameters<typeof pm.wrapExpression>[0],
-        orSibling as Parameters<typeof pm.wrapExpression>[1],
-        undefined,
-        consequentExpr.id
-    )
-    collected.push(wrap)
-    for (const sourceVar of sourceVariables) {
-        const { changes: appendChanges } = pm.appendExpression(orId, {
-            id: generateId(),
-            ...sharedMeta,
-            parentId: orId,
-            type: "variable" as const,
-            variableId: sourceVar.id,
-            operator: null,
-        } as Parameters<typeof pm.appendExpression>[1])
-        collected.push(appendChanges)
+    const priorBehavior = engine.behavior
+    if (priorBehavior !== "permissive") {
+        engine.setBehavior("permissive")
+    }
+    try {
+        const { changes: wrap } = pm.wrapExpression(
+            impliesOp as Parameters<typeof pm.wrapExpression>[0],
+            orSibling as Parameters<typeof pm.wrapExpression>[1],
+            undefined,
+            consequentExpr.id
+        )
+        collected.push(wrap)
+        for (const sourceVar of sourceVariables) {
+            const { changes: appendChanges } = pm.appendExpression(orId, {
+                id: generateId(),
+                ...sharedMeta,
+                parentId: orId,
+                type: "variable" as const,
+                variableId: sourceVar.id,
+                operator: null,
+            } as Parameters<typeof pm.appendExpression>[1])
+            collected.push(appendChanges)
+        }
+    } finally {
+        if (priorBehavior !== "permissive") {
+            engine.setBehavior(priorBehavior)
+        }
     }
 
     return { changes: mergeChangesetSequence(collected) }
