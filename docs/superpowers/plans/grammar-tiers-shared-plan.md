@@ -45,7 +45,7 @@ This plan documents the **executed shape** of the cross-repo Grammar Tiers initi
 The briefing (§2 of the dispatch) offered two options: (a) delete the legacy helper, (b) keep with `@deprecated` JSDoc. The dispatch recommended (a); the agent chose (b). Rationale:
 
 - The helper's IMPLIES/OR tree construction uses the unchanged `wrapExpression`/`appendExpression` mutation surface and continues to function correctly against core 1.0 (subject to the n ≥ 2 behavior change below).
-- Server has one callsite (`claim-actions.ts:93`) plus a server-side helper (`model/claim.ts:600`). Deleting would force server's bump to absorb the migration in the same change cycle as the peer bump, doubling downstream churn for the server agent.
+- Server has **two production callsites** for `populateDerivationFromCitations`: `proposit-server/src/model/claim.ts:600` and `proposit-server/src/app/api/v1/argument/[argumentId]/[version]/citations/[edgeId]/route.ts:115`. (Separately, `proposit-server/src/app/view/[argumentId]/[version]/contexts/arg-data-context/claim-actions.ts:93` is the `getClaim` → `getProjectClaim` rename callsite — distinct migration; not a `populateDerivationFromCitations` callsite.) Deleting would force server's bump to absorb the migration in the same change cycle as the peer bump, doubling downstream churn for the server agent.
 - Shared's test suite for the helper (`derivation-premises.test.ts:487+`) covers the IMPLIES-OR build semantics the UI exercises; deletion would also delete that suite.
 
 Target removal: shared `^1.0.0`. Documented in release notes + JSDoc.
