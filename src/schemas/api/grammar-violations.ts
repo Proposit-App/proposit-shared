@@ -10,10 +10,7 @@
 // them inline next to the offending entity (see spec §10.3, §10.4).
 
 import { Type, type Static } from "typebox"
-import {
-    GrammarTierSchema,
-    ViolationSchema,
-} from "../grammar/index.js"
+import { GrammarTierSchema, ViolationSchema } from "../grammar/index.js"
 
 export const GrammarViolationsResponseSchema = Type.Object({
     error: Type.Literal("GRAMMAR_VIOLATIONS"),

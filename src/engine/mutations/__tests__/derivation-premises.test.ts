@@ -418,9 +418,9 @@ describe("clearDerivationAntecedent", () => {
         // first `removeExpression` and merges into its changeset). The
         // stable property is "at least the OR + 2 vars are removed, and
         // the consequent ends up at the root."
-        expect(changes.expressions?.removed?.length ?? 0).toBeGreaterThanOrEqual(
-            3
-        )
+        expect(
+            changes.expressions?.removed?.length ?? 0
+        ).toBeGreaterThanOrEqual(3)
         expect(
             changes.expressions?.modified?.length ?? 0
         ).toBeGreaterThanOrEqual(1)

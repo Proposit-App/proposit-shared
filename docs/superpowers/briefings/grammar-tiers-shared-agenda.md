@@ -26,7 +26,7 @@ After `@proposit/proposit-core@^1.0.0` publishes (it ships `TGrammarTier`, `TGra
 
 Add a new exports-map entry `./schemas/grammar` with `types` + `import` + `default` conditions pointing at the re-export file.
 
-*The TypeBox schemas authored on the `grammar-tiers/shared` branch in the original (pre-restructure) `src/schemas/grammar/{tier,rule-code,violation,index}.ts` should be deleted — those concepts now live in core. The work isn't lost; core-dev pulled the schemas directly from that branch into core's source.*
+_The TypeBox schemas authored on the `grammar-tiers/shared` branch in the original (pre-restructure) `src/schemas/grammar/{tier,rule-code,violation,index}.ts` should be deleted — those concepts now live in core. The work isn't lost; core-dev pulled the schemas directly from that branch into core's source._
 
 ### 1.5. Add the 422 response envelope
 
@@ -53,17 +53,17 @@ Tests in `src/schemas/__tests__/grammar-violations-response.test.ts`.
 
 **Migration mapping** (from core 1.0 changelog at `proposit-core/docs/changelogs/v1.0.0.md`):
 
-| Core 0.x | Core 1.0 |
-|---|---|
-| `engine.validate()` returning `{ ok, violations }` | `engine.validateInvariants()` (same return shape) for the legacy invariant sweep; `engine.validate(tier)` returns `readonly TViolation[]` for the new four-tier grammar check |
-| `pe.setGrammarConfig(config)` + `TGrammarConfig` | gone. Replaced by `engine.behavior` setting (`'assistive' \| 'permissive'`) + `engine.setBehavior(b)`. Behavior is the only configurable knob; no flags |
-| `new ManagedDerivationPremiseEngine(...)` + `mdpe.populateFromSupports(...)` | `engine.populateFromCitations(claimId, lookup)` + `engine.populateFromAxioms(claimId, lookup)` — sequential; mixing is forbidden by D-3 |
-| `DERIVATION_ANTECEDENT_NON_EMPTY`, `DERIVATION_TYPE_MISMATCH`, `DERIVATION_CONSEQUENT_LOCKED`, `DERIVATION_ROOT_OPERATOR_INVALID` engine-error constants | gone. Surface via `validate('derivable')` returning `TViolation[]` with codes `D-1`..`D-6` |
-| `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION` | gone (D4 deletion). Pre-1.0 evaluation-time throw on naked-Q is now an evaluation-skip per spec §4.2; broken-tree premises surface as `DERIVATION_STRUCTURE_INVALID` |
-| `TVariableMaterializer`, `TGrammarOptions`, `DEFAULT_GRAMMAR_CONFIG`, `PERMISSIVE_GRAMMAR_CONFIG`, `EXPR_FORMULA_BETWEEN_OPERATORS_VIOLATED` | all gone (D2). Confirm none are imported anywhere in shared |
-| `pe.normalizeExpressions()`, `engine.normalizeAllExpressions()` | gone. AN runs automatically via the post-mutation hook in `assistive` mode; call `engine.normalize(tier?)` explicitly in `permissive` mode (default `tier` = `'presentable'`) |
-| Engine construction with `{ grammarConfig: ... }` option | dropped. Pass `{ behavior: 'assistive' \| 'permissive' }` instead. Default is `'assistive'`. Incremental tree-build patterns (multiple consecutive `addExpression` calls) should use `'permissive'` during build and call `engine.normalize()` at the end |
-| `LOAD_GRAMMAR` / `STRICT_GRAMMAR` snapshot config split | gone. Snapshot loading accepts any Structural state; non-Structural snapshots throw with a structured error |
+| Core 0.x                                                                                                                                                 | Core 1.0                                                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `engine.validate()` returning `{ ok, violations }`                                                                                                       | `engine.validateInvariants()` (same return shape) for the legacy invariant sweep; `engine.validate(tier)` returns `readonly TViolation[]` for the new four-tier grammar check                                                                             |
+| `pe.setGrammarConfig(config)` + `TGrammarConfig`                                                                                                         | gone. Replaced by `engine.behavior` setting (`'assistive' \| 'permissive'`) + `engine.setBehavior(b)`. Behavior is the only configurable knob; no flags                                                                                                   |
+| `new ManagedDerivationPremiseEngine(...)` + `mdpe.populateFromSupports(...)`                                                                             | `engine.populateFromCitations(claimId, lookup)` + `engine.populateFromAxioms(claimId, lookup)` — sequential; mixing is forbidden by D-3                                                                                                                   |
+| `DERIVATION_ANTECEDENT_NON_EMPTY`, `DERIVATION_TYPE_MISMATCH`, `DERIVATION_CONSEQUENT_LOCKED`, `DERIVATION_ROOT_OPERATOR_INVALID` engine-error constants | gone. Surface via `validate('derivable')` returning `TViolation[]` with codes `D-1`..`D-6`                                                                                                                                                                |
+| `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION`                                                                                                             | gone (D4 deletion). Pre-1.0 evaluation-time throw on naked-Q is now an evaluation-skip per spec §4.2; broken-tree premises surface as `DERIVATION_STRUCTURE_INVALID`                                                                                      |
+| `TVariableMaterializer`, `TGrammarOptions`, `DEFAULT_GRAMMAR_CONFIG`, `PERMISSIVE_GRAMMAR_CONFIG`, `EXPR_FORMULA_BETWEEN_OPERATORS_VIOLATED`             | all gone (D2). Confirm none are imported anywhere in shared                                                                                                                                                                                               |
+| `pe.normalizeExpressions()`, `engine.normalizeAllExpressions()`                                                                                          | gone. AN runs automatically via the post-mutation hook in `assistive` mode; call `engine.normalize(tier?)` explicitly in `permissive` mode (default `tier` = `'presentable'`)                                                                             |
+| Engine construction with `{ grammarConfig: ... }` option                                                                                                 | dropped. Pass `{ behavior: 'assistive' \| 'permissive' }` instead. Default is `'assistive'`. Incremental tree-build patterns (multiple consecutive `addExpression` calls) should use `'permissive'` during build and call `engine.normalize()` at the end |
+| `LOAD_GRAMMAR` / `STRICT_GRAMMAR` snapshot config split                                                                                                  | gone. Snapshot loading accepts any Structural state; non-Structural snapshots throw with a structured error                                                                                                                                               |
 
 **Test rewrites:** any test that asserted on the legacy inline AN cascade (formula collapse after removeExpression, removeVariable triggers operator collapse, changeOperator absorption, etc.) needs to switch to the v1.0 pattern: build in permissive, flip to assistive, trigger via an AN-inert mutation, observe the global AN sweep result. See core's `test/grammar/auto-normalize.test.ts` (post-D2b rewrites) for the canonical pattern.
 
@@ -95,9 +95,9 @@ An earlier draft of the design spec added an `intendedForm: 'citation' | 'axioma
 2. Version is already bumped to `0.9.0` (pre-pivot commits on the branch did `pnpm version minor`). Verify `package.json` reads `0.9.0`; the version commit + local tag `v0.9.0` should already exist from those pre-pivot commits. If they don't, re-bump.
 3. Verify `docs/release-notes/v0.9.0.md` and `docs/changelogs/v0.9.0.md` exist and accurately reflect the post-pivot work (re-exports + 422 envelope + engine-wrappers refactor + `populateDerivationFromCitations` decision).
 4. **Merge `grammar-tiers/shared` into local `main`** (`git checkout main && git merge --no-ff grammar-tiers/shared -m "Merge grammar-tiers/shared: v0.9.0 release"`). **STOP HERE.** Do not push, do not run `pnpm publish`. Report back to the orchestrator.
-5. *(Human)* Smoke-test if applicable.
-6. *(Human)* `pnpm publish --access public` with OTP from local `main`.
-7. *(Orchestrator)* After publish succeeds: push `main` to origin, push `v0.9.0` tag, update INDEX with the published-version state, post the `READY:` signal for server+mobile.
+5. _(Human)_ Smoke-test if applicable.
+6. _(Human)_ `pnpm publish --access public` with OTP from local `main`.
+7. _(Orchestrator)_ After publish succeeds: push `main` to origin, push `v0.9.0` tag, update INDEX with the published-version state, post the `READY:` signal for server+mobile.
 
 ## Coordination
 
