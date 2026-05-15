@@ -8,8 +8,13 @@ import type {
 import type { ProjectEngine, ProjectChangeset } from "./types.js"
 import { mergeChangesets } from "./types.js"
 
-// Error codes mirrored from `@proposit/proposit-core`. Surfaced in messages so
-// callers (server, tests) can match on string codes without importing core.
+// Helper-throw error codes scoped to shared's populateDerivationFromCitations.
+// Pre-1.0 these mirrored constants in `@proposit/proposit-core`; core 1.0
+// removed those constants (the corresponding D-tier violations now surface via
+// `engine.validate('derivable')`). Shared retains these local codes for
+// backward-compat with the helper's own throw contract until the helper is
+// removed in shared `^1.0.0`. Surfaced in messages so callers (server, tests)
+// can match on string codes without importing core.
 const DERIVATION_TYPE_MISMATCH = "DERIVATION_TYPE_MISMATCH"
 const DERIVATION_ANTECEDENT_NON_EMPTY = "DERIVATION_ANTECEDENT_NON_EMPTY"
 
