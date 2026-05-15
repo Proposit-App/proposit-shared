@@ -742,8 +742,9 @@ describe("fromServerData with wave-2 derivation premises", () => {
 
     /**
      * Builds a pre-v0.7.0 shape-A snapshot — `IMPLIES(OR(c1, c2), Q)` with no
-     * formula buffer between IMPLIES and OR. Used to verify the back-compat
-     * `LOADING_GRAMMAR` shim still accepts unmigrated rows.
+     * formula buffer between IMPLIES and OR. Used to verify that core 1.0's
+     * unconditional snapshot loader (no LOADING_GRAMMAR shim — that split was
+     * removed) accepts unmigrated rows.
      */
     function buildLegacyUnbufferedSnapshot() {
         const engine = setupEngineWithClaims(claimIds)

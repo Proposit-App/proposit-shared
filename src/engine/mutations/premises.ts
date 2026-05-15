@@ -392,8 +392,9 @@ export function clearDerivationAntecedent(
     //   - n ≥ 2 (canonical, post-v0.7.0): antecedent is a `formula` node
     //     whose only child is an OR; the OR's children are citation vars.
     //   - n ≥ 2 (legacy pre-v0.7.0 snapshots): antecedent is the OR directly
-    //     (no formula buffer), reached only via a load through
-    //     `LOADING_GRAMMAR`.
+    //     (no formula buffer). Core 1.0 loads such snapshots unconditionally;
+    //     no `LOADING_GRAMMAR` shim is involved (the snapshot-loading split was
+    //     removed in core 1.0).
     const citationVariableIds: string[] = []
     if (antecedent.type === "variable") {
         if (antecedent.variableId != null) {

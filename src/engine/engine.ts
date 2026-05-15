@@ -115,11 +115,12 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 const orig = claimLookup.get(id, version)
                 if (orig) return toCoreClaim(orig)
                 // During snapshot rollback (restoring from server data), return
-                // a stub so validate() passes for claim references not present
-                // in the supplied claims array. This allows fromServerData to
-                // work when claims are omitted or incomplete. Normal mutations
-                // (addVariable) still check the lookup — but addVariable is not
-                // called during rollbackInternal, only validate() is.
+                // a stub so validateInvariants() passes for claim references
+                // not present in the supplied claims array. This allows
+                // fromServerData to work when claims are omitted or incomplete.
+                // Normal mutations (addVariable) still check the lookup — but
+                // addVariable is not called during rollbackInternal, only
+                // validateInvariants() is.
                 if (claimContext.permissiveForRestore) {
                     return {
                         id,
@@ -148,17 +149,19 @@ export class PropositArgumentEngine extends ArgumentEngine<
 
     /**
      * Overrides base rollback() to temporarily enable permissive claim stubs
-     * during the validate() call that rollback() performs internally.
+     * during the validateInvariants() call that rollback() performs internally.
      *
-     * In proposit-core 0.8.0+, rollback() calls validate() which checks that
-     * every claim-bound variable's (claimId, claimVersion) exists in the claim
-     * library. When the engine is loaded from a server snapshot and the caller
-     * does not supply the full claims array (common in tests), this would fail.
+     * In proposit-core 1.0.0+, rollback() calls validateInvariants() which
+     * checks that every claim-bound variable's (claimId, claimVersion) exists
+     * in the claim library. When the engine is loaded from a server snapshot
+     * and the caller does not supply the full claims array (common in tests),
+     * this would fail.
      *
-     * Permissive stubs are ONLY active during rollback's validate() pass:
+     * Permissive stubs are ONLY active during rollback's validateInvariants()
+     * pass:
      * - addVariable() explicit check: claimContext.permissiveForRestore = false
      *   (addVariable is not called inside rollbackInternal)
-     * - validate() inside rollback(): permissiveForRestore = true
+     * - validateInvariants() inside rollback(): permissiveForRestore = true
      */
     override rollback(
         snapshot: Parameters<
@@ -394,7 +397,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         // the server's CHECKSUM_CONFIG includes extra fields (createdOn, etc.).
         //
         // NOTE: rollback() is overridden in PropositArgumentEngine to set
-        // claimContext.permissiveForRestore = true during the validate() call,
+        // claimContext.permissiveForRestore = true during the validateInvariants() call,
         // so unknown claim references in the snapshot don't cause failures when
         // the caller provides an incomplete claims array.
         //
