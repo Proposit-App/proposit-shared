@@ -608,9 +608,11 @@ export function populateDerivationFromCitations(
     // run `engine.normalize()` after this helper returns, capture the
     // additional changeset themselves (e.g., via snapshot diffing), or
     // rely on the canonical-shape canonicalization migration to materialize
-    // the formula buffer at the storage layer. Restore the caller's prior
-    // behavior on exit so the helper is transparent w.r.t. the engine's
-    // mode.
+    // the formula buffer at the storage layer. The caller's prior behavior
+    // is restored on exit. Note: the helper is synchronous, so the window
+    // during which `engine.behavior === 'permissive'` is observable to any
+    // concurrent subscriber is narrow but non-zero — it's not strictly
+    // transparent w.r.t. the engine's mode.
     //
     // For n = 1 we don't need the flip: `IMPLIES(citvar, Q)` has no
     // operator-under-operator nesting, so AN-1 doesn't fire and AN-3 has
