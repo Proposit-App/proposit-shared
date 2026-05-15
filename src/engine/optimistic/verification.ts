@@ -22,7 +22,14 @@ export function detectDivergence(
     engine: PropositArgumentEngine,
     serverSnapshot: TProjectSnapshot
 ): DivergenceScope {
-    // Build a temporary engine from the server snapshot to compute checksums
+    // Build a temporary engine from the server snapshot to compute checksums.
+    //
+    // Core 1.0 dropped the per-engine `grammarConfig` knob in favor of a
+    // single `behavior: 'assistive' | 'permissive'` setting (default
+    // `'assistive'`). Checksum comparison doesn't need to mutate the engine
+    // — only `rollback()` runs — so the default behavior is fine: no AN
+    // post-hook fires during `rollback`, and `validateInvariants` semantics
+    // are unchanged. Snapshot loading accepts any Structural state in 1.0.
     const serverEngine = new ArgumentEngine<
         TArgument,
         TPropositionalPremise,
@@ -34,10 +41,6 @@ export function detectDivergence(
         {
             checksumConfig: CHECKSUM_CONFIG,
             positionConfig: serverSnapshot.config?.positionConfig,
-            grammarConfig: {
-                autoNormalize: false,
-                enforceFormulaBetweenOperators: true,
-            },
         }
     )
     serverEngine.rollback(serverSnapshot)

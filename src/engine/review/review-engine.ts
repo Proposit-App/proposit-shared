@@ -133,7 +133,14 @@ export class ReviewEngine {
     private dropStaleAssignments(): void {
         let dropped = 0
         for (const id of Object.keys(this.draft.claimAssignments)) {
-            if (!this.argEngine.getClaim(id)) {
+            // `getProjectClaim` is shared's domain accessor returning the
+            // richer `TClaim` from the per-engine `claimsMap`. Core 1.0
+            // promoted `getClaim(claimId, claimVersion)` on the
+            // `ArgumentEngine` base surface (returns the minimal
+            // `TCoreClaim`); shared's domain method was renamed to avoid the
+            // override collision. See `PropositArgumentEngine` for the full
+            // rationale.
+            if (!this.argEngine.getProjectClaim(id)) {
                 delete this.draft.claimAssignments[id]
                 dropped++
             }

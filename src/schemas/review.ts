@@ -129,7 +129,15 @@ export type TReviewDraft = Static<typeof ReviewDraftSchema>
 // Mirrors @proposit/proposit-core dist/lib/types/evaluation.d.ts.
 // Snapshot-tested against a real core evaluation result in Task G1.
 
-// TCoreValidationCode enum (18 literals — mirrors core@0.11.0).
+// TCoreValidationCode enum (18 literals — mirrors core@1.0.0).
+//
+// Core 1.0 Phase D4 deleted `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION`
+// (the pre-1.0 evaluation-time throw on naked-Q derivation premises);
+// naked-Q is now an evaluation no-op per spec §4.2, and broken-tree
+// derivation premises continue to surface as the unchanged
+// `DERIVATION_STRUCTURE_INVALID` code. This schema must match core's
+// runtime emitter exactly — keep the literal list synchronized when
+// bumping `@proposit/proposit-core`.
 export const TCoreValidationCodeSchema = Type.Union([
     Type.Literal("ARGUMENT_NO_CONCLUSION"),
     Type.Literal("ARGUMENT_CONCLUSION_NOT_FOUND"),
@@ -148,7 +156,7 @@ export const TCoreValidationCodeSchema = Type.Union([
     Type.Literal("SOURCE_EXPRESSION_ASSOCIATION_INVALID_EXPRESSION"),
     Type.Literal("SOURCE_ORPHANED"),
     Type.Literal("EXPR_BOUND_PREMISE_EMPTY"),
-    Type.Literal("DERIVATION_STRUCTURE_INVALID_AT_EVALUATION"),
+    Type.Literal("DERIVATION_STRUCTURE_INVALID"),
 ])
 
 export const TCoreValidationIssueSchema = Type.Object({
