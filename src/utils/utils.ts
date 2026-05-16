@@ -4,6 +4,7 @@ import {
     type ParsedSuccess,
 } from "../schemas/common.js"
 import type { JsonObject, JsonValue } from "../schemas/common.js"
+import { GrammarViolationsResponseSchema } from "../schemas/api/grammar-violations.js"
 import type { Static, TSchema } from "typebox"
 import { Value } from "typebox/value"
 
@@ -45,10 +46,32 @@ export async function parseRequest<T extends TSchema>(
     return Value.Parse(schema, converted)
 }
 
+// Default (2-arg) form: the error half widens to include the
+// `GrammarViolationsResponseSchema` envelope. When a callsite hits a server
+// endpoint that fails its grammar-tier gate (submit/save in assistive, publish
+// in either mode), the server returns HTTP 422 with `{ error: "GRAMMAR_VIOLATIONS",
+// tier, violations }` (see `proposit-shared/src/schemas/api/grammar-violations.ts`
+// and the 422-envelope research at `docs/research/proposit-server/422-envelope-sketch.md`).
+//
+// Pre-0.11 behavior parsed all non-`ok` bodies as `TErrorResponse` and threw
+// "Error: Parse" on the 422 envelope because its shape diverges from
+// `ErrorResponseSchema`. 0.11 detects the 422-with-GRAMMAR_VIOLATIONS body at
+// runtime and returns it as `ParsedError<typeof GrammarViolationsResponseSchema>`.
+// Non-422 failures (or 422 bodies that don't match the envelope) continue to
+// parse as `TErrorResponse`, preserving the existing surface.
 export async function parseResponse<T extends TSchema>(
     response: Response,
     schema: T
-): Promise<ParsedSuccess<T> | ParsedError<typeof ErrorResponseSchema>>
+): Promise<
+    | ParsedSuccess<T>
+    | ParsedError<typeof ErrorResponseSchema>
+    | ParsedError<typeof GrammarViolationsResponseSchema>
+>
+// Explicit-error-schema (3-arg) form: caller supplies the error schema. This
+// overload is unchanged from 0.10 — callers that opt in to a specific error
+// shape keep their narrower return type and bypass the GRAMMAR_VIOLATIONS
+// auto-detect. If a caller wants both, they can compose `errorSchema` as a
+// `Type.Union([ErrorResponseSchema, GrammarViolationsResponseSchema])`.
 export async function parseResponse<T extends TSchema, E extends TSchema>(
     response: Response,
     schema: T,
@@ -58,10 +81,29 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     response: Response,
     schema: T,
     errorSchema?: E
-): Promise<ParsedSuccess<T> | ParsedError<E | typeof ErrorResponseSchema>> {
+): Promise<
+    | ParsedSuccess<T>
+    | ParsedError<E | typeof ErrorResponseSchema>
+    | ParsedError<typeof GrammarViolationsResponseSchema>
+> {
     const data = (await response.json()) as JsonValue
 
     if (!response.ok) {
+        // Auto-detect the GRAMMAR_VIOLATIONS 422 envelope only when the caller
+        // omitted an explicit error schema (default form). Callers that passed
+        // their own error schema keep the pre-0.11 single-schema behavior.
+        if (
+            errorSchema === undefined &&
+            response.status === 422 &&
+            Value.Check(GrammarViolationsResponseSchema, data)
+        ) {
+            const parsedViolations = Value.Parse(
+                GrammarViolationsResponseSchema,
+                data
+            )
+            return { error: parsedViolations, ok: false }
+        }
+
         const errSchema = errorSchema ?? ErrorResponseSchema
         const parsedError = Value.Parse(errSchema, data)
         return { error: parsedError, ok: false }
