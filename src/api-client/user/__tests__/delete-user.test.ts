@@ -70,6 +70,14 @@ describe("apiClient.deleteUser", () => {
 
         expect(result.ok).toBe(false)
         if (result.ok) throw new Error("expected error")
+        // 0.11 widened parseResponse's error half to a discriminated union
+        // (TErrorResponse | TGrammarViolationsResponse). Narrow before
+        // accessing TErrorResponse-only fields — a 401 always lands in the
+        // TErrorResponse branch (the GRAMMAR_VIOLATIONS auto-detect only
+        // fires on 422 + matching body).
+        if (!("errorMessage" in result.error)) {
+            throw new Error("expected TErrorResponse branch")
+        }
         expect(result.error.errorMessage).toBe("Unauthorized")
         expect(result.error.statusCode).toBe(401)
     })
@@ -92,6 +100,12 @@ describe("apiClient.deleteUser", () => {
 
         expect(result.ok).toBe(false)
         if (result.ok) throw new Error("expected error")
+        // 0.11 widened parseResponse's error half; narrow to TErrorResponse
+        // for the legacy `statusCode` accessor. A 500 always lands in the
+        // TErrorResponse branch (auto-detect is 422-only).
+        if (!("statusCode" in result.error)) {
+            throw new Error("expected TErrorResponse branch")
+        }
         expect(result.error.statusCode).toBe(500)
     })
 
