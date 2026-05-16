@@ -49,9 +49,18 @@ export function mutateCreatePremise(
         const { changes: roleChanges } = engine.setConclusionPremise(premiseId)
         allChanges = mergeChangesets(changes, roleChanges)
     } else if (engine.getConclusionPremise()?.getId() === premiseId) {
-        // proposit-core 0.8.0+ auto-sets the first premise as conclusion
-        // regardless of the requested role. Undo the auto-assignment when
-        // the caller requested "supporting".
+        // Caller requested `role: "supporting"`. proposit-core 0.8.0+
+        // auto-sets the first premise as conclusion regardless of the
+        // requested role, so we have to address the mismatch here.
+        //
+        // Under `@proposit/proposit-core@^1.0.2` the engine refuses to
+        // leave a non-empty argument without a conclusion (the E-7
+        // invariant), so this `clearConclusionPremise()` call is a no-op
+        // when the new premise is the first/only one — the auto-assigned
+        // conclusion role correctly stays in place. For premises 2+ on
+        // 1.0.2, and for all premises on `^1.0.0`/`^1.0.1`, the call
+        // clears the conclusion-role designation the caller did not
+        // request.
         const { changes: clearChanges } = engine.clearConclusionPremise()
         allChanges = mergeChangesets(changes, clearChanges)
     }
