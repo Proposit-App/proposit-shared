@@ -39,8 +39,6 @@ export const ParticipantRoles = {
     OWNER: "owner",
     // Can edit content
     EDITOR: "editor",
-    // Can only add suggested edits and comments
-    REVIEWER: "reviewer",
 }
 
 export type TParticipantRole =
