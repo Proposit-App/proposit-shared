@@ -6,10 +6,15 @@ import {
     mutateCreateDerivationPremise,
     clearDerivationAntecedent,
     populateDerivationFromCitations,
+    populateDerivationFromAxiom,
 } from "../premises.js"
 import { mutateCreateVariable } from "../variables.js"
 import { PropositArgumentEngine } from "../../engine.js"
 import { createClaimLookup } from "../../library-adapters.js"
+import type {
+    TAxiomaticClaim,
+    TAxiomKind,
+} from "../../../schemas/model/claims.js"
 
 const ARG_ID = "test-arg-id"
 const ARG_VERSION = 1
@@ -704,6 +709,292 @@ describe("populateDerivationFromCitations", () => {
         expect(() => clearDerivationAntecedent(engine, premiseId)).toThrowError(
             /DERIVATION_TYPE_MISMATCH/
         )
+    })
+})
+
+// ──── populateDerivationFromAxiom ──────────────────────────────────────────
+
+/**
+ * Mint a minimal axiomatic claim. Mirrors `mkTestClaim` shape but with the
+ * required `type: 'axiomatic'`, `axiom: TAxiomKind`, and the
+ * `title`/`body`/etc. fields nulled out per `AxiomaticClaimSchema`.
+ */
+function mkAxiomaticClaim(
+    id: string,
+    axiom: TAxiomKind = "logical-principle",
+    overrides?: Partial<TAxiomaticClaim>
+): TAxiomaticClaim {
+    return {
+        id,
+        argumentId: ARG_ID,
+        version: ARG_VERSION,
+        creatorId: USER_ID,
+        createdOn: new Date("2026-01-01"),
+        digest: `axiom-digest-${id}`,
+        type: "axiomatic",
+        kind: null,
+        title: null,
+        body: null,
+        titleContentHash: null,
+        url: null,
+        citation: null,
+        citationContentHash: null,
+        axiom,
+        parentId: null,
+        claimForkId: null,
+        ...overrides,
+    } as TAxiomaticClaim
+}
+
+describe("populateDerivationFromAxiom", () => {
+    test("on a naked premise builds IMPLIES(axiom_var, Q) with the axiom as antecedent", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const axiomaticClaim = mkAxiomaticClaim("ax-1")
+        engine.setClaim(axiomaticClaim)
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+
+        const { changes } = populateDerivationFromAxiom(
+            engine,
+            premise.id,
+            axiomaticClaim
+        )
+
+        // Root expression is IMPLIES with the axiom-bound variable as
+        // antecedent (position 0) and the consequent variable Q at
+        // position 1.
+        const pm = engine.getPremise(premise.id)!
+        const rootId = pm.getRootExpressionId()!
+        const root = pm.getExpression(rootId)!
+        expect(root.type).toBe("operator")
+        if (root.type === "operator") {
+            expect(root.operator).toBe("implies")
+        }
+
+        const rootChildren = pm
+            .getChildExpressions(rootId)
+            .sort((a, b) => a.position - b.position)
+        expect(rootChildren).toHaveLength(2)
+
+        const antecedent = rootChildren[0]
+        expect(antecedent.type).toBe("variable")
+        const consequent = rootChildren[1]
+        expect(consequent.id).toBe("e-q")
+        expect(consequent.type).toBe("variable")
+
+        // The antecedent variable resolves to the axiomatic claim.
+        const antecedentVarId =
+            antecedent.type === "variable" ? antecedent.variableId : null
+        expect(antecedentVarId).not.toBeNull()
+        const antecedentVar = engine.getVariable(antecedentVarId!)
+        expect(antecedentVar && "claimId" in antecedentVar).toBe(true)
+        if (antecedentVar && "claimId" in antecedentVar) {
+            expect(antecedentVar.claimId).toBe("ax-1")
+        }
+
+        // Changeset reflects the new axiom-bound variable being added and the
+        // wrap-introduced IMPLIES operator plus the axiom variable expression.
+        const variableAdds = changes.variables?.added ?? []
+        const axiomBoundAdds = variableAdds.filter(
+            (v) => "claimId" in v && v.claimId === "ax-1"
+        )
+        expect(axiomBoundAdds).toHaveLength(1)
+
+        const operatorAdds = (changes.expressions?.added ?? []).filter(
+            (e) => e.type === "operator"
+        )
+        expect(operatorAdds.map((e) => e.operator).sort()).toEqual(["implies"])
+    })
+
+    test("snapshot/rollback round-trip after axiom population loads without invariant violations", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const axiomaticClaim = mkAxiomaticClaim("ax-1", "mathematical-principle")
+        engine.setClaim(axiomaticClaim)
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromAxiom(engine, "p-1", axiomaticClaim)
+
+        const snapshot = engine.snapshot()
+        const restored = setupEngineWithClaims(["claim-q"])
+        restored.setClaim(axiomaticClaim)
+        expect(() => restored.rollback(snapshot)).not.toThrow()
+        const restoredPm = restored.getPremise("p-1")!
+        const restoredRoot = restoredPm.getExpression(
+            restoredPm.getRootExpressionId()!
+        )!
+        expect(restoredRoot.type).toBe("operator")
+        if (restoredRoot.type === "operator") {
+            expect(restoredRoot.operator).toBe("implies")
+        }
+    })
+
+    test("replaces a citation-backed antecedent (clear-then-populate composition)", () => {
+        const engine = setupEngineWithClaims(["claim-q", "src-a"])
+        const axiomaticClaim = mkAxiomaticClaim("ax-1")
+        engine.setClaim(axiomaticClaim)
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        // Populate with a citation first so the antecedent is non-empty.
+        populateDerivationFromCitations(engine, premise.id, ["src-a"])
+
+        const { changes } = populateDerivationFromAxiom(
+            engine,
+            premise.id,
+            axiomaticClaim
+        )
+
+        // Expected: the citation-bound variable for src-a is removed (cleared
+        // by the helper's internal clearDerivationAntecedent call), and the
+        // axiom-bound variable for ax-1 is added.
+        const variableAdds = changes.variables?.added ?? []
+        const variableRemoves = changes.variables?.removed ?? []
+        const axiomBoundAdds = variableAdds.filter(
+            (v) => "claimId" in v && v.claimId === "ax-1"
+        )
+        expect(axiomBoundAdds).toHaveLength(1)
+        const citationBoundRemoves = variableRemoves.filter(
+            (v) => "claimId" in v && v.claimId === "src-a"
+        )
+        expect(citationBoundRemoves).toHaveLength(1)
+
+        // Final engine state: the antecedent resolves to ax-1, not src-a.
+        const pm = engine.getPremise(premise.id)!
+        const rootId = pm.getRootExpressionId()!
+        const rootChildren = pm
+            .getChildExpressions(rootId)
+            .sort((a, b) => a.position - b.position)
+        const antecedent = rootChildren[0]
+        expect(antecedent.type).toBe("variable")
+        if (antecedent.type === "variable" && antecedent.variableId) {
+            const v = engine.getVariable(antecedent.variableId)
+            expect(v && "claimId" in v && v.claimId).toBe("ax-1")
+        }
+    })
+
+    test("idempotent — re-applying the same axiom to a premise already bound to it is a no-op", () => {
+        // The spec calls this idempotent: calling on a derivation premise
+        // already carrying the same axiomatic claim is a no-op (empty
+        // changeset). The implementation short-circuits when the existing
+        // antecedent is a single variable expression bound to a variable
+        // whose claimId === axiomaticClaim.id.
+        const engine = setupEngineWithClaims(["claim-q"])
+        const axiomaticClaim = mkAxiomaticClaim("ax-1")
+        engine.setClaim(axiomaticClaim)
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromAxiom(engine, premise.id, axiomaticClaim)
+
+        const checksumBefore = engine.combinedChecksum()
+        const { changes } = populateDerivationFromAxiom(
+            engine,
+            premise.id,
+            axiomaticClaim
+        )
+        const checksumAfter = engine.combinedChecksum()
+
+        // No-op contract: empty changeset and unchanged engine checksum.
+        expect(changes.expressions).toBeUndefined()
+        expect(changes.variables).toBeUndefined()
+        expect(changes.premises).toBeUndefined()
+        expect(checksumAfter).toBe(checksumBefore)
+    })
+
+    test("replacing one axiom with a different axiom triggers the full clear-and-re-add cycle", () => {
+        // Distinct from the idempotency case above — when the existing
+        // antecedent is bound to a *different* axiom, the helper must
+        // clear-then-populate (non-empty changeset).
+        const engine = setupEngineWithClaims(["claim-q"])
+        const axiom1 = mkAxiomaticClaim("ax-1", "logical-principle")
+        const axiom2 = mkAxiomaticClaim("ax-2", "mathematical-principle")
+        engine.setClaim(axiom1)
+        engine.setClaim(axiom2)
+        const { premise } = createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        populateDerivationFromAxiom(engine, premise.id, axiom1)
+
+        const { changes } = populateDerivationFromAxiom(
+            engine,
+            premise.id,
+            axiom2
+        )
+
+        // ax-1's bound variable should be removed; ax-2's added.
+        const variableAdds = changes.variables?.added ?? []
+        const variableRemoves = changes.variables?.removed ?? []
+        expect(
+            variableAdds.some((v) => "claimId" in v && v.claimId === "ax-2")
+        ).toBe(true)
+        expect(
+            variableRemoves.some((v) => "claimId" in v && v.claimId === "ax-1")
+        ).toBe(true)
+    })
+
+    test("on a non-derivation premise throws DERIVATION_TYPE_MISMATCH", () => {
+        const engine = setupEngineWithClaims([])
+        const axiomaticClaim = mkAxiomaticClaim("ax-1")
+        engine.setClaim(axiomaticClaim)
+        const premiseId = crypto.randomUUID()
+        mutateCreatePremise(engine, premiseId, {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            title: null,
+            role: "supporting",
+        })
+        expect(() =>
+            populateDerivationFromAxiom(engine, premiseId, axiomaticClaim)
+        ).toThrowError(/DERIVATION_TYPE_MISMATCH/)
+    })
+
+    test("on a missing premise throws a clear error", () => {
+        const engine = setupEngineWithClaims([])
+        const axiomaticClaim = mkAxiomaticClaim("ax-1")
+        engine.setClaim(axiomaticClaim)
+        expect(() =>
+            populateDerivationFromAxiom(
+                engine,
+                "nonexistent-premise-id",
+                axiomaticClaim
+            )
+        ).toThrowError(/not found/i)
+    })
+
+    test("rejects a non-axiomatic claim — argument type contract", () => {
+        // The signature locks `axiomaticClaim: TAxiomaticClaim`; at the
+        // runtime boundary the helper rejects a claim whose `type` is not
+        // `'axiomatic'` so a mis-typed `as TAxiomaticClaim` cast surfaces
+        // a clear error rather than silently wiring the wrong claim in.
+        const engine = setupEngineWithClaims(["claim-q"])
+        const nonAxiom = mkTestClaim({ id: "not-an-axiom", type: "normal" })
+        engine.setClaim(nonAxiom)
+        createNakedDerivationPremise(engine, "claim-q", {
+            premiseId: "p-1",
+            varId: "v-q",
+            exprId: "e-q",
+        })
+        expect(() =>
+            populateDerivationFromAxiom(
+                engine,
+                "p-1",
+                nonAxiom as unknown as TAxiomaticClaim
+            )
+        ).toThrowError(/axiomatic/i)
     })
 })
 
