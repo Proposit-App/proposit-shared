@@ -799,7 +799,7 @@ export function populateDerivationFromAxiom(
         )
     }
     const consequentExpr = pm.getExpression(rootExprId)
-    if (!consequentExpr || consequentExpr.type !== "variable") {
+    if (consequentExpr?.type !== "variable") {
         throw new Error(
             `populateDerivationFromAxiom: post-clear root expression is not a bare variable (got ${
                 consequentExpr?.type ?? "undefined"
@@ -887,7 +887,7 @@ function isAlreadyAxiomBacked(
     const rootExprId = pm.getRootExpressionId()
     if (rootExprId === undefined) return false
     const root = pm.getExpression(rootExprId)
-    if (!root || root.type !== "operator" || root.operator !== "implies") {
+    if (root?.type !== "operator" || root.operator !== "implies") {
         return false
     }
     const rootChildren = pm

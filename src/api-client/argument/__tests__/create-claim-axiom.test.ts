@@ -62,11 +62,11 @@ function urlToString(input: Parameters<typeof fetch>[0]): string {
 
 describe("apiClient.createClaimAxiom", () => {
     test("POSTs to /api/v1/argument/[id]/[v]/claims/[claimId]/axiom with the axiom kind body", async () => {
-        const calls: Array<{
+        const calls: {
             url: string
             method?: string
             body?: unknown
-        }> = []
+        }[] = []
         const fetchImpl: typeof fetch = (input, init) => {
             calls.push({
                 url: urlToString(input),

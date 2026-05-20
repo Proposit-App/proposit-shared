@@ -1,10 +1,7 @@
 import Type, { type Static } from "typebox"
 import { Nullable } from "../../common.js"
 import { ClaimSchema, MutableClaimFieldsSchema } from "../../model.js"
-import {
-    AxiomaticClaimSchema,
-    AxiomKindSchema,
-} from "../../model/claims.js"
+import { AxiomaticClaimSchema, AxiomKindSchema } from "../../model/claims.js"
 import { ClaimCitationSchema } from "../../model/citations.js"
 import {
     PropositionalVariableSchema,
@@ -54,7 +51,9 @@ export type TClaimCitationDeleteResponse = Static<
 export const AxiomAssignmentRequestSchema = Type.Object({
     axiom: AxiomKindSchema,
 })
-export type TAxiomAssignmentRequest = Static<typeof AxiomAssignmentRequestSchema>
+export type TAxiomAssignmentRequest = Static<
+    typeof AxiomAssignmentRequestSchema
+>
 
 /**
  * Response body for the assign-axiom POST. Mirrors the citation-creation
@@ -67,4 +66,6 @@ export const AxiomAssignmentResponseSchema = Type.Object({
     axiomClaim: AxiomaticClaimSchema,
     derivationPremise: PropositionalPremiseSchema,
 })
-export type TAxiomAssignmentResponse = Static<typeof AxiomAssignmentResponseSchema>
+export type TAxiomAssignmentResponse = Static<
+    typeof AxiomAssignmentResponseSchema
+>

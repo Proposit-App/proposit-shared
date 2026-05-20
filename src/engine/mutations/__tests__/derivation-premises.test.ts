@@ -811,7 +811,10 @@ describe("populateDerivationFromAxiom", () => {
 
     test("snapshot/rollback round-trip after axiom population loads without invariant violations", () => {
         const engine = setupEngineWithClaims(["claim-q"])
-        const axiomaticClaim = mkAxiomaticClaim("ax-1", "mathematical-principle")
+        const axiomaticClaim = mkAxiomaticClaim(
+            "ax-1",
+            "mathematical-principle"
+        )
         engine.setClaim(axiomaticClaim)
         createNakedDerivationPremise(engine, "claim-q", {
             premiseId: "p-1",
