@@ -5,6 +5,7 @@ import type {
     TPropositionalVariable,
     TPropositionalExpressionCombined,
 } from "../../schemas/logic.js"
+import type { TAxiomaticClaim } from "../../schemas/model/claims.js"
 import type { ProjectEngine, ProjectChangeset } from "./types.js"
 import { mergeChangesets } from "./types.js"
 
@@ -698,6 +699,208 @@ export function populateDerivationFromCitations(
     }
 
     return { changes: mergeChangesetSequence(collected) }
+}
+
+/**
+ * Builds the `IMPLIES(axiom_var, Q)` tree on a derivation premise, where
+ * `axiom_var` is a claim-bound variable for the supplied axiomatic claim.
+ * Mirrors `populateDerivationFromCitations`' composition pattern:
+ * `clearDerivationAntecedent` first to guarantee an empty antecedent slot,
+ * then bind the axiomatic claim's variable as the single antecedent variable.
+ *
+ * **Caller contract.** The caller is responsible for registering the
+ * axiomatic claim with the engine (via `engine.setClaim(axiomaticClaim)` or
+ * `mutateSetClaim(engine, axiomaticClaim)`) **before** invoking this helper.
+ * The split mirrors the citation-side pattern where claim-row creation
+ * (`addClaim` server-side, `setClaim` engine-side) and derivation-tree wiring
+ * (`populateDerivationFromCitations`) are separable engine operations; the
+ * server route at `POST /api/v1/argument/[id]/[v]/claims/[claimId]/axiom`
+ * composes them. Calling this helper before the claim is registered surfaces
+ * an `ensureClaimBoundVariable` error from the engine — clear but indirect.
+ *
+ * **Idempotency.** Calling this helper on a derivation premise already
+ * carrying the same axiomatic claim as its antecedent is a no-op: the
+ * helper short-circuits before any mutation when the existing root is
+ * `IMPLIES(axiom_var, Q)` where `axiom_var` resolves to a variable bound
+ * to `axiomaticClaim.id`. A different axiomatic claim (or any other
+ * antecedent shape) triggers the full clear-and-re-add cycle.
+ *
+ * @throws Error when `derivationPremiseId` does not resolve.
+ * @throws Error when `axiomaticClaim.type !== 'axiomatic'` — the signature
+ *         narrows to `TAxiomaticClaim`, but a runtime guard catches
+ *         mis-typed `as TAxiomaticClaim` casts that slip past the
+ *         TypeScript boundary.
+ * @throws InvariantViolationError(DERIVATION_TYPE_MISMATCH) when the
+ *         premise is not a derivation premise (re-thrown via
+ *         `clearDerivationAntecedent`).
+ */
+export function populateDerivationFromAxiom(
+    engine: ProjectEngine,
+    derivationPremiseId: string,
+    axiomaticClaim: TAxiomaticClaim
+): { changes: ProjectChangeset } {
+    if (axiomaticClaim.type !== "axiomatic") {
+        throw new Error(
+            `populateDerivationFromAxiom: expected axiomaticClaim.type === 'axiomatic', got ${
+                (axiomaticClaim as { type?: string }).type ?? "undefined"
+            }`
+        )
+    }
+
+    const pm = engine.getPremise(derivationPremiseId)
+    if (!pm) {
+        throw new Error(`Premise ${derivationPremiseId} not found`)
+    }
+    // Validate derivation-premise type up front so callers get the
+    // DERIVATION_TYPE_MISMATCH path before any clear-related throws.
+    const premiseData = pm.toPremiseData()
+    if (premiseData.type !== "derivation") {
+        throw new InvariantViolationError([
+            {
+                code: "DERIVATION_TYPE_MISMATCH",
+                message: `DERIVATION_TYPE_MISMATCH: premise ${derivationPremiseId} is not a derivation premise (type=${premiseData.type ?? "freeform"})`,
+                entityType: "premise",
+                entityId: derivationPremiseId,
+                premiseId: derivationPremiseId,
+            },
+        ])
+    }
+
+    // Idempotency short-circuit. If the root is already
+    // `IMPLIES(axiom_var, Q)` with `axiom_var` bound to this axiom's claim
+    // id, nothing to do — return an empty changeset without invoking
+    // `clearDerivationAntecedent` (which would still be a no-op shape-wise
+    // but would also cascade-remove the axiom-bound variable we'd
+    // immediately re-add, producing a non-empty churn changeset for
+    // identity work).
+    if (isAlreadyAxiomBacked(engine, pm, axiomaticClaim.id)) {
+        return { changes: {} }
+    }
+
+    const collected: ProjectChangeset[] = []
+
+    // 1. Clear any existing antecedent so the root is back to the naked-Q
+    //    form. The helper is a no-op on an already-naked premise, so
+    //    transitioning from `empty` and `citation-backed` are both
+    //    handled uniformly. The clear's changeset carries the removals
+    //    of any prior citation-bound variables + their expressions plus
+    //    the IMPLIES/OR scaffolding.
+    const { changes: clearChanges } = clearDerivationAntecedent(
+        engine,
+        derivationPremiseId
+    )
+    collected.push(clearChanges)
+
+    // 2. Now the root must be the bare consequent variable expression.
+    const rootExprId = pm.getRootExpressionId()
+    if (rootExprId === undefined) {
+        throw new Error(
+            `populateDerivationFromAxiom: premise ${derivationPremiseId} has no root expression after clear`
+        )
+    }
+    const consequentExpr = pm.getExpression(rootExprId)
+    if (!consequentExpr || consequentExpr.type !== "variable") {
+        throw new Error(
+            `populateDerivationFromAxiom: post-clear root expression is not a bare variable (got ${
+                consequentExpr?.type ?? "undefined"
+            })`
+        )
+    }
+    if (consequentExpr.variableId == null) {
+        throw new Error(
+            "populateDerivationFromAxiom: consequent variable expression has no variableId"
+        )
+    }
+
+    const sharedMeta = {
+        argumentId: consequentExpr.argumentId,
+        argumentVersion: consequentExpr.argumentVersion,
+        premiseId: derivationPremiseId,
+        creatorId: consequentExpr.creatorId,
+        createdOn: consequentExpr.createdOn,
+    }
+
+    // 3. Materialize the claim-bound variable for the axiomatic claim.
+    //    `ensureClaimBoundVariable` bypasses the standard mutation surface
+    //    (no changeset emitted), so capture newly-added vars by diffing
+    //    pre/post variable sets — same pattern as the citation helper.
+    const variablesBefore = new Set(engine.getVariables().map((v) => v.id))
+    const axiomVar = engine.ensureClaimBoundVariable(
+        axiomaticClaim.id
+    ) as unknown as TPropositionalVariable
+    if (!variablesBefore.has(axiomVar.id)) {
+        collected.push({
+            variables: {
+                added: [axiomVar],
+                modified: [],
+                removed: [],
+            },
+        })
+    }
+
+    // 4. Build the IMPLIES tree by wrapping the consequent expression.
+    //    `wrapExpression` with `rightNodeId=consequentExpr.id` makes the
+    //    existing consequent the right (consequent) child and the new
+    //    sibling the left (antecedent) child of the new IMPLIES root.
+    //    n=1 form — no formula buffer needed (no operator-under-operator
+    //    nesting), build under whatever behavior the caller set (matches
+    //    the citation helper's n=1 branch).
+    const impliesId = generateId()
+    const impliesOp = {
+        id: impliesId,
+        ...sharedMeta,
+        parentId: null,
+        type: "operator" as const,
+        operator: "implies" as const,
+        variableId: null,
+    }
+    const axiomExpr = {
+        id: generateId(),
+        ...sharedMeta,
+        parentId: null, // wrapExpression sets the real parentId
+        type: "variable" as const,
+        variableId: axiomVar.id,
+        operator: null,
+    }
+    const { changes: wrap } = pm.wrapExpression(
+        impliesOp as Parameters<typeof pm.wrapExpression>[0],
+        axiomExpr as Parameters<typeof pm.wrapExpression>[1],
+        undefined,
+        consequentExpr.id
+    )
+    collected.push(wrap)
+
+    return { changes: mergeChangesetSequence(collected) }
+}
+
+/**
+ * Returns true iff the derivation premise's root expression is
+ * `IMPLIES(axiom_var, Q)` where `axiom_var` resolves to a claim-bound
+ * variable for `axiomClaimId`. Used by `populateDerivationFromAxiom` for
+ * the idempotency short-circuit.
+ */
+function isAlreadyAxiomBacked(
+    engine: ProjectEngine,
+    pm: NonNullable<ReturnType<ProjectEngine["getPremise"]>>,
+    axiomClaimId: string
+): boolean {
+    const rootExprId = pm.getRootExpressionId()
+    if (rootExprId === undefined) return false
+    const root = pm.getExpression(rootExprId)
+    if (!root || root.type !== "operator" || root.operator !== "implies") {
+        return false
+    }
+    const rootChildren = pm
+        .getChildExpressions(rootExprId)
+        .sort((a, b) => a.position - b.position)
+    if (rootChildren.length !== 2) return false
+    const antecedent = rootChildren[0]
+    if (antecedent.type !== "variable" || antecedent.variableId == null) {
+        return false
+    }
+    const antecedentVar = engine.getVariable(antecedent.variableId)
+    if (!antecedentVar || !("claimId" in antecedentVar)) return false
+    return antecedentVar.claimId === axiomClaimId
 }
 
 // ──── Internal helpers ─────────────────────────────────────────────────────

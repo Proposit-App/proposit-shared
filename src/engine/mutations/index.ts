@@ -13,6 +13,7 @@ export {
     mutateCreateDerivationPremise,
     clearDerivationAntecedent,
     populateDerivationFromCitations,
+    populateDerivationFromAxiom,
 } from "./premises.js"
 
 export {
