@@ -1,6 +1,7 @@
 import type {
     TMutableClaimFields,
     TClaimUpdateFields,
+    TAxiomKind,
 } from "../../schemas/model/claims.js"
 import { ClaimSchema, ClaimUpdateRequestSchema } from "../../schemas/model.js"
 import {
@@ -9,6 +10,8 @@ import {
     ClaimDeletionResponseSchema,
     ClaimCitationDeleteResponseSchema,
     CitationCreationSchema,
+    AxiomAssignmentRequestSchema,
+    AxiomAssignmentResponseSchema,
 } from "../../schemas/api/argument/claims.js"
 import {
     IEEEReferenceSchemaMap,
@@ -100,5 +103,39 @@ export async function deleteClaimCitationImpl(
             { method: "DELETE" }
         ),
         ClaimCitationDeleteResponseSchema
+    )
+}
+
+/**
+ * Assigns an axiomatic claim as the antecedent of a normal claim's
+ * derivation premise. The server mints a new axiomatic-claim row from the
+ * `axiom` kind, wires it into the citing claim's derivation premise via
+ * `populateDerivationFromAxiom`, persists the changeset, and returns the
+ * new claim alongside its derivation-premise context.
+ *
+ * Args object shape (not positional) — matches the architect-locked
+ * signature from the S3 spec
+ * (2026-05-19-server-ui-improvements-s3-claim-details-proof-state-design)
+ * §11. `claimId` is the **citing** claim's id (the claim whose derivation
+ * premise gains the axiomatic backing), not the freshly-minted axiomatic
+ * claim's id.
+ */
+export async function createClaimAxiomImpl(
+    config: TApiClientConfig,
+    args: {
+        argumentId: string
+        version: number
+        claimId: string
+        axiom: TAxiomKind
+    }
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await strictFetch(
+        `${baseUrl}/api/v1/argument/${args.argumentId}/${args.version}/claims/${args.claimId}/axiom`,
+        { method: "POST" },
+        { axiom: args.axiom },
+        AxiomAssignmentRequestSchema,
+        AxiomAssignmentResponseSchema,
+        config.fetchImpl
     )
 }

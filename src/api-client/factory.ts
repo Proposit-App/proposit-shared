@@ -27,6 +27,7 @@ import {
     updateClaimImpl,
     createClaimCitationImpl,
     deleteClaimCitationImpl,
+    createClaimAxiomImpl,
 } from "./argument/claims.js"
 import { createReactionImpl, deleteReactionImpl } from "./argument/reactions.js"
 import {
@@ -93,6 +94,7 @@ const impls = {
     updateClaim: updateClaimImpl,
     createClaimCitation: createClaimCitationImpl,
     deleteClaimCitation: deleteClaimCitationImpl,
+    createClaimAxiom: createClaimAxiomImpl,
     createReaction: createReactionImpl,
     deleteReaction: deleteReactionImpl,
     getMyReview: getMyReviewImpl,
