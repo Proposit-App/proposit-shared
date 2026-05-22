@@ -188,6 +188,61 @@ describe("mutateUpdatePremiseRole", () => {
         const newPe = engine.getPremise(newConclusionId)
         expect(newPe?.toPremiseData().role).toBe("conclusion")
     })
+
+    // Reviewer-fold (followups-sweep-2026-05 C bundle, P2): the
+    // already-in-state branch must remain a true no-op at the changeset
+    // level. Pre-extras-sync this was naturally the case (the helper
+    // returned `{ changes: {} }`); after the extras-sync was added the
+    // branch unconditionally called `pe.updateExtras({ role })`, which
+    // routes through core's `setExtras` → always `markDirty()` + always
+    // emit `modifiedPremise`. That broke the no-op contract — downstream
+    // consumers (`persistChangeset` writing the row, engine cache
+    // invalidation, UI subscribers) would fire on every redundant call.
+    // Short-circuit when the new role equals the current role.
+    test("is a no-op (empty changeset) when premise is already in the requested role", () => {
+        const engine = createTestEngine()
+        const supportingId = crypto.randomUUID()
+        const conclusionId = crypto.randomUUID()
+        mutateCreatePremise(engine, conclusionId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "C",
+            role: "conclusion",
+        })
+        mutateCreatePremise(engine, supportingId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "P",
+            role: "supporting",
+        })
+
+        // No-op on the supporting premise.
+        const supportingResult = mutateUpdatePremiseRole(
+            engine,
+            supportingId,
+            "supporting"
+        )
+        expect(supportingResult.changes.premises?.modified ?? []).toEqual([])
+        expect(supportingResult.changes.premises?.added ?? []).toEqual([])
+        expect(supportingResult.changes.premises?.removed ?? []).toEqual([])
+        expect(supportingResult.changes.roles).toBeUndefined()
+
+        // No-op on the conclusion premise too — same branch (current
+        // role-state already matches the requested role).
+        const conclusionResult = mutateUpdatePremiseRole(
+            engine,
+            conclusionId,
+            "conclusion"
+        )
+        expect(conclusionResult.changes.premises?.modified ?? []).toEqual([])
+        expect(conclusionResult.changes.premises?.added ?? []).toEqual([])
+        expect(conclusionResult.changes.premises?.removed ?? []).toEqual([])
+        expect(conclusionResult.changes.roles).toBeUndefined()
+    })
 })
 
 describe("mutateDeletePremise", () => {

@@ -155,78 +155,12 @@ export function evaluateArgumentForReview(
     // `strictUnknownAssignmentKeys: false` because we pass an argument-wide
     // assignment; per-premise strictness would reject every premise that
     // doesn't reference every claim-bound variable in the argument.
-    const result = argEngine.evaluate(assignment, {
+    return argEngine.evaluate(assignment, {
         validateFirst: true,
         strictUnknownAssignmentKeys: false,
         includeDiagnostics: true,
         includeExpressionValues: true,
     })
-    // Diagnostic dump for proposit-core debugging: full argument shape +
-    // assignment + evaluation result as a single JSON payload.
-    try {
-        console.log(
-            "[review:evaluation]",
-            JSON.stringify(
-                buildEvaluationDebugPayload(
-                    draft,
-                    argEngine,
-                    assignment,
-                    result
-                ),
-                null,
-                2
-            )
-        )
-    } catch (err) {
-        console.warn("[review:evaluation] dump failed:", err)
-    }
-    return result
-}
-
-function buildEvaluationDebugPayload(
-    draft: TReviewDraft,
-    argEngine: ProjectEngine,
-    assignment: TCoreExpressionAssignment,
-    result: TCoreArgumentEvaluationResult
-): Record<string, unknown> {
-    const variables = argEngine.getVariables().map((v) => ({
-        id: v.id,
-        symbol: v.symbol,
-        claimId: "claimId" in v ? v.claimId : undefined,
-        boundPremiseId: "boundPremiseId" in v ? v.boundPremiseId : undefined,
-    }))
-    const premises = argEngine.listPremises().map((p) => {
-        const id = p.getId()
-        const expressions = p.getExpressions().map((e) => ({
-            id: e.id,
-            type: e.type,
-            operator: "operator" in e ? e.operator : undefined,
-            variableId: "variableId" in e ? e.variableId : undefined,
-            parentId: e.parentId,
-            position: e.position,
-        }))
-        return {
-            id,
-            role:
-                argEngine.getConclusionPremise()?.getId() === id
-                    ? "conclusion"
-                    : "supporting",
-            rootExpressionId: p.getRootExpressionId(),
-            expressions,
-        }
-    })
-    return {
-        argumentId: argEngine.getArgument().id,
-        argumentVersion: argEngine.getArgument().version,
-        variables,
-        premises,
-        draft: {
-            claimAssignments: draft.claimAssignments,
-            operatorAssignments: draft.operatorAssignments,
-        },
-        canonicalAssignment: assignment,
-        result,
-    }
 }
 
 export function checkValidityForReview(

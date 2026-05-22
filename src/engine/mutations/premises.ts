@@ -94,6 +94,34 @@ export function mutateUpdatePremiseRole(
     //      its extras-bag stale at "conclusion".
     //   3. (Demotion-only) The target premise is what we're clearing, so
     //      sync site 1 covers it; no other premise needs touching.
+
+    // No-op short-circuit (followups-sweep-2026-05 C bundle P2 fold):
+    // when the engine's role-state AND the premise's `extras.role` already
+    // both match the requested role, every downstream call below would emit
+    // a redundant changeset entry — `setConclusionPremise(currentConclusion)`
+    // re-emits a `roles` entry unconditionally, and `syncPremiseExtrasRole`
+    // routes through core's `setExtras` which always `markDirty()`s + emits
+    // `modifiedPremise` regardless of value equality. Skipping the work
+    // here keeps the helper a true no-op when called with the premise's
+    // current role, so downstream consumers (`persistChangeset` writing the
+    // row, engine cache invalidation, UI subscribers) don't fire on every
+    // redundant call. Self-consistency is the qualifier: if `extras.role`
+    // has drifted from the engine's role-state slot (the entire reason this
+    // helper exists), fall through and let the sync repair the drift.
+    const existingPremise = engine.getPremise(premiseId)
+    if (existingPremise) {
+        const isCurrentlyConclusion =
+            engine.getConclusionPremise()?.getId() === premiseId
+        const wantsConclusion = newRole === "conclusion"
+        const existingExtrasRole = existingPremise.toPremiseData().role
+        if (
+            isCurrentlyConclusion === wantsConclusion &&
+            existingExtrasRole === newRole
+        ) {
+            return { changes: {} }
+        }
+    }
+
     if (newRole === "conclusion") {
         const collected: ProjectChangeset[] = []
         const priorConclusion = engine.getConclusionPremise()
