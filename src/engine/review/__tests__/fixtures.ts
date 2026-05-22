@@ -6,7 +6,7 @@
 import { PropositArgumentEngine } from "../../engine.js"
 import { CHECKSUM_CONFIG } from "../../../checksum.js"
 import { createClaimLookup } from "../../library-adapters.js"
-import type { TClaim } from "../../../schemas/model/claims.js"
+import type { TClaim, TAxiomaticClaim } from "../../../schemas/model/claims.js"
 import type { TArgument } from "../../../schemas/model/arguments.js"
 import type { TClaimBoundVariable } from "../../../schemas/logic.js"
 
@@ -295,6 +295,163 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
 
 /** Alias used by later tasks. */
 export const buildEngine = buildEngineWithTwoPremises
+
+function makeAxiomaticClaim(id: string, title: string): TAxiomaticClaim {
+    return {
+        id,
+        argumentId: ARGUMENT_ID,
+        version: ARGUMENT_VERSION,
+        creatorId: CREATOR_ID,
+        createdOn: NOW,
+        digest: `digest-${id}`,
+        type: "axiomatic",
+        kind: null,
+        title: null,
+        body: null,
+        titleContentHash: null,
+        url: null,
+        citation: null,
+        citationContentHash: null,
+        axiom: "logical-principle",
+        parentId: null,
+        claimForkId: null,
+        // `title` is null on AxiomaticClaimSchema, but tests still want a
+        // human-readable label for logging — store it on the digest field.
+        ...{ _label: title },
+    } as unknown as TAxiomaticClaim
+}
+
+/**
+ * Builds a minimal engine whose conclusion premise's root expression is a
+ * single variable expression bound to an axiomatic claim. With no user
+ * assignments, the only way the review evaluation can return a definite
+ * verdict is if the engine forces the axiomatic-bound variable to `true`
+ * before evaluating. Used by the C1 regression test
+ * (followups-sweep-2026-05).
+ */
+export function buildEngineWithAxiomaticConclusion(): PropositArgumentEngine {
+    const axiomClaim = makeAxiomaticClaim("cAxiom", "Axiom claim")
+    const claims = [axiomClaim] as unknown as TClaim[]
+    const claimLookup = createClaimLookup(claims)
+
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+
+    engine.addVariable(makeVariable("vAxiom", "X", "cAxiom"))
+
+    const conclusionPremiseId = "pAxiomaticConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(
+        conclusionPremiseId,
+        {
+            type: "freeform",
+            extras: {
+                title: "Conclusion — axiom variable",
+                role: "conclusion",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        }
+    )
+    pConclusion.addExpression({
+        id: "eAxiomRoot",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: null,
+        premiseId: conclusionPremiseId,
+        position: 0,
+        type: "variable",
+        variableId: "vAxiom",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+
+    engine.setConclusionPremise(conclusionPremiseId)
+    for (const c of claims) engine.setClaim(c)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * Builds a minimal engine with:
+ *   - A conclusion premise whose root is a single variable expression bound
+ *     to `cConclusion` (a normal claim).
+ *   - A supporting "naked-Q derivation premise" whose root is a single
+ *     variable expression bound to `cDerived` (a normal claim). This is the
+ *     post-`addClaim` scaffolding shape: every non-conclusion normal claim
+ *     has a hidden derivation premise minted in the naked-Q form.
+ *
+ * With only `cConclusion` assigned true and `cDerived` left unassigned, the
+ * standalone evaluator sees the naked-Q derivation premise's variable as
+ * null and propagates that null up through `allSupportingPremisesTrue` →
+ * Indeterminate. The engine's `asEvaluationContext()` filters naked-Q
+ * derivation premises out, so calling `engine.evaluate(...)` (the safety-
+ * net path) gives a definite verdict. Used by the C1 regression test.
+ */
+export function buildEngineWithNakedQSupportingPremise(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cConclusion", "Conclusion claim"),
+        makeClaim("cDerived", "Derived claim (scaffold)"),
+    ]
+    const claimLookup = createClaimLookup(claims)
+
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+
+    engine.addVariable(makeVariable("vConclusion", "C", "cConclusion"))
+
+    // Conclusion premise: single variable expression for cConclusion.
+    const conclusionPremiseId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(
+        conclusionPremiseId,
+        {
+            type: "freeform",
+            extras: {
+                title: "Conclusion — C",
+                role: "conclusion",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        }
+    )
+    pConclusion.addExpression({
+        id: "eConclusionRoot",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: null,
+        premiseId: conclusionPremiseId,
+        position: 0,
+        type: "variable",
+        variableId: "vConclusion",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+
+    // Naked-Q derivation premise for cDerived. `createPremiseWithId` with
+    // `type: "derivation"` auto-creates the consequent variable + naked-Q
+    // expression — we don't have to wire anything manually.
+    engine.createPremiseWithId("pNakedQ", {
+        type: "derivation",
+        derivedClaimId: "cDerived",
+        extras: {
+            creatorId: CREATOR_ID,
+            createdOn: NOW,
+            role: "supporting" as const,
+        },
+    })
+
+    engine.setConclusionPremise(conclusionPremiseId)
+    for (const c of claims) engine.setClaim(c)
+
+    engine.setBehavior("assistive")
+    return engine
+}
 
 /**
  * Fast-forwards a ReviewEngine through the claim phase, assigning `true` to every claim

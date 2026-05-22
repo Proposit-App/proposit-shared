@@ -4,7 +4,11 @@ import {
     toEvaluationContext,
     evaluateArgumentForReview,
 } from "../../review/evaluation.js"
-import { buildEngineWithTwoPremises } from "./fixtures.js"
+import {
+    buildEngineWithTwoPremises,
+    buildEngineWithAxiomaticConclusion,
+    buildEngineWithNakedQSupportingPremise,
+} from "./fixtures.js"
 import type { TReviewDraft } from "../../../schemas/review.js"
 
 function draftSkeleton(): TReviewDraft {
@@ -119,5 +123,83 @@ describe("evaluation", () => {
         expect(typeof result.conclusionTrue === "boolean").toBe(true)
         // 0.9.0+: argument-wide propagated map is populated with includeDiagnostics: true
         expect(result.propagatedVariableValues).toBeDefined()
+    })
+
+    // Bug fix regression test (followups-sweep-2026-05, C1).
+    //
+    // Pre-fix, `evaluateArgumentForReview` constructed an evaluation context
+    // manually (`toEvaluationContext`) and called the standalone
+    // `evaluateArgument` directly. That bypassed two safety nets that
+    // `ArgumentEngine.evaluate()` applies in core 1.0:
+    //   1. Axiomatic-bound variables are forced to `true` before evaluation.
+    //   2. Naked-Q derivation premises are filtered out of the eval context.
+    //
+    // The user-visible symptom was a "Indeterminate" verdict on arguments that
+    // should evaluate cleanly post-Grammar-Tiers 1.0. See investigation report:
+    // proposit-server/docs/research/2026-05-16-review-indeterminate-bug.md.
+    it("forces axiomatic-bound variables to true (does NOT return Indeterminate)", () => {
+        const engine = buildEngineWithAxiomaticConclusion()
+        const now = new Date()
+        // Draft assigns NOTHING — the axiom variable is intentionally left
+        // unassigned (the wizard never offers an axiom for user assignment).
+        // The conclusion premise is `ax_var` (a single-variable expression
+        // bound to the axiomatic claim).
+        const draft: TReviewDraft = {
+            schemaVersion: 1,
+            reviewId: "00000000-0000-0000-0000-000000000001",
+            argumentId: engine.getArgument().id,
+            argumentVersion: 1,
+            userId: undefined,
+            createdAt: now,
+            updatedAt: now,
+            phase: "operators",
+            currentStepIndex: 0,
+            claimAssignments: {},
+            operatorAssignments: [],
+        }
+        const result = evaluateArgumentForReview(draft, engine)
+        // Pre-fix: result.conclusionTrue === null → UI shows "Indeterminate".
+        // Post-fix: axiom var forced true → conclusion var true → conclusionTrue === true.
+        expect(result.ok).toBe(true)
+        expect(result.conclusionTrue).toBe(true)
+    })
+
+    it("filters naked-Q derivation premises out of supporting-premise evaluation", () => {
+        const engine = buildEngineWithNakedQSupportingPremise()
+        const now = new Date()
+        // Assign the conclusion claim (`cConclusion`) true. The naked-Q
+        // derivation premise binds to `cDerived` which the user does NOT
+        // assign (claim queue should not surface it — but if the filter is
+        // missing the premise still contributes a null to the supporting
+        // chain).
+        const draft: TReviewDraft = {
+            schemaVersion: 1,
+            reviewId: "00000000-0000-0000-0000-000000000002",
+            argumentId: engine.getArgument().id,
+            argumentVersion: 1,
+            userId: undefined,
+            createdAt: now,
+            updatedAt: now,
+            phase: "operators",
+            currentStepIndex: 0,
+            claimAssignments: {
+                cConclusion: {
+                    assignmentId: "a-conclusion",
+                    claimId: "cConclusion",
+                    value: true,
+                    skipped: false,
+                    decidedAt: now,
+                },
+            },
+            operatorAssignments: [],
+        }
+        const result = evaluateArgumentForReview(draft, engine)
+        // Pre-fix: naked-Q derivation premise's variable `cDerived` is null
+        // (no user assignment) → its premise evaluates to null →
+        // `allSupportingPremisesTrue` is null → "Indeterminate".
+        // Post-fix: filter excludes the naked-Q premise; only the conclusion
+        // premise remains (its single var = cConclusion = true).
+        expect(result.ok).toBe(true)
+        expect(result.conclusionTrue).toBe(true)
     })
 })
