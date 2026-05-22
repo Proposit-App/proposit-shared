@@ -105,6 +105,89 @@ describe("mutateUpdatePremiseRole", () => {
 
         expect(engine.getConclusionPremise()).toBeUndefined()
     })
+
+    // Followups-sweep-2026-05 C3: extras.role must stay in sync with role-state.
+    //
+    // `engine.setConclusionPremise(id)` and `engine.clearConclusionPremise()`
+    // only update the engine's `conclusionPremiseId` slot — they never touch
+    // the affected premise's `extras.role` field. Pre-fix, the server worked
+    // around this in cycle-5 by chasing every `mutateUpdatePremiseRole` with a
+    // `mutateUpdatePremiseExtras({ role })` call. Mobile clients (and any
+    // future consumer) hitting `mutateUpdatePremiseRole` directly would see
+    // `premise.role` stale on subsequent persistence operations.
+    //
+    // Lift the sync into the shared mutation so the helper is internally
+    // consistent.
+    test("syncs extras.role to 'conclusion' when promoting to conclusion", () => {
+        const engine = createTestEngine()
+        const pId = crypto.randomUUID()
+        mutateCreatePremise(engine, pId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "P",
+            role: "supporting",
+        })
+
+        mutateUpdatePremiseRole(engine, pId, "conclusion")
+
+        const pe = engine.getPremise(pId)
+        expect(pe?.toPremiseData().role).toBe("conclusion")
+    })
+
+    test("syncs extras.role to 'supporting' when demoting from conclusion", () => {
+        const engine = createTestEngine()
+        const pId = crypto.randomUUID()
+        mutateCreatePremise(engine, pId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "C",
+            role: "conclusion",
+        })
+
+        mutateUpdatePremiseRole(engine, pId, "supporting")
+
+        const pe = engine.getPremise(pId)
+        expect(pe?.toPremiseData().role).toBe("supporting")
+    })
+
+    // When promoting a new premise to conclusion, the prior conclusion is
+    // implicitly demoted at the role-state slot (core's setConclusionPremise
+    // overwrites `conclusionPremiseId`). The prior conclusion's
+    // `extras.role` must be synced to "supporting" so persistence writes
+    // don't pick up a stale "conclusion" value from the extras bag.
+    test("syncs prior conclusion's extras.role to 'supporting' when promoting a different premise", () => {
+        const engine = createTestEngine()
+        const oldConclusionId = crypto.randomUUID()
+        const newConclusionId = crypto.randomUUID()
+        mutateCreatePremise(engine, oldConclusionId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "Old C",
+            role: "conclusion",
+        })
+        mutateCreatePremise(engine, newConclusionId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "New C",
+            role: "supporting",
+        })
+
+        mutateUpdatePremiseRole(engine, newConclusionId, "conclusion")
+
+        expect(engine.getConclusionPremise()?.getId()).toBe(newConclusionId)
+        const oldPe = engine.getPremise(oldConclusionId)
+        expect(oldPe?.toPremiseData().role).toBe("supporting")
+        const newPe = engine.getPremise(newConclusionId)
+        expect(newPe?.toPremiseData().role).toBe("conclusion")
+    })
 })
 
 describe("mutateDeletePremise", () => {

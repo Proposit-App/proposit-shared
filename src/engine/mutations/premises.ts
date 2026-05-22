@@ -77,18 +77,88 @@ export function mutateUpdatePremiseRole(
     premiseId: string,
     newRole: TPremiseRoleType
 ): { changes: ProjectChangeset } {
+    // `engine.setConclusionPremise(id)` / `engine.clearConclusionPremise()`
+    // only mutate the engine's `conclusionPremiseId` slot — they don't touch
+    // the affected premise's `extras.role`. Without this sync, callers that
+    // persist the engine's premise data after a role change would write a
+    // stale `role` field to storage (matching the server-side cycle-5
+    // workaround at proposit-server/src/model/logic.ts:1318 ff.). Lift the
+    // sync inside the mutation helper so every consumer — server, mobile,
+    // tests — gets a self-consistent in-memory model after the call returns.
+    //
+    // Three sync sites:
+    //   1. The target premise's `extras.role` matches `newRole`.
+    //   2. (Promotion-only) The prior conclusion's `extras.role` is demoted
+    //      to "supporting" — `setConclusionPremise(newId)` implicitly
+    //      replaces the old conclusion at the role-state slot, but leaves
+    //      its extras-bag stale at "conclusion".
+    //   3. (Demotion-only) The target premise is what we're clearing, so
+    //      sync site 1 covers it; no other premise needs touching.
     if (newRole === "conclusion") {
-        const { changes } = engine.setConclusionPremise(premiseId)
-        return { changes }
+        const collected: ProjectChangeset[] = []
+        const priorConclusion = engine.getConclusionPremise()
+        if (priorConclusion && priorConclusion.getId() !== premiseId) {
+            const { changes: priorExtrasChanges } = syncPremiseExtrasRole(
+                engine,
+                priorConclusion.getId(),
+                "supporting"
+            )
+            collected.push(priorExtrasChanges)
+        }
+        const { changes: roleChanges } = engine.setConclusionPremise(premiseId)
+        collected.push(roleChanges)
+        const { changes: extrasChanges } = syncPremiseExtrasRole(
+            engine,
+            premiseId,
+            "conclusion"
+        )
+        collected.push(extrasChanges)
+        return { changes: collected.reduce(mergeChangesets, {}) }
     }
 
     const currentConclusion = engine.getConclusionPremise()
     if (currentConclusion?.getId() === premiseId) {
-        const { changes } = engine.clearConclusionPremise()
-        return { changes }
+        const { changes: roleChanges } = engine.clearConclusionPremise()
+        const { changes: extrasChanges } = syncPremiseExtrasRole(
+            engine,
+            premiseId,
+            "supporting"
+        )
+        return { changes: mergeChangesets(roleChanges, extrasChanges) }
     }
 
-    return { changes: {} }
+    // The premise is already in the requested role-state. Still sync the
+    // extras-bag in case a prior caller's update left `extras.role`
+    // mismatched with the engine's role-state slot (defense in depth — the
+    // role-state-vs-extras gap is the entire reason this helper exists).
+    const { changes: extrasChanges } = syncPremiseExtrasRole(
+        engine,
+        premiseId,
+        newRole
+    )
+    return { changes: extrasChanges }
+}
+
+/**
+ * Sets `extras.role` to `role` on the named premise. Used by
+ * `mutateUpdatePremiseRole` to keep `extras.role` in sync with the engine's
+ * `conclusionPremiseId` slot. Returns the standard `{ changes }` shape so
+ * callers can merge into their own changeset.
+ *
+ * Returns `{ changes: {} }` when the premise doesn't exist — keeping the
+ * surface lenient mirrors `mutateUpdatePremiseRole`'s "no-op when
+ * already-in-state" branch and matches the server's update-premise route
+ * which checks existence before delegating.
+ */
+function syncPremiseExtrasRole(
+    engine: ProjectEngine,
+    premiseId: string,
+    role: TPremiseRoleType
+): { changes: ProjectChangeset } {
+    const pe = engine.getPremise(premiseId)
+    if (!pe) return { changes: {} }
+    const { changes } = pe.updateExtras({ role })
+    return { changes }
 }
 
 export function mutateUpdatePremiseExtras(
