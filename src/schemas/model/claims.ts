@@ -155,11 +155,22 @@ export function isAxiomaticClaim(claim: TClaim): claim is TAxiomaticClaim {
     return claim.type === "axiomatic"
 }
 
-// Re-based on NormalClaimSchema. Server's getClaims() filters by
-// type='normal' before populating childClaimIds/childCitationIds, so this
-// type accurately describes only Normal-with-children rows.
-export const ClaimWithChildrenSchema = Type.Interface([NormalClaimSchema], {
-    childClaimIds: Type.Array(UUID),
-    childCitationIds: Type.Array(UUID),
-})
+// Union of NormalClaim | AxiomaticClaim with `childClaimIds` /
+// `childCitationIds` arrays attached. Citation claims are excluded — they
+// have no children of their own (they're leaf citations).
+//
+// Widened from NormalClaim-only in `@proposit/shared@0.12.1` to admit
+// axiomatic claims. Server's `getClaims()` filtered by `type='normal'` in
+// pre-axiom releases; the R5 axiom-mutation server slice removed that filter
+// so axiomatic claims now flow through this surface. The schema follows.
+export const ClaimWithChildrenSchema = Type.Union([
+    Type.Interface([NormalClaimSchema], {
+        childClaimIds: Type.Array(UUID),
+        childCitationIds: Type.Array(UUID),
+    }),
+    Type.Interface([AxiomaticClaimSchema], {
+        childClaimIds: Type.Array(UUID),
+        childCitationIds: Type.Array(UUID),
+    }),
+])
 export type TClaimWithChildren = Static<typeof ClaimWithChildrenSchema>

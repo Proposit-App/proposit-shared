@@ -4,6 +4,7 @@ import {
     AxiomaticClaimSchema,
     CitationClaimSchema,
     ClaimSchema,
+    ClaimWithChildrenSchema,
     isAxiomaticClaim,
     isCitationClaim,
     isNormalClaim,
@@ -202,6 +203,37 @@ describe("ClaimSchema (union)", () => {
     it("rejects an object whose type is not one of the three literals", () => {
         const bad = { ...normalBase, type: "unknown" }
         expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+})
+
+describe("ClaimWithChildrenSchema", () => {
+    // Followups-sweep-2026-05 C2: widened from NormalClaim-only to
+    // NormalClaim | AxiomaticClaim. The server's getClaims() no longer
+    // filters by type='normal' before populating childClaimIds / childCitationIds
+    // (the R5 server slice removed that filter), so axiomatic claims now flow
+    // through this surface and must validate.
+    const withChildrenExtras = {
+        childClaimIds: [],
+        childCitationIds: [],
+    }
+
+    it("accepts a normal claim with children-id arrays", () => {
+        const payload = { ...normalBase, ...withChildrenExtras }
+        expect(Value.Check(ClaimWithChildrenSchema, payload)).toBe(true)
+    })
+
+    it("accepts an axiomatic claim with children-id arrays", () => {
+        const payload = { ...axiomaticBase, ...withChildrenExtras }
+        expect(Value.Check(ClaimWithChildrenSchema, payload)).toBe(true)
+    })
+
+    it("rejects a citation claim (citations don't carry children)", () => {
+        const payload = { ...citationBase, ...withChildrenExtras }
+        expect(Value.Check(ClaimWithChildrenSchema, payload)).toBe(false)
+    })
+
+    it("rejects a claim missing the children-id arrays", () => {
+        expect(Value.Check(ClaimWithChildrenSchema, normalBase)).toBe(false)
     })
 })
 

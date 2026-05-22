@@ -27,6 +27,7 @@ Run this BEFORE creating your `followups-sweep-2026-05` branch so the tag lands 
 **Investigation:** `/Users/brian/Projects/Proposit-App/docs/research/proposit-server/2026-05-16-review-indeterminate-bug.md` (already in tree, written during Grammar Tiers; read before starting).
 
 **Symptom:** `toEvaluationContext` constructs an evaluation context manually, bypassing `ArgumentEngine.asEvaluationContext()`'s safety nets:
+
 - no naked-Q filter (Q variables that have no defining expression get included as freely-assignable)
 - no axiomatic-var forcing (axiomatic claim variables not pinned to `true`)
 
