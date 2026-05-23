@@ -19,7 +19,7 @@ Phase 1 lands two small additive surfaces in `proposit-shared`:
 
 **Critical platform-state preflight finding:** the workspace plan originally said `src/tasks/ingest-argument/` for the new schemas, but `proposit-shared`'s existing convention puts schemas under `src/schemas/` with sub-entry exports declared in `package.json`. This briefing uses the actual repo convention (`src/schemas/`), not the plan's invented `src/tasks/` path. The semantics are unchanged — the schemas are wire-format contracts, just placed where they belong.
 
-**Public wire shape is NOT changing.** The existing `/api/v1/argument/import/raw_text` route uses `CreateArgumentSchema` (`{ origin: "raw_text", data: { text } }`) and stays exactly that way. The new `IngestArgumentTaskInputSchema` is the *internal* task-input shape that the server's route handler will construct from the public body before passing into the pipeline framework — it's not a public route schema.
+**Public wire shape is NOT changing.** The existing `/api/v1/argument/import/raw_text` route uses `CreateArgumentSchema` (`{ origin: "raw_text", data: { text } }`) and stays exactly that way. The new `IngestArgumentTaskInputSchema` is the _internal_ task-input shape that the server's route handler will construct from the public body before passing into the pipeline framework — it's not a public route schema.
 
 No public `api-client` wrapper ships in Phase 1. Per spec §14 item 11, the path is reserved but a typed wrapper around the existing `createArgument`-with-origin-raw-text call can be added in a later slice if/when needed. **Do not add an `api-client/ingest-argument.ts` file in this slice.**
 
@@ -39,11 +39,11 @@ Add internal task-input schemas + a re-export of `ProcessingFailureSchema` from 
 ### Files to modify
 
 - `package.json`:
-  - Bump `dependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
-  - Bump `peerDependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
-  - Add two new `exports` entries (alphabetically slotted next to the existing ones; preserve the file's stable shape):
-    - `"./schemas/ingest-argument"` → `./dist/schemas/ingest-argument/index.d.ts` / `.js`
-    - `"./schemas/processing-failure"` → `./dist/schemas/processing-failure.d.ts` / `.js`
+    - Bump `dependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
+    - Bump `peerDependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
+    - Add two new `exports` entries (alphabetically slotted next to the existing ones; preserve the file's stable shape):
+        - `"./schemas/ingest-argument"` → `./dist/schemas/ingest-argument/index.d.ts` / `.js`
+        - `"./schemas/processing-failure"` → `./dist/schemas/processing-failure.d.ts` / `.js`
 - `src/schemas/index.ts` — if this barrel re-exports submodules, add the two new ones surgically (only what consumers need); follow the existing pattern. If it doesn't aggregate submodules (sub-entries already provide the path), no change needed.
 
 ### Type definitions — exact shapes
@@ -57,7 +57,9 @@ export const IngestionPipelineVersionSchema = Type.Union([
     Type.Literal("v1-single-shot"),
     Type.Literal("v2-multi-stage"),
 ])
-export type TIngestionPipelineVersion = Static<typeof IngestionPipelineVersionSchema>
+export type TIngestionPipelineVersion = Static<
+    typeof IngestionPipelineVersionSchema
+>
 
 /**
  * Internal task input passed from a server route handler into the
@@ -74,7 +76,9 @@ export const IngestArgumentTaskInputSchema = Type.Object({
     title: Type.Optional(Type.String()),
     description: Type.Optional(Type.String()),
 })
-export type TIngestArgumentTaskInput = Static<typeof IngestArgumentTaskInputSchema>
+export type TIngestArgumentTaskInput = Static<
+    typeof IngestArgumentTaskInputSchema
+>
 ```
 
 ```ts
@@ -115,11 +119,11 @@ And the runtime schema would land in a future shared slice when core adds it. Fl
 ### Test plan
 
 - `src/schemas/ingest-argument/__tests__/index.test.ts` — small TypeBox round-trip tests:
-  - Valid input: `{ text: "hi", pipelineVersion: "v1-single-shot" }` parses cleanly.
-  - Invalid `pipelineVersion: "v3-future"` rejects with a clear error.
-  - Empty text rejects.
-  - Text exceeding 50_000 chars rejects.
-  - Optional `title` / `description` accepted when present and when absent.
+    - Valid input: `{ text: "hi", pipelineVersion: "v1-single-shot" }` parses cleanly.
+    - Invalid `pipelineVersion: "v3-future"` rejects with a clear error.
+    - Empty text rejects.
+    - Text exceeding 50_000 chars rejects.
+    - Optional `title` / `description` accepted when present and when absent.
 - `src/schemas/__tests__/processing-failure.test.ts` (optional): one assertion that `import { ProcessingFailureSchema } from "../processing-failure.js"` returns the same schema instance as `import { ProcessingFailureSchema } from "@proposit/proposit-core"`. If only the type is exported (per the validation step above), assert the type-only re-export compiles.
 
 Existing shared test suite must continue to pass.
