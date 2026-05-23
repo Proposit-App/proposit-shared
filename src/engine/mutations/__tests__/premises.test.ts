@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest"
+import { InvariantViolationError } from "@proposit/proposit-core"
 import { createTestEngine } from "./helpers.js"
 import {
     mutateCreatePremise,
@@ -89,7 +90,29 @@ describe("mutateUpdatePremiseRole", () => {
         expect(result.changes).toBeDefined()
     })
 
-    test("clears conclusion role", () => {
+    // Sync-to-core@1.0.2 E-7 invariant. Pre-1.0.2 the engine permitted a
+    // non-empty argument to have `conclusionPremiseId === undefined`; this
+    // helper's demote branch called `engine.clearConclusionPremise()` which
+    // unset the slot, and the test below asserted the unset.
+    //
+    // Core 1.0.2 added the E-7 invariant: "a non-empty argument always has
+    // a conclusion designated". `clearConclusionPremise()` became a no-op
+    // when premises exist. Under that invariant there is NO valid
+    // "demote the current conclusion in place" operation — the only way to
+    // re-shape the conclusion-role designation on a non-empty argument is
+    // to promote a different premise (which atomically replaces the
+    // current conclusion at the role-state slot; covered separately above).
+    //
+    // The helper now refuses the operation explicitly via
+    // `InvariantViolationError(ARGUMENT_NO_CONCLUSION)` rather than
+    // silently swallowing the request (which would leave the engine's
+    // role-state slot still pointing at the premise while `extras.role`
+    // drifted to "supporting" — exactly the role-state-vs-extras gap this
+    // helper was created to prevent). Refusal also matches the Proposit
+    // "no changes to argument without consent" principle: when the user's
+    // request is structurally incompatible with the invariant, tell them
+    // honestly rather than half-apply the change.
+    test("throws InvariantViolationError when demoting the sole conclusion (E-7)", () => {
         const engine = createTestEngine()
         const pId = crypto.randomUUID()
         mutateCreatePremise(engine, pId, {
@@ -101,9 +124,52 @@ describe("mutateUpdatePremiseRole", () => {
             role: "conclusion",
         })
 
-        mutateUpdatePremiseRole(engine, pId, "supporting")
+        expect(() =>
+            mutateUpdatePremiseRole(engine, pId, "supporting")
+        ).toThrow(InvariantViolationError)
 
-        expect(engine.getConclusionPremise()).toBeUndefined()
+        // Engine state is unchanged — E-7 still holds, extras-role still
+        // matches the engine's role-state slot.
+        expect(engine.getConclusionPremise()?.getId()).toBe(pId)
+        expect(engine.getPremise(pId)?.toPremiseData().role).toBe("conclusion")
+    })
+
+    test("throws InvariantViolationError when demoting the conclusion alongside other premises (E-7)", () => {
+        // Multi-premise variant: same invariant applies. The legitimate
+        // way to swap the conclusion designation is to promote a different
+        // premise (atomic replace), not to demote the current one in
+        // place and leave the argument conclusion-less mid-mutation.
+        const engine = createTestEngine()
+        const conclusionId = crypto.randomUUID()
+        const supportingId = crypto.randomUUID()
+        mutateCreatePremise(engine, conclusionId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "C",
+            role: "conclusion",
+        })
+        mutateCreatePremise(engine, supportingId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "P",
+            role: "supporting",
+        })
+
+        expect(() =>
+            mutateUpdatePremiseRole(engine, conclusionId, "supporting")
+        ).toThrow(InvariantViolationError)
+
+        expect(engine.getConclusionPremise()?.getId()).toBe(conclusionId)
+        expect(engine.getPremise(conclusionId)?.toPremiseData().role).toBe(
+            "conclusion"
+        )
+        expect(engine.getPremise(supportingId)?.toPremiseData().role).toBe(
+            "supporting"
+        )
     })
 
     // Followups-sweep-2026-05 C3: extras.role must stay in sync with role-state.
@@ -136,23 +202,13 @@ describe("mutateUpdatePremiseRole", () => {
         expect(pe?.toPremiseData().role).toBe("conclusion")
     })
 
-    test("syncs extras.role to 'supporting' when demoting from conclusion", () => {
-        const engine = createTestEngine()
-        const pId = crypto.randomUUID()
-        mutateCreatePremise(engine, pId, {
-            argumentId: "test-arg-id",
-            argumentVersion: 1,
-            creatorId: "test-user-id",
-            createdOn: new Date(),
-            title: "C",
-            role: "conclusion",
-        })
-
-        mutateUpdatePremiseRole(engine, pId, "supporting")
-
-        const pe = engine.getPremise(pId)
-        expect(pe?.toPremiseData().role).toBe("supporting")
-    })
+    // The pre-E-7 "syncs extras.role to 'supporting' when demoting from
+    // conclusion" test that previously sat here demoted the sole conclusion
+    // in place. Core@1.0.2's E-7 invariant ("a non-empty argument always
+    // has a conclusion") makes that operation illegitimate — see the
+    // throw-tests above. The "supporting via implicit demote" path now goes
+    // through the promote-a-different-premise route, covered by the test
+    // immediately below.
 
     // When promoting a new premise to conclusion, the prior conclusion is
     // implicitly demoted at the role-state slot (core's setConclusionPremise

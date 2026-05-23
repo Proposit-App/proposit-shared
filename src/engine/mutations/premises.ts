@@ -146,13 +146,36 @@ export function mutateUpdatePremiseRole(
 
     const currentConclusion = engine.getConclusionPremise()
     if (currentConclusion?.getId() === premiseId) {
-        const { changes: roleChanges } = engine.clearConclusionPremise()
-        const { changes: extrasChanges } = syncPremiseExtrasRole(
-            engine,
-            premiseId,
-            "supporting"
-        )
-        return { changes: mergeChangesets(roleChanges, extrasChanges) }
+        // E-7 invariant (core@^1.0.2): a non-empty argument always has a
+        // conclusion designated. Demoting the current conclusion in place
+        // would leave the argument conclusion-less mid-mutation, which the
+        // engine forbids — `engine.clearConclusionPremise()` is a no-op
+        // when premises exist (it returns the current role state unchanged
+        // with an empty changeset). Calling it here and chasing with
+        // `syncPremiseExtrasRole(..., "supporting")` would silently desync
+        // `extras.role` from the engine's role-state slot (the engine
+        // keeps the premise as conclusion, but extras now says
+        // supporting) — exactly the drift this helper was created to
+        // prevent. The legitimate way to swap the conclusion on a non-
+        // empty argument is to promote a different premise via
+        // `mutateUpdatePremiseRole(otherId, "conclusion")`, which
+        // atomically replaces the conclusion designation at the role-state
+        // slot AND syncs both premises' extras-roles in one shot.
+        //
+        // Throw with core's `InvariantViolationError` so server route
+        // handlers can map this to a 409 Conflict and surface a clear
+        // message to the user (matches the Proposit "no changes without
+        // consent" principle: refuse and explain rather than half-apply).
+        throw new InvariantViolationError([
+            {
+                code: "ARGUMENT_NO_CONCLUSION",
+                message:
+                    "Cannot demote the current conclusion premise in place — a non-empty argument must always have a conclusion designated (E-7). Promote a different premise to conclusion instead, which atomically replaces the designation.",
+                entityType: "premise",
+                entityId: premiseId,
+                premiseId,
+            },
+        ])
     }
 
     // The premise is already in the requested role-state. Still sync the
