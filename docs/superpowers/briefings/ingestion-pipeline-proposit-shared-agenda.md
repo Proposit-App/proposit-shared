@@ -202,8 +202,8 @@ Alternative fix (rejected for V1): throw `InvariantViolationError` mirroring sli
 **Test in `src/engine/mutations/__tests__/premises.test.ts`:**
 
 - Add or extend an existing test: create the first premise of a new engine with `role: "supporting"` (or `role: "criterion"` for an even-clearer test of the override semantics). Assert:
-  - `engine.getConclusionPremise()?.getId() === pId` (engine state).
-  - `engine.getPremise(pId).extras.role === "conclusion"` (extras stays in sync — NOT `"supporting"`).
+    - `engine.getConclusionPremise()?.getId() === pId` (engine state).
+    - `engine.getPremise(pId).extras.role === "conclusion"` (extras stays in sync — NOT `"supporting"`).
 - The existing creation tests for `role: "conclusion"` on first premise should still pass unchanged.
 
 **P3 — Add `InvariantViolationError.violations[0].code === "ARGUMENT_NO_CONCLUSION"` assertion to slice 1E.A's throw-tests.**
@@ -229,7 +229,7 @@ In the two throw-tests added in `7ef95a1` (`mutateUpdatePremiseRole` demote refu
 ### Carry-forward (orchestrator-tracked, not for this dev)
 
 - Slice 1G briefing must instruct `proposit-server-backend-dev` to:
-  - Search for callers of `mutateUpdatePremiseRole` across `proposit-server/src/`. Reviewer already identified `src/model/logic.ts:1264-1283` and `arg-data-context/premise-actions.ts:117-138` as the two known sites.
-  - **Delete the defensive "demote prior conclusion → promote new premise" two-call pattern.** Shared's promote-to-conclusion branch now atomically swaps the prior conclusion's role to supporting; the server's role-change becomes a single call to `mutateUpdatePremiseRole(newPremiseId, "conclusion")`.
-  - **Add 409 mapping** for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"` in route handlers that may receive it (`onAssignConclusion` flow at `premise-gear-menu-host.tsx:82` is the only UI affordance shipping today; route handlers behind that UI need the mapping).
+    - Search for callers of `mutateUpdatePremiseRole` across `proposit-server/src/`. Reviewer already identified `src/model/logic.ts:1264-1283` and `arg-data-context/premise-actions.ts:117-138` as the two known sites.
+    - **Delete the defensive "demote prior conclusion → promote new premise" two-call pattern.** Shared's promote-to-conclusion branch now atomically swaps the prior conclusion's role to supporting; the server's role-change becomes a single call to `mutateUpdatePremiseRole(newPremiseId, "conclusion")`.
+    - **Add 409 mapping** for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"` in route handlers that may receive it (`onAssignConclusion` flow at `premise-gear-menu-host.tsx:82` is the only UI affordance shipping today; route handlers behind that UI need the mapping).
 - Slice 1I (mobile) briefing: the reviewer confirmed mobile has ZERO callers of `mutateUpdatePremiseRole`. The dep-bump-only scope holds.

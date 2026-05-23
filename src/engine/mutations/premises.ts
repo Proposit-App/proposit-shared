@@ -50,20 +50,47 @@ export function mutateCreatePremise(
         const { changes: roleChanges } = engine.setConclusionPremise(premiseId)
         allChanges = mergeChangesets(changes, roleChanges)
     } else if (engine.getConclusionPremise()?.getId() === premiseId) {
-        // Caller requested `role: "supporting"`. proposit-core 0.8.0+
-        // auto-sets the first premise as conclusion regardless of the
-        // requested role, so we have to address the mismatch here.
+        // Caller requested a non-conclusion role for the first premise of
+        // a new argument. Core's `createPremiseWithId` unconditionally
+        // auto-assigns the first premise as conclusion (the
+        // "auto-conclusion assignment" rule), and core@1.0.2's E-7
+        // invariant ("a non-empty argument always has a conclusion
+        // designated") makes `engine.clearConclusionPremise()` a no-op
+        // when premises exist — so the helper cannot undo the
+        // auto-assignment. The previous implementation called
+        // `clearConclusionPremise()` here and let `extras.role` retain
+        // the caller's requested value, which silently desynced the
+        // engine's `conclusionPremiseId` slot (still pointing at this
+        // premise) from `extras.role` (set to "supporting"). That drift
+        // is exactly the role-state-vs-extras gap this helper layer
+        // exists to prevent.
         //
-        // Under `@proposit/proposit-core@^1.0.2` the engine refuses to
-        // leave a non-empty argument without a conclusion (the E-7
-        // invariant), so this `clearConclusionPremise()` call is a no-op
-        // when the new premise is the first/only one — the auto-assigned
-        // conclusion role correctly stays in place. For premises 2+ on
-        // 1.0.2, and for all premises on `^1.0.0`/`^1.0.1`, the call
-        // clears the conclusion-role designation the caller did not
-        // request.
-        const { changes: clearChanges } = engine.clearConclusionPremise()
-        allChanges = mergeChangesets(changes, clearChanges)
+        // Sync `extras.role` to "conclusion" to match the engine's
+        // auto-assigned designation. The helper's contract becomes:
+        // "the first premise of a brand-new argument is always conclusion,
+        // regardless of the caller-requested role — both at the engine
+        // slot AND in `extras.role`." Symmetric with slice 1E.A's
+        // `mutateUpdatePremiseRole` demote refusal: when the engine's
+        // invariants are incompatible with the caller's exact intent,
+        // surface the actual outcome rather than half-apply.
+        const { changes: extrasChanges } = syncPremiseExtrasRole(
+            engine,
+            premiseId,
+            "conclusion"
+        )
+        // `syncPremiseExtrasRole` routes through `updateExtras` which marks
+        // the premise as `modified` in its changeset. The outer
+        // `engine.createPremiseWithId(...)` already added the premise in
+        // its own changeset — the same id appearing in both `added` and
+        // `modified` trips `mergeChangesets`'s single-bucket invariant.
+        // Drop the redundant `modified` entry so the merged result carries
+        // only the `added` row (whose data reflects the final post-sync
+        // state, since `updateExtras` mutated the same in-memory premise).
+        const cleanedExtrasChanges = withoutPremiseModifications(
+            extrasChanges,
+            premiseId
+        )
+        allChanges = mergeChangesets(changes, cleanedExtrasChanges)
     }
 
     return {

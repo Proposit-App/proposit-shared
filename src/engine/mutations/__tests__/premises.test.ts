@@ -8,7 +8,18 @@ import {
 } from "../premises.js"
 
 describe("mutateCreatePremise", () => {
-    test("creates a supporting premise", () => {
+    // First-premise + caller-requested `role: "supporting"`: the engine
+    // auto-assigns the first premise of a new argument as conclusion (core's
+    // `createPremiseWithId` "auto-conclusion assignment" rule), and core@1.0.2's
+    // E-7 invariant makes `engine.clearConclusionPremise()` a no-op when
+    // premises exist — so the helper can't undo the auto-assignment. To
+    // prevent the engine's role-state slot from disagreeing with `extras.role`,
+    // the helper now syncs `extras.role` to "conclusion" (matching the engine)
+    // rather than honoring the caller's "supporting" request on the first
+    // premise. Symmetric in spirit with slice 1E.A's `mutateUpdatePremiseRole`
+    // demote refusal: when the engine's invariants are incompatible with the
+    // caller's exact intent, surface the actual outcome rather than half-apply.
+    test("first premise auto-assigns as conclusion regardless of requested 'supporting' role (E-7)", () => {
         const engine = createTestEngine()
         const premiseId = crypto.randomUUID()
 
@@ -23,9 +34,49 @@ describe("mutateCreatePremise", () => {
 
         expect(result.premise.id).toBe(premiseId)
         expect(result.premise.title).toBe("P1")
-        expect(result.premise.role).toBe("supporting")
+        // Engine state and extras.role both reflect the engine's
+        // auto-assigned conclusion — no role-state-vs-extras drift.
+        expect(engine.getConclusionPremise()?.getId()).toBe(premiseId)
+        expect(result.premise.role).toBe("conclusion")
+        expect(engine.getPremise(premiseId)?.toPremiseData().role).toBe(
+            "conclusion"
+        )
         expect(engine.listPremiseIds()).toContain(premiseId)
         expect(result.changes.premises?.added).toHaveLength(1)
+    })
+
+    test("second premise with 'supporting' role stays supporting (no auto-conclusion override)", () => {
+        // Once a conclusion exists, core's auto-conclusion rule does not
+        // fire, and the helper preserves the caller's requested
+        // "supporting" role unchanged. Pre-existing conclusion stays put.
+        const engine = createTestEngine()
+        const conclusionId = crypto.randomUUID()
+        mutateCreatePremise(engine, conclusionId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "C",
+            role: "conclusion",
+        })
+
+        const supportingId = crypto.randomUUID()
+        const result = mutateCreatePremise(engine, supportingId, {
+            argumentId: "test-arg-id",
+            argumentVersion: 1,
+            creatorId: "test-user-id",
+            createdOn: new Date(),
+            title: "P",
+            role: "supporting",
+        })
+
+        expect(result.premise.role).toBe("supporting")
+        expect(engine.getPremise(supportingId)?.toPremiseData().role).toBe(
+            "supporting"
+        )
+        // Conclusion designation unchanged — still points at the
+        // pre-existing conclusion premise.
+        expect(engine.getConclusionPremise()?.getId()).toBe(conclusionId)
     })
 
     test("creates a conclusion premise and sets conclusion role", () => {
@@ -124,9 +175,18 @@ describe("mutateUpdatePremiseRole", () => {
             role: "conclusion",
         })
 
-        expect(() =>
+        let caught: unknown
+        try {
             mutateUpdatePremiseRole(engine, pId, "supporting")
-        ).toThrow(InvariantViolationError)
+        } catch (err) {
+            caught = err
+        }
+        expect(caught).toBeInstanceOf(InvariantViolationError)
+        // Pin the violation code — server route handlers (slice 1G)
+        // pattern-match on this code to map to 409 Conflict.
+        expect((caught as InvariantViolationError).violations[0].code).toBe(
+            "ARGUMENT_NO_CONCLUSION"
+        )
 
         // Engine state is unchanged — E-7 still holds, extras-role still
         // matches the engine's role-state slot.
@@ -159,9 +219,16 @@ describe("mutateUpdatePremiseRole", () => {
             role: "supporting",
         })
 
-        expect(() =>
+        let caught: unknown
+        try {
             mutateUpdatePremiseRole(engine, conclusionId, "supporting")
-        ).toThrow(InvariantViolationError)
+        } catch (err) {
+            caught = err
+        }
+        expect(caught).toBeInstanceOf(InvariantViolationError)
+        expect((caught as InvariantViolationError).violations[0].code).toBe(
+            "ARGUMENT_NO_CONCLUSION"
+        )
 
         expect(engine.getConclusionPremise()?.getId()).toBe(conclusionId)
         expect(engine.getPremise(conclusionId)?.toPremiseData().role).toBe(
