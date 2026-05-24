@@ -233,3 +233,88 @@ In the two throw-tests added in `7ef95a1` (`mutateUpdatePremiseRole` demote refu
     - **Delete the defensive "demote prior conclusion → promote new premise" two-call pattern.** Shared's promote-to-conclusion branch now atomically swaps the prior conclusion's role to supporting; the server's role-change becomes a single call to `mutateUpdatePremiseRole(newPremiseId, "conclusion")`.
     - **Add 409 mapping** for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"` in route handlers that may receive it (`onAssignConclusion` flow at `premise-gear-menu-host.tsx:82` is the only UI affordance shipping today; route handlers behind that UI need the mapping).
 - Slice 1I (mobile) briefing: the reviewer confirmed mobile has ZERO callers of `mutateUpdatePremiseRole`. The dep-bump-only scope holds.
+
+---
+
+## Slice 1F — Release @proposit/shared@0.13.0
+
+**Pre-condition:** slices 1E + 1E.A + 1E.B all complete on `ingestion-pipeline/phase-1` at HEAD `8011b55`. **User approves the publish (implicit — same protocol as core's 1D.1: dev does steps 1–7, stops at the manual `pnpm publish` handoff).**
+**Branch:** merge `ingestion-pipeline/phase-1` → `main`, then cut the release on `main`.
+
+### Verified facts (orchestrator preflight)
+
+- `proposit-shared` has **no `.github/workflows/`** — no CI workflow, no publish workflow. Publish is fully manual; `prepublishOnly: pnpm run check` is the gate (runs locally before `pnpm publish` uploads).
+- Past releases were published by `proposit-admin` (`npm view @proposit/shared@0.12.2 _npmUser`).
+- shared **does not use `upcoming.md`** — past releases create `docs/release-notes/<version>.md` + `docs/changelogs/<version>.md` directly. The v0.12.2 prep commit `4a17910 docs(release): rotate v0.12.1 -> v0.12.2 + fold entries` is the canonical shape (rename + fold, not upcoming-rotation).
+
+### Sequence
+
+1. **Verify HEAD is clean and green.** `git status`, `git log --oneline -6` (should show 1E commits + briefing commits on top of `cbba801`), `pnpm run check`. STOP and surface if any check fails.
+
+2. **Merge `ingestion-pipeline/phase-1` → `main`.**
+   - `git checkout main`
+   - `git pull --ff-only origin main` — main is 1 commit ahead of origin per `cbba801` briefing commit. If origin rejects `--ff-only` because main is ahead, push first: `git push origin main`, then re-pull.
+   - `git merge --no-ff ingestion-pipeline/phase-1 -m "Merge ingestion-pipeline/phase-1: ingest-argument schemas + ProcessingFailure re-export + E-7 engine sync"`
+   - `--no-ff` preserves slice structure.
+
+3. **Write release notes + changelog.**
+   - Create `docs/release-notes/v0.13.0.md` — npm-consumer-facing. Cover:
+     - New `IngestArgumentTaskInputSchema` + `IngestionPipelineVersionSchema` at sub-entry `@proposit/shared/schemas/ingest-argument` (internal task-input shape; not a public route schema).
+     - New `TProcessingFailure` type re-export at sub-entry `@proposit/shared/schemas/processing-failure`. **Type-only for now** — core@1.1.1 ships only the TS type; a future shared minor adds the value re-export when core adds the runtime schema.
+     - Bumped `@proposit/proposit-core` from `^1.0.0` to `^1.1.1` in `peerDependencies` + `devDependencies`. **Behavior-change note (load-bearing for consumers):** the bump pulls in core@1.0.2's E-7 invariant. Two consequent helper-level behavior changes:
+       - `mutateUpdatePremiseRole` now **throws `InvariantViolationError({ code: "ARGUMENT_NO_CONCLUSION" })`** when called to demote the current conclusion premise to any other role. To replace conclusion atomically: call `mutateUpdatePremiseRole(newPremiseId, "conclusion")` directly — the promote-to-conclusion branch atomically swaps the prior conclusion's role to supporting.
+       - `mutateCreatePremise` now **syncs `extras.role` to `"conclusion"`** when creating the first premise of a new argument, regardless of caller-requested role. Subsequent premises honor caller intent.
+     - **Consumer migration:** route handlers / UI flows in `proposit-server` (and any future mobile authoring code) calling `mutateUpdatePremiseRole`: replace defensive demote-then-promote two-call patterns with a single promote call; add 409-mapping for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"`.
+   - Create `docs/changelogs/v0.13.0.md` — developer-facing, ordered by slice with commit hashes:
+     - Slice 1E (`a410110`): schemas + dep bump.
+     - Slice 1E.A (`7ef95a1`): E-7 demote refusal in `mutateUpdatePremiseRole`.
+     - Slice 1E.B (`8011b55`): `mutateCreatePremise` E-7 sync + `ARGUMENT_NO_CONCLUSION` error-code assertion.
+     - End: `pnpm run check` green; 369 tests pass; build clean.
+   - Commit: `docs(release): add v0.13.0 release notes + changelog`.
+
+4. **(Optional)** AGENTS.md / CLAUDE.md sync: if you think a "Pipeline-related schemas" subsection is warranted (mirroring the existing "Grammar rule-code coordination protocol" section's style), add it — but keep it to two sentences max. If unclear whether warranted, skip; can land in a later doc-sync slice.
+
+5. **Bump version.** `pnpm version minor` — produces a commit `0.13.0`. Verify with `git log --oneline -3`.
+
+6. **Tag.** `git tag v0.13.0` at HEAD. Verify: `git tag --list 'v0.13.*'`.
+
+7. **Push to origin.**
+   - `git push origin main`
+   - `git push origin v0.13.0`
+   - shared has no CI workflow — no GitHub Actions run will fire. The local `pnpm run check` was your gate.
+
+8. **STOP — hand off to the user for the manual `pnpm publish`.** Do NOT run `pnpm publish` yourself. Return DONE_WITH_CONCERNS with the handoff message verbatim.
+
+### Exit criteria (steps 1–7)
+
+- `main` has the merge of `ingestion-pipeline/phase-1` + the `0.13.0` version-bump commit.
+- Tag `v0.13.0` on origin.
+- `docs/release-notes/v0.13.0.md` + `docs/changelogs/v0.13.0.md` committed.
+- Working tree clean.
+
+### Handoff message for the user (return verbatim in your status)
+
+```
+v0.13.0 ready to publish. Run from /Users/brian/Projects/Proposit-App/proposit-shared/:
+
+  git checkout main
+  git pull origin main
+  npm whoami        # confirm logged in as proposit-admin
+  pnpm publish      # invokes prepublishOnly: pnpm run check (~30s); then uploads
+
+After it lands, confirm:
+
+  npm view @proposit/shared@0.13.0
+```
+
+### Notes
+
+- No co-authoring trailers; no `--no-verify`; no force-push.
+- shared has no CI workflow; the local `pnpm run check` is the only gate.
+- The core@1.1.0 lockfile drift that hit slice 1D doesn't apply here — slice 1E.B regenerated shared's lockfile and `pnpm install --frozen-lockfile` is verified passing at HEAD.
+
+### What is NOT in this slice
+
+- The `api-client/ingest-argument.ts` wrapper — deferred per spec §14 item 11.
+- Server consumer updates — slice 1G, separate dispatch.
+- Mobile dep bump — slice 1I, separate dispatch.
