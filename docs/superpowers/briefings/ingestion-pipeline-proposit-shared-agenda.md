@@ -19,7 +19,7 @@ Phase 1 lands two small additive surfaces in `proposit-shared`:
 
 **Critical platform-state preflight finding:** the workspace plan originally said `src/tasks/ingest-argument/` for the new schemas, but `proposit-shared`'s existing convention puts schemas under `src/schemas/` with sub-entry exports declared in `package.json`. This briefing uses the actual repo convention (`src/schemas/`), not the plan's invented `src/tasks/` path. The semantics are unchanged — the schemas are wire-format contracts, just placed where they belong.
 
-**Public wire shape is NOT changing.** The existing `/api/v1/argument/import/raw_text` route uses `CreateArgumentSchema` (`{ origin: "raw_text", data: { text } }`) and stays exactly that way. The new `IngestArgumentTaskInputSchema` is the *internal* task-input shape that the server's route handler will construct from the public body before passing into the pipeline framework — it's not a public route schema.
+**Public wire shape is NOT changing.** The existing `/api/v1/argument/import/raw_text` route uses `CreateArgumentSchema` (`{ origin: "raw_text", data: { text } }`) and stays exactly that way. The new `IngestArgumentTaskInputSchema` is the _internal_ task-input shape that the server's route handler will construct from the public body before passing into the pipeline framework — it's not a public route schema.
 
 No public `api-client` wrapper ships in Phase 1. Per spec §14 item 11, the path is reserved but a typed wrapper around the existing `createArgument`-with-origin-raw-text call can be added in a later slice if/when needed. **Do not add an `api-client/ingest-argument.ts` file in this slice.**
 
@@ -39,11 +39,11 @@ Add internal task-input schemas + a re-export of `ProcessingFailureSchema` from 
 ### Files to modify
 
 - `package.json`:
-  - Bump `dependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
-  - Bump `peerDependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
-  - Add two new `exports` entries (alphabetically slotted next to the existing ones; preserve the file's stable shape):
-    - `"./schemas/ingest-argument"` → `./dist/schemas/ingest-argument/index.d.ts` / `.js`
-    - `"./schemas/processing-failure"` → `./dist/schemas/processing-failure.d.ts` / `.js`
+    - Bump `dependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
+    - Bump `peerDependencies."@proposit/proposit-core"` from `^1.0.0` to `^1.1.1`.
+    - Add two new `exports` entries (alphabetically slotted next to the existing ones; preserve the file's stable shape):
+        - `"./schemas/ingest-argument"` → `./dist/schemas/ingest-argument/index.d.ts` / `.js`
+        - `"./schemas/processing-failure"` → `./dist/schemas/processing-failure.d.ts` / `.js`
 - `src/schemas/index.ts` — if this barrel re-exports submodules, add the two new ones surgically (only what consumers need); follow the existing pattern. If it doesn't aggregate submodules (sub-entries already provide the path), no change needed.
 
 ### Type definitions — exact shapes
@@ -57,7 +57,9 @@ export const IngestionPipelineVersionSchema = Type.Union([
     Type.Literal("v1-single-shot"),
     Type.Literal("v2-multi-stage"),
 ])
-export type TIngestionPipelineVersion = Static<typeof IngestionPipelineVersionSchema>
+export type TIngestionPipelineVersion = Static<
+    typeof IngestionPipelineVersionSchema
+>
 
 /**
  * Internal task input passed from a server route handler into the
@@ -74,7 +76,9 @@ export const IngestArgumentTaskInputSchema = Type.Object({
     title: Type.Optional(Type.String()),
     description: Type.Optional(Type.String()),
 })
-export type TIngestArgumentTaskInput = Static<typeof IngestArgumentTaskInputSchema>
+export type TIngestArgumentTaskInput = Static<
+    typeof IngestArgumentTaskInputSchema
+>
 ```
 
 ```ts
@@ -115,11 +119,11 @@ And the runtime schema would land in a future shared slice when core adds it. Fl
 ### Test plan
 
 - `src/schemas/ingest-argument/__tests__/index.test.ts` — small TypeBox round-trip tests:
-  - Valid input: `{ text: "hi", pipelineVersion: "v1-single-shot" }` parses cleanly.
-  - Invalid `pipelineVersion: "v3-future"` rejects with a clear error.
-  - Empty text rejects.
-  - Text exceeding 50_000 chars rejects.
-  - Optional `title` / `description` accepted when present and when absent.
+    - Valid input: `{ text: "hi", pipelineVersion: "v1-single-shot" }` parses cleanly.
+    - Invalid `pipelineVersion: "v3-future"` rejects with a clear error.
+    - Empty text rejects.
+    - Text exceeding 50_000 chars rejects.
+    - Optional `title` / `description` accepted when present and when absent.
 - `src/schemas/__tests__/processing-failure.test.ts` (optional): one assertion that `import { ProcessingFailureSchema } from "../processing-failure.js"` returns the same schema instance as `import { ProcessingFailureSchema } from "@proposit/proposit-core"`. If only the type is exported (per the validation step above), assert the type-only re-export compiles.
 
 Existing shared test suite must continue to pass.
@@ -157,3 +161,160 @@ One or two commits, depending on what feels clean:
 - **Lockfile gotcha** (from slice 1D): after bumping `@proposit/proposit-core` in `package.json`, run `pnpm install` (regen lockfile), then `pnpm install --frozen-lockfile` (verify CI gate). Commit the lockfile change in the same batch.
 - **Branch:** create `ingestion-pipeline/phase-1` off shared's `main` as your first action (matches the proposit-core branch naming).
 - **Final dispatch:** slice 1F (the release) is a separate dispatch after this slice's reviewer fold lands. Don't run `pnpm version` or `pnpm publish` from this slice.
+
+---
+
+## Slice 1E.B — Reviewer fold (P2 + selected P3)
+
+**Triggered by:** dual-review synthesis at `/Users/brian/Projects/Proposit-App/docs/reviews/proposit-shared/2026-05-23-a410110-7ef95a1-ingestion-pipeline-1E.md`.
+**Branch:** continue on `ingestion-pipeline/phase-1`.
+
+### Scope — one commit batch
+
+**P2 — Symmetric latent drift in `mutateCreatePremise`** (`src/engine/mutations/premises.ts:52-67`).
+
+The same core@1.0.2 E-7 invariant that surfaced slice 1E.A's demote bug also breaks the create-supporting-as-first-premise path in mirror image:
+
+1. Caller invokes `mutateCreatePremise(engine, pId, { ..., role: "supporting" })` to create the first premise of a new argument with role `supporting`.
+2. Internally, the helper calls `engine.createPremiseWithId(...)`.
+3. Core's `createPremiseWithId` auto-assigns the first premise as the conclusion (per core's "auto-conclusion assignment" rule — see core's CLAUDE.md "Auto-conclusion assignment: First premise added to an engine is auto-designated as conclusion if none is set").
+4. The shared helper tries to undo this by calling `engine.clearConclusionPremise()`.
+5. **Under core@1.0.2's E-7 invariant, `clearConclusionPremise()` is now a no-op when premises exist** (which they do — we just created one).
+6. The helper then proceeds with `syncPremiseExtrasRole({ role: "supporting" })`.
+
+Result: engine's `conclusionPremiseId` slot points at the premise (engine considers it the conclusion), but `extras.role === "supporting"`. Drift between engine state and extras — exactly the kind of internal inconsistency the helper was created to prevent.
+
+The dev annotated this case in the comment but mis-framed it as "the auto-assigned conclusion role correctly stays in place" — which is wrong: it's NOT correct, the role is requested as "supporting" by the caller but the engine has it as conclusion. The existing test doesn't assert engine state, so the drift is invisible.
+
+**Fix (lowest-impact, matches the comment's intent):**
+
+The comment frames the auto-assignment as a feature: "first premise of a new argument always becomes the conclusion regardless of what the caller asks for." If that's the intent, then `extras.role` should be `"conclusion"`, not `"supporting"`. **Sync extras to `"conclusion"` when core auto-assigns**, regardless of what the caller passed in `role`.
+
+Alternative fix (rejected for V1): throw `InvariantViolationError` mirroring slice 1E.A's pattern. Symmetric but more disruptive; callers may legitimately want to create a first premise without thinking about conclusion semantics. The auto-assign + sync-extras approach matches the existing comment's framing.
+
+**Implementation in `src/engine/mutations/premises.ts`:**
+
+1. After `engine.createPremiseWithId(...)`, check whether the engine auto-assigned this premise as conclusion (`engine.getConclusionPremise()?.getId() === pId`).
+2. If so AND the caller-requested role was NOT `"conclusion"`: instead of the current "clear + sync to caller-requested role" path, sync extras to `"conclusion"`.
+3. If the caller-requested role WAS `"conclusion"`: same as before, just sync extras to `"conclusion"`.
+4. Update the inline comment to reflect the actual behavior: "The first premise of a new argument is unconditionally auto-assigned as conclusion (core's E-7 invariant + auto-conclusion rule). We sync extras to match the engine, not the caller's requested role."
+
+**Test in `src/engine/mutations/__tests__/premises.test.ts`:**
+
+- Add or extend an existing test: create the first premise of a new engine with `role: "supporting"` (or `role: "criterion"` for an even-clearer test of the override semantics). Assert:
+    - `engine.getConclusionPremise()?.getId() === pId` (engine state).
+    - `engine.getPremise(pId).extras.role === "conclusion"` (extras stays in sync — NOT `"supporting"`).
+- The existing creation tests for `role: "conclusion"` on first premise should still pass unchanged.
+
+**P3 — Add `InvariantViolationError.violations[0].code === "ARGUMENT_NO_CONCLUSION"` assertion to slice 1E.A's throw-tests.**
+
+In the two throw-tests added in `7ef95a1` (`mutateUpdatePremiseRole` demote refusal — single-premise + multi-premise variants), add an `expect(err.violations[0].code).toBe("ARGUMENT_NO_CONCLUSION")` assertion. Server-side route handlers (slice 1G) will pattern-match on this code to map to 409 Conflict; locking the contract via a test prevents accidental code rename in a future cycle.
+
+### Items NOT in this fold
+
+- **Value.Parse vs Value.Check in the schema tests (P3):** keep `Value.Check` for now. The schemas don't have defaults/coercion paths; `Check` is enough. Revisit if/when schemas get coercion behavior.
+- **Slice 1G server carry-forward (P1-for-1G):** captured separately in the slice 1G briefing by the orchestrator. The shared change here is enough — the server slice fixes its own call-sites.
+- **Briefing wording about `dependencies` vs `peerDependencies`:** orchestrator-side process note; no code change.
+
+### Test plan additions
+
+- 1 new test (or extended existing test) for `mutateCreatePremise` first-premise-supporting → extras.role === "conclusion".
+- 2 new assertions in the existing slice 1E.A throw-tests for the error code.
+
+### Exit criteria
+
+- `pnpm run check` green.
+- One commit on `ingestion-pipeline/phase-1`: `fix(engine): fold reviewer findings — mutateCreatePremise E-7 sync + ARGUMENT_NO_CONCLUSION code assertion`.
+
+### Carry-forward (orchestrator-tracked, not for this dev)
+
+- Slice 1G briefing must instruct `proposit-server-backend-dev` to:
+    - Search for callers of `mutateUpdatePremiseRole` across `proposit-server/src/`. Reviewer already identified `src/model/logic.ts:1264-1283` and `arg-data-context/premise-actions.ts:117-138` as the two known sites.
+    - **Delete the defensive "demote prior conclusion → promote new premise" two-call pattern.** Shared's promote-to-conclusion branch now atomically swaps the prior conclusion's role to supporting; the server's role-change becomes a single call to `mutateUpdatePremiseRole(newPremiseId, "conclusion")`.
+    - **Add 409 mapping** for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"` in route handlers that may receive it (`onAssignConclusion` flow at `premise-gear-menu-host.tsx:82` is the only UI affordance shipping today; route handlers behind that UI need the mapping).
+- Slice 1I (mobile) briefing: the reviewer confirmed mobile has ZERO callers of `mutateUpdatePremiseRole`. The dep-bump-only scope holds.
+
+---
+
+## Slice 1F — Release @proposit/shared@0.13.0
+
+**Pre-condition:** slices 1E + 1E.A + 1E.B all complete on `ingestion-pipeline/phase-1` at HEAD `8011b55`. **User approves the publish (implicit — same protocol as core's 1D.1: dev does steps 1–7, stops at the manual `pnpm publish` handoff).**
+**Branch:** merge `ingestion-pipeline/phase-1` → `main`, then cut the release on `main`.
+
+### Verified facts (orchestrator preflight)
+
+- `proposit-shared` has **no `.github/workflows/`** — no CI workflow, no publish workflow. Publish is fully manual; `prepublishOnly: pnpm run check` is the gate (runs locally before `pnpm publish` uploads).
+- Past releases were published by `proposit-admin` (`npm view @proposit/shared@0.12.2 _npmUser`).
+- shared **does not use `upcoming.md`** — past releases create `docs/release-notes/<version>.md` + `docs/changelogs/<version>.md` directly. The v0.12.2 prep commit `4a17910 docs(release): rotate v0.12.1 -> v0.12.2 + fold entries` is the canonical shape (rename + fold, not upcoming-rotation).
+
+### Sequence
+
+1. **Verify HEAD is clean and green.** `git status`, `git log --oneline -6` (should show 1E commits + briefing commits on top of `cbba801`), `pnpm run check`. STOP and surface if any check fails.
+
+2. **Merge `ingestion-pipeline/phase-1` → `main`.**
+    - `git checkout main`
+    - `git pull --ff-only origin main` — main is 1 commit ahead of origin per `cbba801` briefing commit. If origin rejects `--ff-only` because main is ahead, push first: `git push origin main`, then re-pull.
+    - `git merge --no-ff ingestion-pipeline/phase-1 -m "Merge ingestion-pipeline/phase-1: ingest-argument schemas + ProcessingFailure re-export + E-7 engine sync"`
+    - `--no-ff` preserves slice structure.
+
+3. **Write release notes + changelog.**
+    - Create `docs/release-notes/v0.13.0.md` — npm-consumer-facing. Cover:
+        - New `IngestArgumentTaskInputSchema` + `IngestionPipelineVersionSchema` at sub-entry `@proposit/shared/schemas/ingest-argument` (internal task-input shape; not a public route schema).
+        - New `TProcessingFailure` type re-export at sub-entry `@proposit/shared/schemas/processing-failure`. **Type-only for now** — core@1.1.1 ships only the TS type; a future shared minor adds the value re-export when core adds the runtime schema.
+        - Bumped `@proposit/proposit-core` from `^1.0.0` to `^1.1.1` in `peerDependencies` + `devDependencies`. **Behavior-change note (load-bearing for consumers):** the bump pulls in core@1.0.2's E-7 invariant. Two consequent helper-level behavior changes:
+            - `mutateUpdatePremiseRole` now **throws `InvariantViolationError({ code: "ARGUMENT_NO_CONCLUSION" })`** when called to demote the current conclusion premise to any other role. To replace conclusion atomically: call `mutateUpdatePremiseRole(newPremiseId, "conclusion")` directly — the promote-to-conclusion branch atomically swaps the prior conclusion's role to supporting.
+            - `mutateCreatePremise` now **syncs `extras.role` to `"conclusion"`** when creating the first premise of a new argument, regardless of caller-requested role. Subsequent premises honor caller intent.
+        - **Consumer migration:** route handlers / UI flows in `proposit-server` (and any future mobile authoring code) calling `mutateUpdatePremiseRole`: replace defensive demote-then-promote two-call patterns with a single promote call; add 409-mapping for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"`.
+    - Create `docs/changelogs/v0.13.0.md` — developer-facing, ordered by slice with commit hashes:
+        - Slice 1E (`a410110`): schemas + dep bump.
+        - Slice 1E.A (`7ef95a1`): E-7 demote refusal in `mutateUpdatePremiseRole`.
+        - Slice 1E.B (`8011b55`): `mutateCreatePremise` E-7 sync + `ARGUMENT_NO_CONCLUSION` error-code assertion.
+        - End: `pnpm run check` green; 369 tests pass; build clean.
+    - Commit: `docs(release): add v0.13.0 release notes + changelog`.
+
+4. **(Optional)** AGENTS.md / CLAUDE.md sync: if you think a "Pipeline-related schemas" subsection is warranted (mirroring the existing "Grammar rule-code coordination protocol" section's style), add it — but keep it to two sentences max. If unclear whether warranted, skip; can land in a later doc-sync slice.
+
+5. **Bump version.** `pnpm version minor` — produces a commit `0.13.0`. Verify with `git log --oneline -3`.
+
+6. **Tag.** `git tag v0.13.0` at HEAD. Verify: `git tag --list 'v0.13.*'`.
+
+7. **Push to origin.**
+    - `git push origin main`
+    - `git push origin v0.13.0`
+    - shared has no CI workflow — no GitHub Actions run will fire. The local `pnpm run check` was your gate.
+
+8. **STOP — hand off to the user for the manual `pnpm publish`.** Do NOT run `pnpm publish` yourself. Return DONE_WITH_CONCERNS with the handoff message verbatim.
+
+### Exit criteria (steps 1–7)
+
+- `main` has the merge of `ingestion-pipeline/phase-1` + the `0.13.0` version-bump commit.
+- Tag `v0.13.0` on origin.
+- `docs/release-notes/v0.13.0.md` + `docs/changelogs/v0.13.0.md` committed.
+- Working tree clean.
+
+### Handoff message for the user (return verbatim in your status)
+
+```
+v0.13.0 ready to publish. Run from /Users/brian/Projects/Proposit-App/proposit-shared/:
+
+  git checkout main
+  git pull origin main
+  npm whoami        # confirm logged in as proposit-admin
+  pnpm publish      # invokes prepublishOnly: pnpm run check (~30s); then uploads
+
+After it lands, confirm:
+
+  npm view @proposit/shared@0.13.0
+```
+
+### Notes
+
+- No co-authoring trailers; no `--no-verify`; no force-push.
+- shared has no CI workflow; the local `pnpm run check` is the only gate.
+- The core@1.1.0 lockfile drift that hit slice 1D doesn't apply here — slice 1E.B regenerated shared's lockfile and `pnpm install --frozen-lockfile` is verified passing at HEAD.
+
+### What is NOT in this slice
+
+- The `api-client/ingest-argument.ts` wrapper — deferred per spec §14 item 11.
+- Server consumer updates — slice 1G, separate dispatch.
+- Mobile dep bump — slice 1I, separate dispatch.
