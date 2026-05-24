@@ -252,25 +252,25 @@ In the two throw-tests added in `7ef95a1` (`mutateUpdatePremiseRole` demote refu
 1. **Verify HEAD is clean and green.** `git status`, `git log --oneline -6` (should show 1E commits + briefing commits on top of `cbba801`), `pnpm run check`. STOP and surface if any check fails.
 
 2. **Merge `ingestion-pipeline/phase-1` → `main`.**
-   - `git checkout main`
-   - `git pull --ff-only origin main` — main is 1 commit ahead of origin per `cbba801` briefing commit. If origin rejects `--ff-only` because main is ahead, push first: `git push origin main`, then re-pull.
-   - `git merge --no-ff ingestion-pipeline/phase-1 -m "Merge ingestion-pipeline/phase-1: ingest-argument schemas + ProcessingFailure re-export + E-7 engine sync"`
-   - `--no-ff` preserves slice structure.
+    - `git checkout main`
+    - `git pull --ff-only origin main` — main is 1 commit ahead of origin per `cbba801` briefing commit. If origin rejects `--ff-only` because main is ahead, push first: `git push origin main`, then re-pull.
+    - `git merge --no-ff ingestion-pipeline/phase-1 -m "Merge ingestion-pipeline/phase-1: ingest-argument schemas + ProcessingFailure re-export + E-7 engine sync"`
+    - `--no-ff` preserves slice structure.
 
 3. **Write release notes + changelog.**
-   - Create `docs/release-notes/v0.13.0.md` — npm-consumer-facing. Cover:
-     - New `IngestArgumentTaskInputSchema` + `IngestionPipelineVersionSchema` at sub-entry `@proposit/shared/schemas/ingest-argument` (internal task-input shape; not a public route schema).
-     - New `TProcessingFailure` type re-export at sub-entry `@proposit/shared/schemas/processing-failure`. **Type-only for now** — core@1.1.1 ships only the TS type; a future shared minor adds the value re-export when core adds the runtime schema.
-     - Bumped `@proposit/proposit-core` from `^1.0.0` to `^1.1.1` in `peerDependencies` + `devDependencies`. **Behavior-change note (load-bearing for consumers):** the bump pulls in core@1.0.2's E-7 invariant. Two consequent helper-level behavior changes:
-       - `mutateUpdatePremiseRole` now **throws `InvariantViolationError({ code: "ARGUMENT_NO_CONCLUSION" })`** when called to demote the current conclusion premise to any other role. To replace conclusion atomically: call `mutateUpdatePremiseRole(newPremiseId, "conclusion")` directly — the promote-to-conclusion branch atomically swaps the prior conclusion's role to supporting.
-       - `mutateCreatePremise` now **syncs `extras.role` to `"conclusion"`** when creating the first premise of a new argument, regardless of caller-requested role. Subsequent premises honor caller intent.
-     - **Consumer migration:** route handlers / UI flows in `proposit-server` (and any future mobile authoring code) calling `mutateUpdatePremiseRole`: replace defensive demote-then-promote two-call patterns with a single promote call; add 409-mapping for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"`.
-   - Create `docs/changelogs/v0.13.0.md` — developer-facing, ordered by slice with commit hashes:
-     - Slice 1E (`a410110`): schemas + dep bump.
-     - Slice 1E.A (`7ef95a1`): E-7 demote refusal in `mutateUpdatePremiseRole`.
-     - Slice 1E.B (`8011b55`): `mutateCreatePremise` E-7 sync + `ARGUMENT_NO_CONCLUSION` error-code assertion.
-     - End: `pnpm run check` green; 369 tests pass; build clean.
-   - Commit: `docs(release): add v0.13.0 release notes + changelog`.
+    - Create `docs/release-notes/v0.13.0.md` — npm-consumer-facing. Cover:
+        - New `IngestArgumentTaskInputSchema` + `IngestionPipelineVersionSchema` at sub-entry `@proposit/shared/schemas/ingest-argument` (internal task-input shape; not a public route schema).
+        - New `TProcessingFailure` type re-export at sub-entry `@proposit/shared/schemas/processing-failure`. **Type-only for now** — core@1.1.1 ships only the TS type; a future shared minor adds the value re-export when core adds the runtime schema.
+        - Bumped `@proposit/proposit-core` from `^1.0.0` to `^1.1.1` in `peerDependencies` + `devDependencies`. **Behavior-change note (load-bearing for consumers):** the bump pulls in core@1.0.2's E-7 invariant. Two consequent helper-level behavior changes:
+            - `mutateUpdatePremiseRole` now **throws `InvariantViolationError({ code: "ARGUMENT_NO_CONCLUSION" })`** when called to demote the current conclusion premise to any other role. To replace conclusion atomically: call `mutateUpdatePremiseRole(newPremiseId, "conclusion")` directly — the promote-to-conclusion branch atomically swaps the prior conclusion's role to supporting.
+            - `mutateCreatePremise` now **syncs `extras.role` to `"conclusion"`** when creating the first premise of a new argument, regardless of caller-requested role. Subsequent premises honor caller intent.
+        - **Consumer migration:** route handlers / UI flows in `proposit-server` (and any future mobile authoring code) calling `mutateUpdatePremiseRole`: replace defensive demote-then-promote two-call patterns with a single promote call; add 409-mapping for `InvariantViolationError` with `code: "ARGUMENT_NO_CONCLUSION"`.
+    - Create `docs/changelogs/v0.13.0.md` — developer-facing, ordered by slice with commit hashes:
+        - Slice 1E (`a410110`): schemas + dep bump.
+        - Slice 1E.A (`7ef95a1`): E-7 demote refusal in `mutateUpdatePremiseRole`.
+        - Slice 1E.B (`8011b55`): `mutateCreatePremise` E-7 sync + `ARGUMENT_NO_CONCLUSION` error-code assertion.
+        - End: `pnpm run check` green; 369 tests pass; build clean.
+    - Commit: `docs(release): add v0.13.0 release notes + changelog`.
 
 4. **(Optional)** AGENTS.md / CLAUDE.md sync: if you think a "Pipeline-related schemas" subsection is warranted (mirroring the existing "Grammar rule-code coordination protocol" section's style), add it — but keep it to two sentences max. If unclear whether warranted, skip; can land in a later doc-sync slice.
 
@@ -279,9 +279,9 @@ In the two throw-tests added in `7ef95a1` (`mutateUpdatePremiseRole` demote refu
 6. **Tag.** `git tag v0.13.0` at HEAD. Verify: `git tag --list 'v0.13.*'`.
 
 7. **Push to origin.**
-   - `git push origin main`
-   - `git push origin v0.13.0`
-   - shared has no CI workflow — no GitHub Actions run will fire. The local `pnpm run check` was your gate.
+    - `git push origin main`
+    - `git push origin v0.13.0`
+    - shared has no CI workflow — no GitHub Actions run will fire. The local `pnpm run check` was your gate.
 
 8. **STOP — hand off to the user for the manual `pnpm publish`.** Do NOT run `pnpm publish` yourself. Return DONE_WITH_CONCERNS with the handoff message verbatim.
 
