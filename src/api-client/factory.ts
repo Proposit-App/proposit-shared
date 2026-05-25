@@ -66,6 +66,10 @@ import {
 import { getUserClaimsImpl } from "./user/claims.js"
 import { deleteUserImpl } from "./user/delete-user.js"
 import { getUserCitationsImpl } from "./user/citations.js"
+import {
+    getTaskPipelineImpl,
+    getTaskPipelineStagePayloadsImpl,
+} from "./tasks/pipeline-status.js"
 
 /**
  * Registry of all *Impl functions, keyed by the public method name.
@@ -127,6 +131,8 @@ const impls = {
     getUserClaims: getUserClaimsImpl,
     getUserCitations: getUserCitationsImpl,
     deleteUser: deleteUserImpl,
+    getTaskPipeline: getTaskPipelineImpl,
+    getTaskPipelineStagePayloads: getTaskPipelineStagePayloadsImpl,
 } as const
 
 /**
