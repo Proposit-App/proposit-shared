@@ -43,6 +43,11 @@
             "import": "./dist/schemas/api/grammar-violations.js",
             "default": "./dist/schemas/api/grammar-violations.js"
         },
+        "./schemas/api/pipeline-status": {
+            "types": "./dist/schemas/api/pipeline-status/index.d.ts",
+            "import": "./dist/schemas/api/pipeline-status/index.js",
+            "default": "./dist/schemas/api/pipeline-status/index.js"
+        },
         "./schemas/api/reaction": {
             "types": "./dist/schemas/api/reaction/index.d.ts",
             "import": "./dist/schemas/api/reaction/index.js",
