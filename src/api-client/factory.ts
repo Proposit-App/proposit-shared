@@ -70,6 +70,7 @@ import {
     getTaskPipelineImpl,
     getTaskPipelineStagePayloadsImpl,
 } from "./tasks/pipeline-status.js"
+import { retryTaskImpl, retryStageImpl } from "./tasks/task-retry.js"
 
 /**
  * Registry of all *Impl functions, keyed by the public method name.
@@ -133,6 +134,8 @@ const impls = {
     deleteUser: deleteUserImpl,
     getTaskPipeline: getTaskPipelineImpl,
     getTaskPipelineStagePayloads: getTaskPipelineStagePayloadsImpl,
+    retryTask: retryTaskImpl,
+    retryStage: retryStageImpl,
 } as const
 
 /**
