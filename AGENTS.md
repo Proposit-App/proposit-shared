@@ -1,5 +1,33 @@
 # `proposit-shared` — Claude Code Guide
 
+## Repository scope and identity
+
+`proposit-shared` is the runtime-agnostic TypeScript library shared by Proposit's web app (`proposit-server`) and mobile app (`proposit-mobile`). Published as `@proposit/shared`. Compiles against `lib: ["ES2022"]`; any browser-only or Node-only access path must be feature-gated, never an unconditional import.
+
+**This repo owns:**
+
+- Cross-platform TypeBox schemas: server↔client API contracts (auth, argument, review, ingest-argument, pipeline-status, task-retry, user, reaction, errors, the grammar-violations envelope, processing-failure) and integration schemas
+- Shared constants, error types, checksum config, and small utilities used by both web and mobile
+- The `createApiClient` factory and its companion types (`TApiClient`, `TApiClientConfig`) plus the `isGrammarViolationsError` type guard, consumed identically by web (server-side fetches) and mobile (React Native fetches)
+- Engine surfaces authored here: `./engine/mutations`, `./engine/optimistic`, `./engine/review`, plus derivation, text-tree, and library adapters
+- Re-exports of `@proposit/proposit-core` grammar wire-format types so consumers have a single import path
+- Design tokens and brand assets under `./ui` (colors, typography, spacing, radii, shadows, motion, breakpoints, sizing, SVG logos)
+
+**This repo does NOT own:**
+
+- Anything Next.js-specific — route handlers, `cookies()`, `headers()`, server actions, App Router conventions (route to: `proposit-server`)
+- Anything React Native- or Expo-specific — native modules, `AsyncStorage`, gestures, navigation (route to: `proposit-mobile`)
+- Unconditional DOM or Node-only imports. Browser-only code paths (e.g., the review-store local-storage shim) must be feature-gated via `typeof window !== "undefined"` checks.
+- Core grammar logic — wire-format types are re-exported from `proposit-core`, not redefined here
+
+**Push back on requests to:**
+
+- Add code that only one consumer (web OR mobile) would use, unless the cross-runtime contract itself is the point and the other consumer will replace it with a native equivalent
+- Add a Node or DOM polyfill so a platform-specific dep "just works"
+- Re-implement engine internals here instead of in `proposit-core`
+- Add a flat root entry — `import "@proposit/shared"` resolves only via sub-paths like `@proposit/shared/schemas` or `@proposit/shared/engine/mutations`
+- Add `react`, `react-native`, `next`, or `expo` to dependencies
+
 ## Generic instructions
 
 - Git commit messages should not include any co-authoring content.
