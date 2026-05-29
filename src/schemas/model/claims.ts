@@ -119,7 +119,12 @@ export const CitationClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
     body: Type.Null(),
     titleContentHash: Type.Null(),
     url: Type.String(),
-    citation: IEEEReferenceSchema,
+    // Nullable: v2 ingestion produces url-only citation claims that carry a
+    // `url` but no structured IEEE reference (`citation: null`). Full IEEE
+    // references remain valid — this is a widening, not a replacement. The
+    // `url` string is what discriminates a citation claim, so a null citation
+    // does not collide with the normal/axiomatic branches of `ClaimSchema`.
+    citation: Nullable(IEEEReferenceSchema),
     citationContentHash: Type.String(),
     axiom: Type.Null(),
 })

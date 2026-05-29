@@ -143,8 +143,17 @@ describe("CitationClaimSchema", () => {
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
 
-    it("rejects a citation claim with null citation", () => {
-        const bad = { ...citationBase, citation: null }
+    // v2 ingestion produces url-only citation claims: a `url` is present but no
+    // structured IEEE reference was extracted, so `citation` is null. This is a
+    // legitimate, validatable shape — the entire-argument response 500'd before
+    // the citation field was widened to nullable.
+    it("accepts a url-only citation claim (null citation)", () => {
+        const urlOnly = { ...citationBase, citation: null }
+        expect(Value.Check(CitationClaimSchema, urlOnly)).toBe(true)
+    })
+
+    it("rejects a citation claim missing the citation field entirely", () => {
+        const { citation: _omit, ...bad } = citationBase
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
 })
@@ -194,6 +203,15 @@ describe("ClaimSchema (union)", () => {
 
     it("accepts a citation-variant claim", () => {
         expect(Value.Check(ClaimSchema, citationBase)).toBe(true)
+    })
+
+    // Regression guard for the entire-argument response 500: the claims array in
+    // FullArgumentSchema is Type.Array(ClaimSchema). A url-only citation claim
+    // (citation: null) coming back from the server's getCitations read path must
+    // resolve to the citation branch of the union, not fail every branch.
+    it("accepts a url-only citation-variant claim (null citation)", () => {
+        const urlOnly = { ...citationBase, citation: null }
+        expect(Value.Check(ClaimSchema, urlOnly)).toBe(true)
     })
 
     it("accepts an axiomatic-variant claim", () => {
