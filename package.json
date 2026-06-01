@@ -63,6 +63,11 @@
             "import": "./dist/schemas/api/review/index.js",
             "default": "./dist/schemas/api/review/index.js"
         },
+        "./schemas/api/task-cancel": {
+            "types": "./dist/schemas/api/task-cancel/index.d.ts",
+            "import": "./dist/schemas/api/task-cancel/index.js",
+            "default": "./dist/schemas/api/task-cancel/index.js"
+        },
         "./schemas/api/task-retry": {
             "types": "./dist/schemas/api/task-retry/index.d.ts",
             "import": "./dist/schemas/api/task-retry/index.js",

@@ -4,4 +4,43 @@ This file accumulates release notes for the next published version of
 `@proposit/shared`. At release time it is renamed to
 `docs/release-notes/{version}.md` and a fresh `upcoming.md` is started.
 
-No entries yet.
+## Task cancellation — the shared wire/client half
+
+This release adds the `@proposit/shared` half of the new **cancel a running
+ingestion task** capability. It ships ahead of the server route
+(`proposit-server` slice S-B1) that will consume it. Spec:
+`docs/superpowers/specs/2026-06-01-shared-task-cancel-design.md`.
+
+### New terminal status: `CANCELLED`
+
+`TaskStatus.CANCELLED` (value `5`) joins the task-status const. It marks a
+task the **user** deliberately cancelled, kept distinct from `INTERRUPTED`
+(`4`), which means a task was stopped externally (e.g. server shutdown) and
+may resume. Cancelled is terminal; interrupted is not.
+
+### `SETTLED_TASK_STATUSES` + a widened settled helper (behavior change)
+
+`@proposit/shared/consts` now exports `SETTLED_TASK_STATUSES`
+(`[COMPLETED, FAILED, CANCELLED]`) as the **single source of truth** for the
+terminal partition. The exported helpers `isTaskSettled` / `isTaskNotSettled`
+(`@proposit/shared/utils`) are derived from it, so they are **widened**: a
+`CANCELLED` task now reads as **settled**.
+
+This is a behavior change for any consumer that branches on settled-ness.
+Server's four known consumers are safe (the streaming render-stop, the
+`argument_build_*` task-type-scoped reads, and the combined-provider
+`=== FAILED` sibling-filter that routes a cancelled task to the bare builder).
+Mobile does not consume the helper, so the change is latent there. Server
+queries that currently hardcode the terminal list can switch to importing
+`SETTLED_TASK_STATUSES`.
+
+### `cancelTask` api-client method
+
+`createApiClient(...)` now exposes `cancelTask(taskId)` — a no-body
+`DELETE /api/v1/task/{taskId}`. The route returns **`200` + the updated task**
+(status flipped to `CANCELLED`), so callers receive the new terminal state
+immediately. A `204` is intentionally NOT used: the client's `parseResponse`
+reads the body unconditionally, so a body-less response would throw. The
+response schema is exported at `@proposit/shared/schemas/api/task-cancel`
+(`CancelTaskResponse`), an alias of the `argument_create` task shape, mirroring
+`task-retry`.
