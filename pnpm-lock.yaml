@@ -16,8 +16,8 @@ importers:
         specifier: ^9.39.4
         version: 9.39.4
       '@proposit/proposit-core':
-        specifier: ^1.1.1
-        version: 1.1.1
+        specifier: ^1.7.0
+        version: 1.7.0(undici@7.25.0)
       '@types/node':
         specifier: ^25.5.2
         version: 25.6.0
@@ -194,14 +194,20 @@ packages:
   '@oxc-project/types@0.126.0':
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
-  '@proposit/proposit-core@1.1.1':
-    resolution: {integrity: sha512-K2DAC3q2q2lRL99rYTK/9BAA0hsIEDSnvLeiY+Oq1hbcQLtzLCfNzMhbbiHn96gnRGzcP+nVIj4y9MnCik1Y1g==}
+  '@proposit/proposit-core@1.7.0':
+    resolution: {integrity: sha512-W989xG5wqc2Pvv/JEfQ7uaJ6J6atu43hwmkWQCB8g8DLxuN1QLKh5dYuauoHLck9EXJtaHOkKpjr+/s39QhtPg==}
     engines: {node: '>=22.3.0'}
     hasBin: true
     peerDependencies:
+      ollama: '>=0.5.0'
       openai: '>=4.0.0'
+      undici: '>=6.0.0'
     peerDependenciesMeta:
+      ollama:
+        optional: true
       openai:
+        optional: true
+      undici:
         optional: true
 
   '@rolldown/binding-android-arm64@1.0.0-rc.16':
@@ -868,8 +874,8 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
-  postcss@8.5.14:
-    resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
+  postcss@8.5.15:
+    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
 
   prelude-ls@1.2.1:
@@ -1286,11 +1292,13 @@ snapshots:
 
   '@oxc-project/types@0.126.0': {}
 
-  '@proposit/proposit-core@1.1.1':
+  '@proposit/proposit-core@1.7.0(undici@7.25.0)':
     dependencies:
       commander: 14.0.3
       typebox: 1.1.28
       yaml: 2.8.3
+    optionalDependencies:
+      undici: 7.25.0
 
   '@rolldown/binding-android-arm64@1.0.0-rc.16':
     optional: true
@@ -1912,7 +1920,7 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  postcss@8.5.14:
+  postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
       picocolors: 1.1.1
@@ -2046,7 +2054,7 @@ snapshots:
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
-      postcss: 8.5.14
+      postcss: 8.5.15
       rolldown: 1.0.0-rc.16
       tinyglobby: 0.2.16
     optionalDependencies:
