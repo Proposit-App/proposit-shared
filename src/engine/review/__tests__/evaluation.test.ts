@@ -125,7 +125,7 @@ describe("evaluation", () => {
         expect(result.propagatedVariableValues).toBeDefined()
     })
 
-    // Bug fix regression test (followups-sweep-2026-05, C1).
+    // Bug fix regression test.
     //
     // Pre-fix, `evaluateArgumentForReview` constructed an evaluation context
     // manually (`toEvaluationContext`) and called the standalone

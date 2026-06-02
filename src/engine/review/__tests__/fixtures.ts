@@ -326,8 +326,7 @@ function makeAxiomaticClaim(id: string, title: string): TAxiomaticClaim {
  * single variable expression bound to an axiomatic claim. With no user
  * assignments, the only way the review evaluation can return a definite
  * verdict is if the engine forces the axiomatic-bound variable to `true`
- * before evaluating. Used by the C1 regression test
- * (followups-sweep-2026-05).
+ * before evaluating. Used by the axiomatic-conclusion regression test.
  */
 export function buildEngineWithAxiomaticConclusion(): PropositArgumentEngine {
     const axiomClaim = makeAxiomaticClaim("cAxiom", "Axiom claim")

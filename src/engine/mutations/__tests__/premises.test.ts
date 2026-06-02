@@ -239,12 +239,12 @@ describe("mutateUpdatePremiseRole", () => {
         )
     })
 
-    // Followups-sweep-2026-05 C3: extras.role must stay in sync with role-state.
+    // extras.role must stay in sync with role-state.
     //
     // `engine.setConclusionPremise(id)` and `engine.clearConclusionPremise()`
     // only update the engine's `conclusionPremiseId` slot — they never touch
     // the affected premise's `extras.role` field. Pre-fix, the server worked
-    // around this in cycle-5 by chasing every `mutateUpdatePremiseRole` with a
+    // around this by chasing every `mutateUpdatePremiseRole` with a
     // `mutateUpdatePremiseExtras({ role })` call. Mobile clients (and any
     // future consumer) hitting `mutateUpdatePremiseRole` directly would see
     // `premise.role` stale on subsequent persistence operations.
@@ -312,8 +312,7 @@ describe("mutateUpdatePremiseRole", () => {
         expect(newPe?.toPremiseData().role).toBe("conclusion")
     })
 
-    // Reviewer-fold (followups-sweep-2026-05 C bundle, P2): the
-    // already-in-state branch must remain a true no-op at the changeset
+    // The already-in-state branch must remain a true no-op at the changeset
     // level. Pre-extras-sync this was naturally the case (the helper
     // returned `{ changes: {} }`); after the extras-sync was added the
     // branch unconditionally called `pe.updateExtras({ role })`, which

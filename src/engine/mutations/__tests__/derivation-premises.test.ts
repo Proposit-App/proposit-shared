@@ -445,7 +445,7 @@ describe("clearDerivationAntecedent", () => {
     })
 
     test("after snapshot/rollback round-trip, clear on n=1 IMPLIES does not throw", () => {
-        // Reproduces docs/change-requests/2026-05-08-clear-derivation-modified-removed-conflict.md.
+        // Regression: clear-derivation modified/removed conflict on a reloaded engine.
         // On a reloaded engine the descendant-checksum tracker is in a fresh
         // state, so removing the antecedent emits IMPLIES as `modified` in the
         // first sub-changeset; the next sub-changeset removes IMPLIES. The

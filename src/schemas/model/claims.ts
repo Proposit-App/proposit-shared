@@ -166,7 +166,7 @@ export function isAxiomaticClaim(claim: TClaim): claim is TAxiomaticClaim {
 //
 // Widened from NormalClaim-only in `@proposit/shared@0.12.1` to admit
 // axiomatic claims. Server's `getClaims()` filtered by `type='normal'` in
-// pre-axiom releases; the R5 axiom-mutation server slice removed that filter
+// pre-axiom releases; the axiom-mutation server work removed that filter
 // so axiomatic claims now flow through this surface. The schema follows.
 export const ClaimWithChildrenSchema = Type.Union([
     Type.Interface([NormalClaimSchema], {

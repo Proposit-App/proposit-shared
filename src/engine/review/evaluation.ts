@@ -148,8 +148,7 @@ export function evaluateArgumentForReview(
     //
     // Pre-fix this path constructed the context manually via
     // `toEvaluationContext` and called the standalone `evaluateArgument`,
-    // bypassing both safety nets. See followups-sweep-2026-05 C1 and the
-    // investigation report at
+    // bypassing both safety nets. See the investigation report at
     // proposit-server/docs/research/2026-05-16-review-indeterminate-bug.md.
     //
     // `strictUnknownAssignmentKeys: false` because we pass an argument-wide

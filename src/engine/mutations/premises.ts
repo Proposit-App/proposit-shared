@@ -108,7 +108,7 @@ export function mutateUpdatePremiseRole(
     // only mutate the engine's `conclusionPremiseId` slot — they don't touch
     // the affected premise's `extras.role`. Without this sync, callers that
     // persist the engine's premise data after a role change would write a
-    // stale `role` field to storage (matching the server-side cycle-5
+    // stale `role` field to storage (matching the server-side
     // workaround at proposit-server/src/model/logic.ts:1318 ff.). Lift the
     // sync inside the mutation helper so every consumer — server, mobile,
     // tests — gets a self-consistent in-memory model after the call returns.
@@ -122,10 +122,10 @@ export function mutateUpdatePremiseRole(
     //   3. (Demotion-only) The target premise is what we're clearing, so
     //      sync site 1 covers it; no other premise needs touching.
 
-    // No-op short-circuit (followups-sweep-2026-05 C bundle P2 fold):
-    // when the engine's role-state AND the premise's `extras.role` already
-    // both match the requested role, every downstream call below would emit
-    // a redundant changeset entry — `setConclusionPremise(currentConclusion)`
+    // No-op short-circuit: when the engine's role-state AND the premise's
+    // `extras.role` already both match the requested role, every downstream
+    // call below would emit a redundant changeset entry —
+    // `setConclusionPremise(currentConclusion)`
     // re-emits a `roles` entry unconditionally, and `syncPremiseExtrasRole`
     // routes through core's `setExtras` which always `markDirty()`s + emits
     // `modifiedPremise` regardless of value equality. Skipping the work

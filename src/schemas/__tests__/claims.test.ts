@@ -225,10 +225,10 @@ describe("ClaimSchema (union)", () => {
 })
 
 describe("ClaimWithChildrenSchema", () => {
-    // Followups-sweep-2026-05 C2: widened from NormalClaim-only to
+    // Widened from NormalClaim-only to
     // NormalClaim | AxiomaticClaim. The server's getClaims() no longer
     // filters by type='normal' before populating childClaimIds / childCitationIds
-    // (the R5 server slice removed that filter), so axiomatic claims now flow
+    // (the server removed that filter), so axiomatic claims now flow
     // through this surface and must validate.
     const withChildrenExtras = {
         childClaimIds: [],
