@@ -11,7 +11,7 @@ import type { TArgument } from "../../../schemas/model/arguments.js"
 import type { TClaimBoundVariable } from "../../../schemas/logic.js"
 
 // Structural type for ReviewEngine methods used by phase-advancement helpers.
-// The concrete class lands in Task C4; declaring it structurally here keeps this
+// The concrete ReviewEngine class is defined elsewhere; declaring it structurally here keeps this
 // fixture file free of circular imports and compiles without forward references.
 interface ReviewEngineLike {
     getSnapshot(): {
@@ -388,7 +388,7 @@ export function buildEngineWithAxiomaticConclusion(): PropositArgumentEngine {
  * null and propagates that null up through `allSupportingPremisesTrue` →
  * Indeterminate. The engine's `asEvaluationContext()` filters naked-Q
  * derivation premises out, so calling `engine.evaluate(...)` (the safety-
- * net path) gives a definite verdict. Used by the C1 regression test.
+ * net path) gives a definite verdict. Used by the naked-Q safety-net regression test.
  */
 export function buildEngineWithNakedQSupportingPremise(): PropositArgumentEngine {
     const claims = [

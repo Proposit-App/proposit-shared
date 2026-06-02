@@ -1211,7 +1211,7 @@ describe("fromServerData with wave-2 derivation premises", () => {
         // top-level `'assistive' | 'permissive'` setting on the engine,
         // defaulted to `'assistive'` for fresh engines and for engines
         // restored via `fromSnapshot` / `fromServerData` without an explicit
-        // override (per spec §11, D5 fork-threading + E1 fromSnapshot
+        // override (per spec §11, fork-threading + fromSnapshot
         // default-behavior regression test).
         //
         // The new assertion captures the equivalent post-load property:

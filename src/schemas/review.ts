@@ -127,11 +127,11 @@ export type TReviewDraft = Static<typeof ReviewDraftSchema>
 
 // ---- Core evaluation result mirror (full) ----
 // Mirrors @proposit/proposit-core dist/lib/types/evaluation.d.ts.
-// Snapshot-tested against a real core evaluation result in Task G1.
+// Snapshot-tested against a real core evaluation result.
 
 // TCoreValidationCode enum (18 literals — mirrors core@1.0.0).
 //
-// Core 1.0 Phase D4 deleted `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION`
+// Core 1.0 deleted `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION`
 // (the pre-1.0 evaluation-time throw on naked-Q derivation premises);
 // naked-Q is now an evaluation no-op per spec §4.2, and broken-tree
 // derivation premises continue to surface as the unchanged

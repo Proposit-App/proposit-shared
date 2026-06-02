@@ -169,7 +169,7 @@ export function checkValidityForReview(
     // Route through `argEngine.checkValidity(...)` so axiomatic-bound
     // variables are excluded from the free-choice enumeration AND pinned to
     // `true` in every generated assignment (core's
-    // `getAxiomaticBoundVariableIds` carve-out). Same C1 safety-net story as
+    // `getAxiomaticBoundVariableIds` carve-out). Same axiomatic safety-net story as
     // `evaluateArgumentForReview` above.
     return argEngine.checkValidity({
         mode: "exhaustive",

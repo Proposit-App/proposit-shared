@@ -9,7 +9,7 @@ import {
     validateDerivationStructure,
 } from "../derivation.js"
 
-// Core 1.0 (the grammar-tiers Phase D rewrite) deleted the
+// Core 1.0 (the grammar-tiers rewrite) deleted the
 // `ManagedDerivationPremiseEngine` subclass, the `TVariableMaterializer`
 // interface, the `DERIVATION_ANTECEDENT_NON_EMPTY` mutation-time throw, and
 // the `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION` evaluation-time throw.
