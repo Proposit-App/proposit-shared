@@ -69,8 +69,8 @@ export function mutateCreatePremise(
         // auto-assigned designation. The helper's contract becomes:
         // "the first premise of a brand-new argument is always conclusion,
         // regardless of the caller-requested role — both at the engine
-        // slot AND in `extras.role`." Symmetric with slice 1E.A's
-        // `mutateUpdatePremiseRole` demote refusal: when the engine's
+        // slot AND in `extras.role`." Symmetric with
+        // `mutateUpdatePremiseRole`'s demote refusal: when the engine's
         // invariants are incompatible with the caller's exact intent,
         // surface the actual outcome rather than half-apply.
         const { changes: extrasChanges } = syncPremiseExtrasRole(

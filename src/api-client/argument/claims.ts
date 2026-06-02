@@ -113,12 +113,9 @@ export async function deleteClaimCitationImpl(
  * `populateDerivationFromAxiom`, persists the changeset, and returns the
  * new claim alongside its derivation-premise context.
  *
- * Args object shape (not positional) — matches the architect-locked
- * signature from the S3 spec
- * (2026-05-19-server-ui-improvements-s3-claim-details-proof-state-design)
- * §11. `claimId` is the **citing** claim's id (the claim whose derivation
- * premise gains the axiomatic backing), not the freshly-minted axiomatic
- * claim's id.
+ * Args object shape (not positional). `claimId` is the **citing** claim's id
+ * (the claim whose derivation premise gains the axiomatic backing), not the
+ * freshly-minted axiomatic claim's id.
  */
 export async function createClaimAxiomImpl(
     config: TApiClientConfig,

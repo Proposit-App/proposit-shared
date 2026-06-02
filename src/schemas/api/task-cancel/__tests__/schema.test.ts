@@ -5,9 +5,8 @@ import { TaskStatus } from "../../../../consts/index.js"
 import { CancelTaskResponse } from "../index.js"
 
 // Verifies the cancel-response TypeBox schema at
-// `@proposit/shared/schemas/api/task-cancel`. Per the S-shared-cancel design
-// spec (`docs/superpowers/specs/2026-06-01-shared-task-cancel-design.md`),
-// the cancel route returns 200 + the updated `argument_create` task body
+// `@proposit/shared/schemas/api/task-cancel`.
+// The cancel route returns 200 + the updated `argument_create` task body
 // (a 204 would crash `parseResponse`, which calls `response.json()`
 // unconditionally). `CancelTaskResponse` is therefore an alias of
 // `ArgumentCreateTask`, mirroring `RetryTaskResponse`.

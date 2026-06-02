@@ -44,8 +44,7 @@ export const UserSchema = Type.Object({
     // engine runs in `'assistive'` behavior — server enforces `validate('derivable')`
     // on submit/save. When `true`, the engine runs in `'permissive'` behavior —
     // server skips the derivable gate, and violations surface inline for the
-    // user to resolve. See the cross-repo Grammar Tiers spec for the full
-    // contract; the DB-side `NOT NULL DEFAULT false` is owned by server.
+    // user to resolve. The DB-side `NOT NULL DEFAULT false` is owned by server.
     advancedMode: Type.Boolean(),
 })
 export type TUser = Static<typeof UserSchema>

@@ -4,10 +4,8 @@ import { Value } from "typebox/value"
 import { BudgetExceededErrorBodySchema } from "../api/errors.js"
 
 // Verifies the canonical 402 body shape at
-// `@proposit/shared/schemas/api/errors`. Per the slice-D 402-contract
-// change request (proposit-server pipeline-refinement post-v0.17.2 design,
-// slice D), every LLM-bearing entry route emits this body when the caller's
-// per-user token budget is exhausted: discriminated by
+// `@proposit/shared/schemas/api/errors`. Every LLM-bearing entry route emits
+// this body when the caller's per-user token budget is exhausted: discriminated by
 // `code: "TOKEN_BUDGET_EXCEEDED"`, carrying `usage` so the client can surface
 // used / limit / resetOn to the user.
 

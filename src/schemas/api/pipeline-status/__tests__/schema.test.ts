@@ -14,9 +14,7 @@ import {
 } from "../schema.js"
 
 // Verifies the pipeline-status TypeBox schemas at
-// `@proposit/shared/schemas/api/pipeline-status`. Wire shapes defined by
-// the pipeline-status UI design spec §8.1 + §8.2
-// (`docs/superpowers/specs/2026-05-25-ingestion-pipeline-status-ui-design.md`).
+// `@proposit/shared/schemas/api/pipeline-status`.
 
 const sampleRunUuid = "11111111-1111-4111-8111-111111111111"
 const sampleStageUuid = "22222222-2222-4222-8222-222222222222"

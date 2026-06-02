@@ -11,7 +11,7 @@ import { ArgumentCreateTask } from "../../tasks.js"
  *
  * Narrowed to `ArgumentCreateTask` (not the full `TaskSchema` union): retry
  * targets ingestion pipeline tasks only. Rejecting a non-ingestion task id with
- * a typed 4xx is the server route's obligation (slice S2), not a shared guard.
+ * a typed 4xx is the server route's obligation, not a shared guard.
  */
 export const RetryTaskResponse = ArgumentCreateTask
 export type TRetryTaskResponse = Static<typeof RetryTaskResponse>

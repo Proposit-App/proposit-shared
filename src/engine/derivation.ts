@@ -3,20 +3,20 @@
 // `@proposit/shared/engine/derivation` for the ergonomic single-import
 // path; the source of truth remains `@proposit/proposit-core`.
 //
-// Core 1.0 (Phase D of the grammar-tiers initiative) removed several
-// derivation-related exports that the pre-1.0 surface had:
+// Core 1.0 removed several derivation-related exports that the pre-1.0
+// surface had:
 //
 //   - `ManagedDerivationPremiseEngine` (the dedicated subclass that
-//     enforced derivation invariants on every mutation) is deleted by
-//     core's D1 — derivation premises now go through the regular
+//     enforced derivation invariants on every mutation) is deleted —
+//     derivation premises now go through the regular
 //     `PremiseEngine`, and the invariants surface via
 //     `engine.validate('derivable')` returning the D-1..D-6 violations
 //     rather than throwing at mutation time.
 //
 //   - `DERIVATION_STRUCTURE_INVALID_AT_EVALUATION` (the pre-1.0
-//     evaluation-time throw on naked-Q derivation premises) is deleted
-//     by core's D4 — naked-Q derivation premises are now an evaluation
-//     no-op per spec §4.2, and broken-tree premises surface as the
+//     evaluation-time throw on naked-Q derivation premises) is deleted —
+//     naked-Q derivation premises are now an evaluation
+//     no-op, and broken-tree premises surface as the
 //     unchanged `DERIVATION_STRUCTURE_INVALID` engine-error code.
 //
 //   - `DERIVATION_ANTECEDENT_NON_EMPTY` (a pre-1.0 mutation-time throw)
@@ -30,8 +30,7 @@
 // Consumers of the deleted surface should migrate to
 // `engine.populateFromCitations(claimId, lookup)` /
 // `engine.populateFromAxioms(claimId, lookup)` on `ArgumentEngine`, and
-// `engine.validate('derivable')` for D-tier invariants. See spec
-// 2026-05-13-grammar-tiers-design §10.1, §10.2, §12.
+// `engine.validate('derivable')` for D-tier invariants.
 export {
     validateDerivationStructure,
     DERIVATION_STRUCTURE_INVALID,

@@ -1,12 +1,10 @@
-// TypeBox response schemas for the pipeline-status endpoints landing in
-// `proposit-server` slice 2F. Wire shapes defined verbatim by the
-// pipeline-status UI design spec §8.1 + §8.2
-// (`docs/superpowers/specs/2026-05-25-ingestion-pipeline-status-ui-design.md`).
+// TypeBox response schemas for the pipeline-status endpoints consumed by
+// `proposit-server`.
 //
 // Two endpoints:
-//   - `GET /api/v1/task/[taskId]/pipeline` (§8.1) — pipelineRuns row + ordered
+//   - `GET /api/v1/task/[taskId]/pipeline` — pipelineRuns row + ordered
 //     pipelineStages rows. Returned to any authenticated owner of the task.
-//   - `GET /api/v1/task/[taskId]/pipeline/stages/[stageRowId]/payloads` (§8.2)
+//   - `GET /api/v1/task/[taskId]/pipeline/stages/[stageRowId]/payloads`
 //     — staff-only. pipelineStagePayloads rows for one stage row.
 //
 // `ProcessingFailureSchema` and `TokenUsageSchema` are declared locally

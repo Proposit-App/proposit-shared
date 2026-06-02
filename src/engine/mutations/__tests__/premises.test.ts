@@ -16,7 +16,7 @@ describe("mutateCreatePremise", () => {
     // prevent the engine's role-state slot from disagreeing with `extras.role`,
     // the helper now syncs `extras.role` to "conclusion" (matching the engine)
     // rather than honoring the caller's "supporting" request on the first
-    // premise. Symmetric in spirit with slice 1E.A's `mutateUpdatePremiseRole`
+    // premise. Symmetric in spirit with `mutateUpdatePremiseRole`'s
     // demote refusal: when the engine's invariants are incompatible with the
     // caller's exact intent, surface the actual outcome rather than half-apply.
     test("first premise auto-assigns as conclusion regardless of requested 'supporting' role (E-7)", () => {
@@ -182,7 +182,7 @@ describe("mutateUpdatePremiseRole", () => {
             caught = err
         }
         expect(caught).toBeInstanceOf(InvariantViolationError)
-        // Pin the violation code — server route handlers (slice 1G)
+        // Pin the violation code — server route handlers
         // pattern-match on this code to map to 409 Conflict.
         expect((caught as InvariantViolationError).violations[0].code).toBe(
             "ARGUMENT_NO_CONCLUSION"

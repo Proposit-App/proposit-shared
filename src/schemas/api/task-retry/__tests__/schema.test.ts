@@ -4,8 +4,7 @@ import { Value } from "typebox/value"
 import { RetryTaskResponse } from "../index.js"
 
 // Verifies the retry-response TypeBox schema at
-// `@proposit/shared/schemas/api/task-retry`. Per the S-shared design spec
-// (`proposit-server/docs/superpowers/specs/2026-05-27-pipeline-refinement-retry-shared-design.md`),
+// `@proposit/shared/schemas/api/task-retry`.
 // `RetryTaskResponse` is an alias of the existing `ArgumentCreateTask` schema:
 // both retry routes (whole-task and per-stage) produce a fresh `argument_create`
 // task whose `previousId` points at the failed task.

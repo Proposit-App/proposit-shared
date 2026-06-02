@@ -1,6 +1,6 @@
-// api-client methods for the two pipeline-status endpoints landing in
-// `proposit-server` slice 2F. Wire shapes come from
-// `@proposit/shared/schemas/api/pipeline-status` (spec §8.1 + §8.2).
+// api-client methods for the two pipeline-status endpoints on
+// `proposit-server`. Wire shapes come from
+// `@proposit/shared/schemas/api/pipeline-status`.
 //
 // Both methods are plain GETs that delegate to `parseResponse` for
 // validation. The staff-only authorization on the second endpoint is
