@@ -75,17 +75,20 @@ export const PipelineOutputStatusSchema = Type.Union([
 ])
 export type TPipelineOutputStatus = Static<typeof PipelineOutputStatusSchema>
 
-// `outcome` on `pipelineStages`: nullable-but-always-present. `null`
-// while the stage is running (or hasn't started yet for stages that have
-// a row before `stage:start` fires — not the current bridge path, but
-// the schema admits it).
-export const PipelineStageOutcomeSchema = Type.Union([
+// `status` on `pipelineStages`: nullable-but-always-present. `null`
+// is retained for backward-compat with historical rows written before
+// pre-creation was introduced; all rows written by current code are
+// non-null. The `pending` and `running` members support pre-created rows
+// (stages whose row exists before `stage:start` fires).
+export const PipelineStageStatusSchema = Type.Union([
+    Type.Literal("pending"),
+    Type.Literal("running"),
     Type.Literal("completed"),
     Type.Literal("skipped"),
     Type.Literal("failed"),
     Type.Null(),
 ])
-export type TPipelineStageOutcome = Static<typeof PipelineStageOutcomeSchema>
+export type TPipelineStageStatus = Static<typeof PipelineStageStatusSchema>
 
 // --- §8.1: GET /api/v1/task/[taskId]/pipeline -----------------------------
 
@@ -104,12 +107,13 @@ export const PipelineStageSchema = Type.Object({
     id: UUID,
     stageId: Type.String(),
     ordinal: Type.Integer(),
-    outcome: PipelineStageOutcomeSchema,
+    status: PipelineStageStatusSchema,
     startedAt: Nullable(Type.String({ format: "date-time" })),
     finishedAt: Nullable(Type.String({ format: "date-time" })),
     tokenUsage: Nullable(TokenUsageSchema),
     retryCount: Type.Integer(),
     failures: Type.Array(ProcessingFailureSchema),
+    responseId: Nullable(Type.String()),
 })
 export type TPipelineStage = Static<typeof PipelineStageSchema>
 
@@ -130,6 +134,9 @@ export type TGetPipelineStatusResponse = Static<
 // stored value may be a schema-conforming output OR the raw LLM response
 // from an attempt whose output failed validation (in which case a retry
 // follows). The receiver decides how to render.
+// `responseId` is the OpenAI response id for this attempt; nullable for
+// non-OpenAI stages or rows written before response-id persistence was
+// introduced.
 export const PipelineStagePayloadSchema = Type.Object({
     id: UUID,
     attempt: Type.Integer(),
@@ -138,6 +145,7 @@ export const PipelineStagePayloadSchema = Type.Object({
     rawOutput: Type.Unknown(),
     tokenUsage: TokenUsageSchema,
     createdAt: Type.String({ format: "date-time" }),
+    responseId: Nullable(Type.String()),
 })
 export type TPipelineStagePayload = Static<typeof PipelineStagePayloadSchema>
 

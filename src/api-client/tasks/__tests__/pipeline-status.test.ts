@@ -35,12 +35,13 @@ const sampleRunBody = {
             id: "44444444-4444-4444-8444-444444444444",
             stageId: "claim-canonicalization",
             ordinal: 0,
-            outcome: "completed",
+            status: "completed",
             startedAt: "2026-05-25T12:00:00.000Z",
             finishedAt: "2026-05-25T12:00:01.000Z",
             tokenUsage: sampleTokenUsage,
             retryCount: 0,
             failures: [],
+            responseId: null,
         },
     ],
 }
@@ -55,6 +56,7 @@ const samplePayloadsBody = {
             rawOutput: { claims: [] },
             tokenUsage: sampleTokenUsage,
             createdAt: "2026-05-25T12:00:01.000Z",
+            responseId: null,
         },
     ],
 }

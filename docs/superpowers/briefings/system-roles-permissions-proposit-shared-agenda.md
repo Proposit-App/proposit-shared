@@ -6,7 +6,7 @@ Overview spec (workspace root, not in this repo): `docs/superpowers/specs/2026-0
 
 ## Capability changes
 
-**`proposit-shared` adds NO `capabilities.md` for this initiative** — a deliberate decision. `capabilities.md` document *user-facing application surfaces*; this repo ships an enforcement primitive and an SDK. You own the permission rules as **code** at a new `@proposit/shared/permissions` sub-entry. The user-facing capability docs live in `proposit-server` route folders and in the orchestrator's product layer — not here. So your **first implementation-branch commit does NOT touch any `capabilities.md`** (the generic process-inbox-initiative "first commit reconciles caps" clause is server-only on this initiative).
+**`proposit-shared` adds NO `capabilities.md` for this initiative** — a deliberate decision. `capabilities.md` document _user-facing application surfaces_; this repo ships an enforcement primitive and an SDK. You own the permission rules as **code** at a new `@proposit/shared/permissions` sub-entry. The user-facing capability docs live in `proposit-server` route folders and in the orchestrator's product layer — not here. So your **first implementation-branch commit does NOT touch any `capabilities.md`** (the generic process-inbox-initiative "first commit reconciles caps" clause is server-only on this initiative).
 
 ## Single-agent constraint
 
@@ -34,7 +34,7 @@ New `@proposit/shared/permissions` sub-entry:
 
 ## Constraints (repo baseline — not exhaustive)
 
-- `lib: ["ES2022"]`; **no `react`/`react-native`/`next`/`expo` deps** (a pure-JS `@casl/ability` is permissible *iff* the spike clears it). No DOM/Node-only globals in `dist/` source.
+- `lib: ["ES2022"]`; **no `react`/`react-native`/`next`/`expo` deps** (a pure-JS `@casl/ability` is permissible _iff_ the spike clears it). No DOM/Node-only globals in `dist/` source.
 - ESM: all relative imports in `src/` end in `.js`; directory imports use the explicit index path.
 - `brain-style` (TypeScript sub-skill) for naming/casing. superpowers plugin baseline: TDD, systematic-debugging, verification-before-completion.
 - **Dual-review** before reporting a slice done: a non-Claude model pass (qwen3.6 via Ollama) + a Claude subagent pass, synthesized — run inside your own session via subagents.
