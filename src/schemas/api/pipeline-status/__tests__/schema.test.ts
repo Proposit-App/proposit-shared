@@ -10,7 +10,7 @@ import {
     ProcessingFailureSchema,
     TokenUsageSchema,
     PipelineOutputStatusSchema,
-    PipelineStageOutcomeSchema,
+    PipelineStageStatusSchema,
 } from "../schema.js"
 
 // Verifies the pipeline-status TypeBox schemas at
@@ -40,12 +40,13 @@ const sampleStage = {
     id: sampleStageUuid,
     stageId: "claim-canonicalization",
     ordinal: 0,
-    outcome: "completed" as const,
+    status: "completed" as const,
     startedAt: "2026-05-25T12:00:00.000Z",
     finishedAt: "2026-05-25T12:00:01.500Z",
     tokenUsage: sampleTokenUsage,
     retryCount: 0,
     failures: [],
+    responseId: null,
 }
 
 describe("TokenUsageSchema", () => {
@@ -147,19 +148,26 @@ describe("PipelineOutputStatusSchema", () => {
     })
 })
 
-describe("PipelineStageOutcomeSchema", () => {
-    it("accepts each of the three literal outcomes", () => {
-        for (const v of ["completed", "skipped", "failed"]) {
-            expect(Value.Check(PipelineStageOutcomeSchema, v)).toBe(true)
+describe("PipelineStageStatusSchema", () => {
+    it("accepts each of the five literal statuses", () => {
+        for (const v of [
+            "pending",
+            "running",
+            "completed",
+            "skipped",
+            "failed",
+        ]) {
+            expect(Value.Check(PipelineStageStatusSchema, v)).toBe(true)
         }
     })
 
-    it("accepts null (stage still running)", () => {
-        expect(Value.Check(PipelineStageOutcomeSchema, null)).toBe(true)
+    it("accepts null (historical row written before pre-creation was introduced)", () => {
+        expect(Value.Check(PipelineStageStatusSchema, null)).toBe(true)
     })
 
     it("rejects unknown string literals", () => {
-        expect(Value.Check(PipelineStageOutcomeSchema, "success")).toBe(false)
+        expect(Value.Check(PipelineStageStatusSchema, "success")).toBe(false)
+        expect(Value.Check(PipelineStageStatusSchema, "errored")).toBe(false)
     })
 })
 
@@ -199,13 +207,33 @@ describe("PipelineStageSchema", () => {
         expect(Value.Check(PipelineStageSchema, sampleStage)).toBe(true)
     })
 
-    it("accepts a still-running stage (outcome=null, finishedAt=null)", () => {
+    it("accepts a pre-created pending stage (status=pending, startedAt=null, finishedAt=null)", () => {
+        const pending = {
+            ...sampleStage,
+            status: "pending" as const,
+            startedAt: null,
+            finishedAt: null,
+            tokenUsage: null,
+        }
+        expect(Value.Check(PipelineStageSchema, pending)).toBe(true)
+    })
+
+    it("accepts an in-progress stage (status=running, finishedAt=null)", () => {
         const running = {
             ...sampleStage,
-            outcome: null,
+            status: "running" as const,
             finishedAt: null,
         }
         expect(Value.Check(PipelineStageSchema, running)).toBe(true)
+    })
+
+    it("accepts a historical null-status stage (status=null)", () => {
+        const historical = {
+            ...sampleStage,
+            status: null,
+            finishedAt: null,
+        }
+        expect(Value.Check(PipelineStageSchema, historical)).toBe(true)
     })
 
     it("accepts a deterministic-stage shape (tokenUsage=null)", () => {
@@ -216,7 +244,7 @@ describe("PipelineStageSchema", () => {
     it("accepts a failed stage with failures populated", () => {
         const failed = {
             ...sampleStage,
-            outcome: "failed" as const,
+            status: "failed" as const,
             retryCount: 1,
             failures: [
                 {
@@ -230,8 +258,16 @@ describe("PipelineStageSchema", () => {
         expect(Value.Check(PipelineStageSchema, failed)).toBe(true)
     })
 
-    it("rejects an invalid outcome literal", () => {
-        const bad = { ...sampleStage, outcome: "errored" }
+    it("accepts a stage with a non-null responseId (OpenAI background-mode stage)", () => {
+        const withResponseId = {
+            ...sampleStage,
+            responseId: "resp_abc123",
+        }
+        expect(Value.Check(PipelineStageSchema, withResponseId)).toBe(true)
+    })
+
+    it("rejects an invalid status literal", () => {
+        const bad = { ...sampleStage, status: "errored" }
         expect(Value.Check(PipelineStageSchema, bad)).toBe(false)
     })
 
@@ -274,10 +310,10 @@ describe("GetPipelineStatusResponseSchema", () => {
         expect(Value.Check(GetPipelineStatusResponseSchema, bad)).toBe(false)
     })
 
-    it("rejects a stages entry with an invalid outcome", () => {
+    it("rejects a stages entry with an invalid status", () => {
         const bad = {
             run: sampleRun,
-            stages: [{ ...sampleStage, outcome: "errored" }],
+            stages: [{ ...sampleStage, status: "errored" }],
         }
         expect(Value.Check(GetPipelineStatusResponseSchema, bad)).toBe(false)
     })
@@ -292,7 +328,7 @@ describe("GetPipelineStatusResponseSchema", () => {
 })
 
 describe("PipelineStagePayloadSchema", () => {
-    it("accepts a payload with an object rawOutput", () => {
+    it("accepts a payload with an object rawOutput (responseId=null for non-OpenAI stage)", () => {
         const payload = {
             id: samplePayloadUuid,
             attempt: 1,
@@ -301,6 +337,21 @@ describe("PipelineStagePayloadSchema", () => {
             rawOutput: { claims: [] },
             tokenUsage: sampleTokenUsage,
             createdAt: "2026-05-25T12:00:00.000Z",
+            responseId: null,
+        }
+        expect(Value.Check(PipelineStagePayloadSchema, payload)).toBe(true)
+    })
+
+    it("accepts a payload with a non-null responseId (OpenAI background-mode attempt)", () => {
+        const payload = {
+            id: samplePayloadUuid,
+            attempt: 1,
+            systemPrompt: "You are a claim canonicalizer.",
+            userMessage: "Input text…",
+            rawOutput: { claims: [] },
+            tokenUsage: sampleTokenUsage,
+            createdAt: "2026-05-25T12:00:00.000Z",
+            responseId: "resp_abc123",
         }
         expect(Value.Check(PipelineStagePayloadSchema, payload)).toBe(true)
     })
@@ -314,6 +365,7 @@ describe("PipelineStagePayloadSchema", () => {
             rawOutput: "raw string the LLM returned",
             tokenUsage: sampleTokenUsage,
             createdAt: "2026-05-25T12:00:00.000Z",
+            responseId: null,
         }
         expect(Value.Check(PipelineStagePayloadSchema, payload)).toBe(true)
     })
@@ -327,6 +379,7 @@ describe("PipelineStagePayloadSchema", () => {
             rawOutput: {},
             tokenUsage: sampleTokenUsage,
             createdAt: "2026-05-25T12:00:00.000Z",
+            responseId: null,
         }
         expect(Value.Check(PipelineStagePayloadSchema, bad)).toBe(false)
     })
@@ -340,6 +393,7 @@ describe("PipelineStagePayloadSchema", () => {
             rawOutput: {},
             tokenUsage: sampleTokenUsage,
             createdAt: "2026-05-25T12:00:00.000Z",
+            responseId: null,
         }
         expect(Value.Check(PipelineStagePayloadSchema, bad)).toBe(false)
     })
@@ -357,6 +411,7 @@ describe("GetPipelineStagePayloadsResponseSchema", () => {
                     rawOutput: { invalid: true },
                     tokenUsage: sampleTokenUsage,
                     createdAt: "2026-05-25T12:00:00.000Z",
+                    responseId: "resp_abc123",
                 },
                 {
                     id: "44444444-4444-4444-8444-444444444444",
@@ -366,6 +421,7 @@ describe("GetPipelineStagePayloadsResponseSchema", () => {
                     rawOutput: { claims: [] },
                     tokenUsage: sampleTokenUsage,
                     createdAt: "2026-05-25T12:00:01.000Z",
+                    responseId: null,
                 },
             ],
         }
@@ -404,6 +460,7 @@ describe("GetPipelineStagePayloadsResponseSchema", () => {
                     rawOutput: {},
                     tokenUsage: sampleTokenUsage,
                     createdAt: "2026-05-25T12:00:00.000Z",
+                    responseId: null,
                 },
             ],
         }
