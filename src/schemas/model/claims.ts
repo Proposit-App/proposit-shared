@@ -1,6 +1,6 @@
 import Type, { type Static } from "typebox"
 import { EncodableDate, Nullable, UUID } from "../common.js"
-import { IEEEReferenceSchema } from "./references.js"
+import { IEEEReferenceSchema, UnparsedCitationSchema } from "./references.js"
 import {
     CoreClaimAxiomaticTypeSchema,
     CoreClaimCitationTypeSchema,
@@ -119,12 +119,15 @@ export const CitationClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
     body: Type.Null(),
     titleContentHash: Type.Null(),
     url: Type.String(),
-    // Nullable: v2 ingestion produces url-only citation claims that carry a
-    // `url` but no structured IEEE reference (`citation: null`). Full IEEE
-    // references remain valid — this is a widening, not a replacement. The
-    // `url` string is what discriminates a citation claim, so a null citation
-    // does not collide with the normal/axiomatic branches of `ClaimSchema`.
-    citation: Nullable(IEEEReferenceSchema),
+    // Full IEEE references and ingestion-extracted unparsed citations both
+    // attach here; null is the url-only citation claim (a `url` column with no
+    // structured reference). The single `type` discriminant — the 33 IEEE
+    // literals vs `"unparsed"` — keeps the union unambiguous, and the `url`
+    // string is what distinguishes a citation claim from the normal/axiomatic
+    // branches, so a null citation does not collide with them.
+    citation: Nullable(
+        Type.Union([IEEEReferenceSchema, UnparsedCitationSchema])
+    ),
     citationContentHash: Type.String(),
     axiom: Type.Null(),
 })
