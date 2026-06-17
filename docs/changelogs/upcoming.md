@@ -6,8 +6,6 @@ date: 2026-06-17
 
 > Requires `@proposit/proposit-core` `^3.0.0`.
 
-<changes starting-hash="6ca2c1f" ending-hash="966b91f">
-
 ## Breaking
 
 - `@proposit/shared/schemas/ingest-argument`: `IngestionPipelineVersionSchema`
@@ -32,5 +30,3 @@ date: 2026-06-17
   field existed; `additionalProperties: false` still rejects unknown keys.
   `tasks.ts` now imports `IngestionPipelineSchema` from `./ingest-argument` as
   the single source of truth for the role union.
-
-</changes>
