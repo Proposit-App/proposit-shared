@@ -2,6 +2,7 @@ import { Type, type Static } from "typebox"
 import { UUID } from "./common.js"
 import { Nullable } from "./common.js"
 import { EncodableDate } from "./common.js"
+import { IngestionPipelineSchema } from "./ingest-argument/index.js"
 import Value from "typebox/value"
 
 export const Roles = {
@@ -60,6 +61,11 @@ export const ArgumentCreateTask = Type.Interface([BaseTaskSchema], {
             argumentId: Type.String({ format: "uuid" }),
             version: Type.Number(),
             responseId: Type.Optional(Nullable(Type.String())),
+            // Resolved import pipeline role, persisted at task creation so the
+            // executor reads it instead of re-resolving from configuration.
+            // Optional only to tolerate rows persisted before this field
+            // existed; new tasks always carry a concrete role.
+            pipeline: Type.Optional(IngestionPipelineSchema),
         },
         { additionalProperties: false }
     ),
