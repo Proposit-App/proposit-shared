@@ -78,6 +78,9 @@ export const CreateArgumentSchema = Type.Object({
         ArgumentPlatformDataMap,
         Type.KeyOf(ArgumentPlatformDataMap)
     ),
+    mode: Type.Optional(
+        Type.Union([Type.Literal("fast"), Type.Literal("thorough")])
+    ),
 })
 export type TCreateArgument = Static<typeof CreateArgumentSchema>
 
