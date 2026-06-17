@@ -9,6 +9,7 @@ None. `proposit-shared` is a runtime-agnostic library with no `capabilities.md`.
 Adopt `proposit-core`'s new two-tier citation model. Authoritative spec: `/Users/brian/Projects/Proposit-App/docs/superpowers/specs/2026-06-16-citation-data-model-design.md` (read §1, the §2 shared bullet, and the §5 shared bullet). You author your own plan from it (`writing-plans`).
 
 Changes:
+
 1. **Re-export path move.** `src/schemas/model/references.ts` imports `@proposit/proposit-core/extensions/ieee` at **three** sites (the `export *` on line 3, plus the `IEEEReferenceSchemaMap` and `ReferenceTypeSchema` imports). Repoint all three to `@proposit/proposit-core/extensions/citations/ieee`. Then add `export * from "@proposit/proposit-core/extensions/citations/unparsed"` so consumers get `UnparsedCitationSchema` / `TUnparsedCitation` through `@proposit/shared/schemas/model/references`.
 2. **Claim union.** `src/schemas/model/claims.ts`: `CitationClaimSchema.citation` goes from `Nullable(IEEEReferenceSchema)` to `Nullable(Type.Union([IEEEReferenceSchema, UnparsedCitationSchema]))` (import `UnparsedCitationSchema` from the new core unparsed subpath). The single `type` discriminant (33 IEEE literals + `"unparsed"`) keeps the union clean and `isCitationClaim` (keys on `type === "citation"`) is unaffected.
 3. **Embedding text.** `src/utils/embedding-text.ts`: widen the param type to include `TUnparsedCitation`, **preserve** the existing legacy `case "Other"` branch, and change `case "UnparsedURL"` → `case "unparsed"` → return `text` (fallback `url`). Update its test.
