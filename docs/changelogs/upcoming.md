@@ -4,7 +4,7 @@ date: 2026-06-17
 
 # Changelog — upcoming
 
-> Requires `@proposit/proposit-core` `^3.0.0`.
+> Requires `@proposit/proposit-core` `^2.1.0`.
 
 ## Breaking
 

@@ -4,7 +4,7 @@ date: 2026-06-17
 
 # Release notes — upcoming
 
-> Requires `@proposit/proposit-core` `^3.0.0`. Install the new core major
+> Requires `@proposit/proposit-core` `^2.1.0`. Install the new core version
 > alongside this release.
 
 This release renames the ingestion pipelines from version labels to role
