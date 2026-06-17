@@ -1,5 +1,8 @@
 import { describe, test, expect } from "vitest"
-import type { TIEEEReference } from "../../schemas/model/references.js"
+import type {
+    TIEEEReference,
+    TUnparsedCitation,
+} from "../../schemas/model/references.js"
 import { extractCitationTitle } from "../embedding-text.js"
 
 describe("extractCitationTitle", () => {
@@ -129,22 +132,34 @@ describe("extractCitationTitle", () => {
         expect(result).toBe("Email from Jones to Mann")
     })
 
-    // UnparsedURL references (import-path sources)
-    test("returns text for UnparsedURL citation with text", () => {
+    // Unparsed citations (ingestion-extracted, not yet structured into IEEE)
+    test("returns text for an unparsed citation with text", () => {
         const result = extractCitationTitle({
-            type: "UnparsedURL",
-            url: "https://example.com/article",
+            type: "unparsed",
             text: "An interesting article",
-        } as TIEEEReference)
+            citationTypeGuess: "Website",
+            url: "https://example.com/article",
+        } satisfies TUnparsedCitation)
         expect(result).toBe("An interesting article")
     })
 
-    test("falls back to url for UnparsedURL citation without text", () => {
+    test("falls back to url for an unparsed citation without text", () => {
         const result = extractCitationTitle({
-            type: "UnparsedURL",
+            type: "unparsed",
+            text: "",
+            citationTypeGuess: "Website",
             url: "https://example.com/article",
-        } as TIEEEReference)
+        } satisfies TUnparsedCitation)
         expect(result).toBe("https://example.com/article")
+    })
+
+    test("returns null for an unparsed citation with neither text nor url", () => {
+        const result = extractCitationTitle({
+            type: "unparsed",
+            text: "",
+            citationTypeGuess: "unknown",
+        } satisfies TUnparsedCitation)
+        expect(result).toBeNull()
     })
 
     // Legacy "Other" citations (pre-0.8.19 imports)
