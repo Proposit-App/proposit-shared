@@ -1,29 +1,36 @@
-import type { TIEEEReference } from "../schemas/model/references.js"
+import type {
+    TIEEEReference,
+    TUnparsedCitation,
+} from "../schemas/model/references.js"
 
 /**
  * Extract the best embeddable text from a citation object.
- * Handles both strict IEEE references and the non-IEEE
- * `{ type: "Other", text: "..." }` format used by the import path.
+ * Handles strict IEEE references, ingestion-extracted unparsed citations
+ * (`{ type: "unparsed", text, … }`), and the legacy non-IEEE
+ * `{ type: "Other", text: "..." }` format used by the old import path.
  * Returns null if no meaningful text can be extracted.
  *
  * Reused for both server-side embedding generation and
  * client-side fuzzy search display text.
  */
 export function extractCitationTitle(
-    citation: TIEEEReference | { type: "Other"; text?: string }
+    citation:
+        | TIEEEReference
+        | TUnparsedCitation
+        | { type: "Other"; text?: string }
 ): string | null {
     let text: string | null = null
 
     switch (citation.type) {
-        // Unparsed URL sources (import path, quick drafts)
-        case "UnparsedURL": {
-            const unparsed = citation as TIEEEReference & {
-                url: string
-                text?: string
-            }
-            text = unparsed.text ?? unparsed.url
+        // Ingestion-extracted citations not yet structured into IEEE: prefer
+        // the raw text, fall back to the optional locator url when text is
+        // empty. (The trailing guard still maps a blank result to null.)
+        case "unparsed":
+            text =
+                citation.text.length > 0
+                    ? citation.text
+                    : (citation.url ?? null)
             break
-        }
 
         // Legacy non-IEEE: plain-text citations from pre-0.8.19 imports
         case "Other":

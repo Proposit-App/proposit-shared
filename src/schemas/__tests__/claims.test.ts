@@ -67,6 +67,21 @@ const citationBase = {
     axiom: null,
 }
 
+// Same citation claim, but carrying an ingestion-extracted unparsed citation
+// (raw text + a guessed reference type + optional locator) instead of a
+// structured IEEE reference. Discriminated from the IEEE branch by
+// `citation.type === "unparsed"`.
+const unparsedCitationBase = {
+    ...citationBase,
+    digest: "digest-citation-unparsed",
+    citation: {
+        type: "unparsed",
+        text: "Mill, On Liberty (the Pooley case)",
+        citationTypeGuess: "Book",
+        url: "https://example.com/on-liberty",
+    },
+}
+
 const axiomaticBase = {
     id: ID,
     argumentId: ARG_ID,
@@ -156,6 +171,48 @@ describe("CitationClaimSchema", () => {
         const { citation: _omit, ...bad } = citationBase
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
+
+    // The citation field is a Nullable(IEEE | Unparsed) union. Ingestion-
+    // extracted citations that have not been structured into IEEE attach here
+    // as `{ type: "unparsed", text, citationTypeGuess, url? }`.
+    it("accepts a citation claim carrying an unparsed citation", () => {
+        expect(Value.Check(CitationClaimSchema, unparsedCitationBase)).toBe(
+            true
+        )
+    })
+
+    it("accepts an unparsed citation with no url and an unknown guess", () => {
+        const noUrl = {
+            ...unparsedCitationBase,
+            citation: {
+                type: "unparsed",
+                text: "the Apologia",
+                citationTypeGuess: "unknown",
+            },
+        }
+        expect(Value.Check(CitationClaimSchema, noUrl)).toBe(true)
+    })
+
+    it("rejects a citation whose citation.type is neither an IEEE type nor unparsed", () => {
+        const bad = {
+            ...citationBase,
+            citation: {
+                type: "Nonsense",
+                text: "x",
+                citationTypeGuess: "unknown",
+            },
+        }
+        expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
+    })
+
+    it("discriminates the citation union on citation.type", () => {
+        // IEEE branch (the 33 literals)
+        expect(Value.Check(CitationClaimSchema, citationBase)).toBe(true)
+        // unparsed branch
+        expect(Value.Check(CitationClaimSchema, unparsedCitationBase)).toBe(
+            true
+        )
+    })
 })
 
 describe("AxiomaticClaimSchema", () => {
@@ -212,6 +269,10 @@ describe("ClaimSchema (union)", () => {
     it("accepts a url-only citation-variant claim (null citation)", () => {
         const urlOnly = { ...citationBase, citation: null }
         expect(Value.Check(ClaimSchema, urlOnly)).toBe(true)
+    })
+
+    it("accepts a citation-variant claim carrying an unparsed citation", () => {
+        expect(Value.Check(ClaimSchema, unparsedCitationBase)).toBe(true)
     })
 
     it("accepts an axiomatic-variant claim", () => {

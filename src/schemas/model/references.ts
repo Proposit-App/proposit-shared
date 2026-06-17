@@ -1,11 +1,12 @@
 // IEEE Citation Templates https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/IEEE_Reference_Guide.pdf
 
-export * from "@proposit/proposit-core/extensions/ieee"
+export * from "@proposit/proposit-core/extensions/citations/ieee"
+export * from "@proposit/proposit-core/extensions/citations/unparsed"
 
 // ── Locally-computed type ──
 
 import type { Static } from "typebox"
-import type { IEEEReferenceSchemaMap } from "@proposit/proposit-core/extensions/ieee"
+import type { IEEEReferenceSchemaMap } from "@proposit/proposit-core/extensions/citations/ieee"
 
 export type TIEEEReferenceMap = {
     [K in keyof typeof IEEEReferenceSchemaMap]: Static<
@@ -16,7 +17,7 @@ export type TIEEEReferenceMap = {
 // ── Server-only API schemas ──
 
 import { Type } from "typebox"
-import { ReferenceTypeSchema } from "@proposit/proposit-core/extensions/ieee"
+import { ReferenceTypeSchema } from "@proposit/proposit-core/extensions/citations/ieee"
 
 export const ReferenceImportRequestSchema = Type.Object({
     url: Type.String(),
