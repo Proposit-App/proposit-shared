@@ -2,50 +2,55 @@ import { describe, expect, it } from "vitest"
 import { Value } from "typebox/value"
 import {
     IngestArgumentTaskInputSchema,
-    IngestionPipelineVersionSchema,
+    IngestionPipelineSchema,
 } from "../index.js"
 
 // Verifies the internal task-input schemas at
 // `@proposit/shared/schemas/ingest-argument`. These are NOT public route
-// bodies — they are the shape a server route handler constructs from the
-// existing `CreateArgumentSchema` body plus the server-side
-// `INGESTION_PIPELINE_VERSION` env, then passes into `executePipeline(...)`
-// from `@proposit/proposit-core`.
-describe("IngestionPipelineVersionSchema", () => {
-    it("accepts the v1-single-shot literal", () => {
-        expect(
-            Value.Check(IngestionPipelineVersionSchema, "v1-single-shot")
-        ).toBe(true)
+// bodies — they are the shape a server route handler constructs (from the
+// user-selected import mode resolved to a pipeline role) before passing
+// into `executePipeline(...)` from `@proposit/proposit-core`.
+describe("IngestionPipelineSchema", () => {
+    it("accepts the scholar role", () => {
+        expect(Value.Check(IngestionPipelineSchema, "scholar")).toBe(true)
     })
 
-    it("accepts the v2-multi-stage literal", () => {
-        expect(
-            Value.Check(IngestionPipelineVersionSchema, "v2-multi-stage")
-        ).toBe(true)
+    it("accepts the scribe role", () => {
+        expect(Value.Check(IngestionPipelineSchema, "scribe")).toBe(true)
     })
 
-    it("rejects an unknown pipeline version literal", () => {
-        expect(Value.Check(IngestionPipelineVersionSchema, "v3-future")).toBe(
+    it("rejects the retired v1-single-shot literal", () => {
+        expect(Value.Check(IngestionPipelineSchema, "v1-single-shot")).toBe(
             false
         )
     })
 
+    it("rejects the retired v2-multi-stage literal", () => {
+        expect(Value.Check(IngestionPipelineSchema, "v2-multi-stage")).toBe(
+            false
+        )
+    })
+
+    it("rejects an unknown role", () => {
+        expect(Value.Check(IngestionPipelineSchema, "oracle")).toBe(false)
+    })
+
     it("rejects non-string values", () => {
-        expect(Value.Check(IngestionPipelineVersionSchema, 1)).toBe(false)
-        expect(Value.Check(IngestionPipelineVersionSchema, null)).toBe(false)
+        expect(Value.Check(IngestionPipelineSchema, 1)).toBe(false)
+        expect(Value.Check(IngestionPipelineSchema, null)).toBe(false)
     })
 })
 
 describe("IngestArgumentTaskInputSchema", () => {
     it("accepts a minimal valid input", () => {
-        const input = { text: "hi", pipelineVersion: "v1-single-shot" }
+        const input = { text: "hi", pipeline: "scholar" }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(true)
     })
 
     it("accepts an input with optional title and description present", () => {
         const input = {
             text: "Some argument text",
-            pipelineVersion: "v2-multi-stage",
+            pipeline: "scribe",
             title: "My title",
             description: "Some description",
         }
@@ -55,7 +60,7 @@ describe("IngestArgumentTaskInputSchema", () => {
     it("accepts an input with optional title alone", () => {
         const input = {
             text: "Some argument text",
-            pipelineVersion: "v1-single-shot",
+            pipeline: "scholar",
             title: "My title",
         }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(true)
@@ -64,21 +69,21 @@ describe("IngestArgumentTaskInputSchema", () => {
     it("accepts an input with optional description alone", () => {
         const input = {
             text: "Some argument text",
-            pipelineVersion: "v1-single-shot",
+            pipeline: "scholar",
             description: "Some description",
         }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(true)
     })
 
     it("rejects an empty text", () => {
-        const input = { text: "", pipelineVersion: "v1-single-shot" }
+        const input = { text: "", pipeline: "scholar" }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
     })
 
     it("rejects text exceeding the 50_000 char ceiling", () => {
         const input = {
             text: "x".repeat(50_001),
-            pipelineVersion: "v1-single-shot",
+            pipeline: "scholar",
         }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
     })
@@ -86,23 +91,28 @@ describe("IngestArgumentTaskInputSchema", () => {
     it("accepts text exactly at the 50_000 char ceiling", () => {
         const input = {
             text: "x".repeat(50_000),
-            pipelineVersion: "v1-single-shot",
+            pipeline: "scholar",
         }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(true)
     })
 
-    it("rejects an unknown pipelineVersion literal", () => {
-        const input = { text: "hi", pipelineVersion: "v3-future" }
+    it("rejects an unknown pipeline role", () => {
+        const input = { text: "hi", pipeline: "oracle" }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
     })
 
-    it("rejects a missing pipelineVersion", () => {
+    it("rejects a retired version literal in the pipeline field", () => {
+        const input = { text: "hi", pipeline: "v2-multi-stage" }
+        expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
+    })
+
+    it("rejects a missing pipeline", () => {
         const input = { text: "hi" }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
     })
 
     it("rejects a missing text", () => {
-        const input = { pipelineVersion: "v1-single-shot" }
+        const input = { pipeline: "scholar" }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
     })
 })
