@@ -34,6 +34,7 @@ const sampleRun = {
     finishedAt: "2026-05-25T12:00:05.000Z",
     outputStatus: "success" as const,
     tokenUsage: sampleTokenUsage,
+    errorData: null,
 }
 
 const sampleStage = {
@@ -181,8 +182,28 @@ describe("PipelineRunSchema", () => {
             ...sampleRun,
             outputStatus: null,
             finishedAt: null,
+            errorData: null,
         }
         expect(Value.Check(PipelineRunSchema, running)).toBe(true)
+    })
+
+    it("accepts a failed row with a populated errorData record", () => {
+        const failed = {
+            ...sampleRun,
+            outputStatus: null,
+            errorData: { code: "EXECUTOR_CRASHED", message: "boom" },
+        }
+        expect(Value.Check(PipelineRunSchema, failed)).toBe(true)
+    })
+
+    it("accepts a row with errorData=null (run did not fail below the stage level)", () => {
+        const noFailure = { ...sampleRun, errorData: null }
+        expect(Value.Check(PipelineRunSchema, noFailure)).toBe(true)
+    })
+
+    it("rejects a row that omits errorData entirely (Nullable, not Optional)", () => {
+        const { errorData: _omitted, ...without } = sampleRun
+        expect(Value.Check(PipelineRunSchema, without)).toBe(false)
     })
 
     it("rejects a missing required field", () => {

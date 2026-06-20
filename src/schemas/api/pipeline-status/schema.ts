@@ -100,6 +100,12 @@ export const PipelineRunSchema = Type.Object({
     finishedAt: Nullable(Type.String({ format: "date-time" })),
     outputStatus: PipelineOutputStatusSchema,
     tokenUsage: TokenUsageSchema,
+    // The persisted run/task-level failure cause (`tasks.errorData`), e.g.
+    // `{ code: "PIPELINE_FAILED", message }` / `{ code: "EXECUTOR_CRASHED",
+    // message }`. `null` for a run that did not fail below the stage level.
+    // Open record (mirrors the loose `tasks.errorData` column) so the same
+    // field can later back a verbose diagnostic view without a wire change.
+    errorData: Nullable(Type.Record(Type.String(), Type.Unknown())),
 })
 export type TPipelineRun = Static<typeof PipelineRunSchema>
 
