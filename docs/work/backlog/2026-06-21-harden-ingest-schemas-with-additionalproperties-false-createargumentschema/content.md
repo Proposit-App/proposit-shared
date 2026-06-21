@@ -1,3 +1,11 @@
+# Harden ingest schemas with additionalProperties:false (CreateArgumentSchema)
+
+## Product changes
+
+## Technical changes
+
+## Meta changes
+
 # Harden the ingestion request/task `data` sub-schemas with `additionalProperties: false`
 
 ## Problem
@@ -28,3 +36,4 @@ Add `{ additionalProperties: false }` to the relevant `Type.Object(...)` definit
 - A request/task object with exactly the known keys still validates.
 - The same object with one extra unknown key now **fails** `Value.Check` (previously passed).
 - An object missing an optional key still validates (optionality unchanged).
+
