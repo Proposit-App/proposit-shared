@@ -56,6 +56,75 @@ describe("CreateArgumentSchema mode", () => {
     })
 })
 
+// `additionalProperties: false` at the ingest trust boundary: the request body
+// and its per-platform `data` sub-objects reject keys they don't declare, so a
+// client (or a future server bug) can't smuggle extra fields past validation.
+describe("CreateArgumentSchema rejects unknown keys", () => {
+    it("rejects an unknown top-level key", () => {
+        const body = {
+            origin: "raw_text",
+            data: { textContent: "text" },
+            unexpected: true,
+        }
+        expect(Value.Check(CreateArgumentSchema, body)).toBe(false)
+    })
+
+    it("rejects an unknown key inside raw_text data", () => {
+        const body = {
+            origin: "raw_text",
+            data: { textContent: "text", smuggled: 1 },
+        }
+        expect(Value.Check(CreateArgumentSchema, body)).toBe(false)
+    })
+
+    it("rejects an unknown key inside twitter data", () => {
+        const body = {
+            origin: "twitter",
+            data: {
+                textContent: "text",
+                postUrl: "https://x.com/u/1",
+                importMode: "self_author",
+                smuggled: 1,
+            },
+        }
+        expect(Value.Check(CreateArgumentSchema, body)).toBe(false)
+    })
+
+    it("rejects an unknown key inside reddit data", () => {
+        const body = {
+            origin: "reddit",
+            data: {
+                textContent: "text",
+                postUrl: "https://reddit.com/r/x/1",
+                smuggled: 1,
+            },
+        }
+        expect(Value.Check(CreateArgumentSchema, body)).toBe(false)
+    })
+
+    it("rejects an unknown key inside manual data", () => {
+        const body = {
+            origin: "manual",
+            data: { argumentTitle: "T", textContent: null, smuggled: 1 },
+        }
+        expect(Value.Check(CreateArgumentSchema, body)).toBe(false)
+    })
+
+    it("still accepts twitter data with its declared optional fields", () => {
+        const body = {
+            origin: "twitter",
+            data: {
+                argumentTitle: "T",
+                textContent: "text",
+                postUrl: "https://x.com/u/1",
+                importMode: "copy_contents",
+                username: "u",
+            },
+        }
+        expect(Value.Check(CreateArgumentSchema, body)).toBe(true)
+    })
+})
+
 // `UpdateArgumentRequestSchema.newData` is the mutable-fields patch for
 // PUT /api/v1/argument. `title` is required; `description` is optional so
 // title-only callers stay valid. The description must survive the schema

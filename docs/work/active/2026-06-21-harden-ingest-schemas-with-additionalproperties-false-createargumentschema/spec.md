@@ -11,14 +11,14 @@ carrying an unexpected key fails `Value.Check`.
 
 Harden these `Type.Object` / `Type.Interface` definitions:
 
-| Schema | File | Construct |
-|---|---|---|
-| `CreateArgumentSchema` | `src/schemas/api/argument/index.ts` | `Type.Object` (top level) |
-| `ExternalPlatformData` | `src/schemas/integrations/index.ts` | `Type.Object` (raw_text data + base of twitter/reddit) |
-| `NoPlatformData` | `src/schemas/integrations/index.ts` | `Type.Object` (manual data) |
-| `TwitterArgumentPlatformData` | `src/schemas/integrations/index.ts` | `Type.Interface` (3rd-arg options) |
-| `RedditArgumentPlatformData` | `src/schemas/integrations/index.ts` | `Type.Interface` (3rd-arg options) |
-| `IngestArgumentTaskInputSchema` | `src/schemas/ingest-argument/index.ts` | `Type.Object` |
+| Schema                          | File                                   | Construct                                              |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------------ |
+| `CreateArgumentSchema`          | `src/schemas/api/argument/index.ts`    | `Type.Object` (top level)                              |
+| `ExternalPlatformData`          | `src/schemas/integrations/index.ts`    | `Type.Object` (raw_text data + base of twitter/reddit) |
+| `NoPlatformData`                | `src/schemas/integrations/index.ts`    | `Type.Object` (manual data)                            |
+| `TwitterArgumentPlatformData`   | `src/schemas/integrations/index.ts`    | `Type.Interface` (3rd-arg options)                     |
+| `RedditArgumentPlatformData`    | `src/schemas/integrations/index.ts`    | `Type.Interface` (3rd-arg options)                     |
+| `IngestArgumentTaskInputSchema` | `src/schemas/ingest-argument/index.ts` | `Type.Object`                                          |
 
 Each gets `{ additionalProperties: false }`.
 

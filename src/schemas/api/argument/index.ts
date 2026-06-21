@@ -72,16 +72,19 @@ export type TGetForksOfArgumentResponse = Static<
     typeof GetForksOfArgumentResponseSchema
 >
 
-export const CreateArgumentSchema = Type.Object({
-    origin: ArgumentImportOrigin,
-    data: Type.Index(
-        ArgumentPlatformDataMap,
-        Type.KeyOf(ArgumentPlatformDataMap)
-    ),
-    mode: Type.Optional(
-        Type.Union([Type.Literal("fast"), Type.Literal("thorough")])
-    ),
-})
+export const CreateArgumentSchema = Type.Object(
+    {
+        origin: ArgumentImportOrigin,
+        data: Type.Index(
+            ArgumentPlatformDataMap,
+            Type.KeyOf(ArgumentPlatformDataMap)
+        ),
+        mode: Type.Optional(
+            Type.Union([Type.Literal("fast"), Type.Literal("thorough")])
+        ),
+    },
+    { additionalProperties: false }
+)
 export type TCreateArgument = Static<typeof CreateArgumentSchema>
 
 export const PublishResponseSchema = Type.Object({

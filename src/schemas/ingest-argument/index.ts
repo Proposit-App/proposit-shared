@@ -15,12 +15,15 @@ export type TIngestionPipeline = Static<typeof IngestionPipelineSchema>
  * role, constructs this internal shape, and passes it to `executePipeline(...)`
  * in `@proposit/proposit-core`.
  */
-export const IngestArgumentTaskInputSchema = Type.Object({
-    text: Type.String({ minLength: 1, maxLength: 50_000 }),
-    pipeline: IngestionPipelineSchema,
-    title: Type.Optional(Type.String()),
-    description: Type.Optional(Type.String()),
-})
+export const IngestArgumentTaskInputSchema = Type.Object(
+    {
+        text: Type.String({ minLength: 1, maxLength: 50_000 }),
+        pipeline: IngestionPipelineSchema,
+        title: Type.Optional(Type.String()),
+        description: Type.Optional(Type.String()),
+    },
+    { additionalProperties: false }
+)
 export type TIngestArgumentTaskInput = Static<
     typeof IngestArgumentTaskInputSchema
 >
