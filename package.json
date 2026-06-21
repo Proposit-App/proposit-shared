@@ -113,6 +113,11 @@
             "import": "./dist/consts/*.js",
             "default": "./dist/consts/*.js"
         },
+        "./permissions": {
+            "types": "./dist/permissions/index.d.ts",
+            "import": "./dist/permissions/index.js",
+            "default": "./dist/permissions/index.js"
+        },
         "./errors": {
             "types": "./dist/errors.d.ts",
             "import": "./dist/errors.js",
