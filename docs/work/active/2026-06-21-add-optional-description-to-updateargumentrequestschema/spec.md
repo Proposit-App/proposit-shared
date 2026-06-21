@@ -27,7 +27,7 @@ export const MutableArgumentFieldsSchema = Type.Object({
 
 - `title` stays required — title-only callers are unaffected.
 - `description` is `Type.Optional` (the field may be absent). The persisted
-  model field (`ArgumentSchema.description`) is `Nullable`; the *update input*
+  model field (`ArgumentSchema.description`) is `Nullable`; the _update input_
   is optional, matching how `title` is modeled (presence, not nullability).
 
 ## Length const

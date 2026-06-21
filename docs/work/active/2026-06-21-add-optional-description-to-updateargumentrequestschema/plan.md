@@ -5,10 +5,10 @@ TDD: failing schema tests first, then the schema + const change, then docs.
 1. **Tests (red).** Add a `UpdateArgumentRequestSchema` describe block to
    `schemas/api/argument/__tests__/index.test.ts` (co-located with the existing
    `CreateArgumentSchema` tests):
-   - accepts `{ newData: { title, description }, currentDigest }`
-   - accepts `{ newData: { title }, currentDigest }` (description omitted)
-   - rejects `newData` missing `title`
-   Run `pnpm test` → the description-present case fails (field stripped/closed object).
+    - accepts `{ newData: { title, description }, currentDigest }`
+    - accepts `{ newData: { title }, currentDigest }` (description omitted)
+    - rejects `newData` missing `title`
+      Run `pnpm test` → the description-present case fails (field stripped/closed object).
 
 2. **Schema (green).** Add `description: Type.Optional(Type.String())` to
    `MutableArgumentFieldsSchema` in `schemas/model/arguments.ts`.

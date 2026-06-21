@@ -85,4 +85,3 @@ No DB migration needed (the column already exists).
 - `UpdateArgumentRequestSchema` accepts a `newData` with `{ title, description }`.
 - It still accepts `newData` with `{ title }` only (description omitted).
 - It rejects a `newData` missing `title`.
-

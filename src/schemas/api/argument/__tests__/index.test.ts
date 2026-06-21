@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { Value } from "typebox/value"
-import { CreateArgumentSchema } from "../index.js"
+import {
+    CreateArgumentSchema,
+    UpdateArgumentRequestSchema,
+    type TUpdateArgumentRequest,
+} from "../index.js"
 
 // `CreateArgumentSchema` is the validated body for POST /api/v1/argument
 // (and the import routes). `mode` is the user-facing import-depth selector;
@@ -49,5 +53,47 @@ describe("CreateArgumentSchema mode", () => {
             mode: "thorough",
         }
         expect(Value.Check(CreateArgumentSchema, body)).toBe(true)
+    })
+})
+
+// `UpdateArgumentRequestSchema.newData` is the mutable-fields patch for
+// PUT /api/v1/argument. `title` is required; `description` is optional so
+// title-only callers stay valid. The description must survive the schema
+// boundary — `Value.Clean` projects a value onto the declared shape, so a
+// field the schema does not declare is dropped there (which is exactly how
+// an edited description was previously lost).
+describe("UpdateArgumentRequestSchema description", () => {
+    const body = (newData: Record<string, unknown>) => ({
+        newData,
+        currentDigest: "digest-abc",
+    })
+
+    it("preserves description through the schema boundary", () => {
+        const cleaned = Value.Clean(
+            UpdateArgumentRequestSchema,
+            body({ title: "T", description: "D" })
+        ) as TUpdateArgumentRequest
+        expect(cleaned.newData.description).toBe("D")
+    })
+
+    it("accepts newData with title and description", () => {
+        expect(
+            Value.Check(
+                UpdateArgumentRequestSchema,
+                body({ title: "T", description: "D" })
+            )
+        ).toBe(true)
+    })
+
+    it("accepts newData with title only (description omitted)", () => {
+        expect(
+            Value.Check(UpdateArgumentRequestSchema, body({ title: "T" }))
+        ).toBe(true)
+    })
+
+    it("rejects newData missing title", () => {
+        expect(
+            Value.Check(UpdateArgumentRequestSchema, body({ description: "D" }))
+        ).toBe(false)
     })
 })
