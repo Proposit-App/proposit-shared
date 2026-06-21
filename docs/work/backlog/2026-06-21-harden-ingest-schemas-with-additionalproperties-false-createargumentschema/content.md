@@ -23,7 +23,7 @@ Surfaced during the Ingestion Pipeline Restructure server review (non-blocking �
 
 ## Proposed fix
 
-Add `{ additionalProperties: false }` to the relevant `Type.Object(...)` definitions so unknown keys are rejected by `Value.Check` / `strictFetch` validation. Keep optional fields optional — this only forbids *unknown* keys, it does not make existing optional fields required.
+Add `{ additionalProperties: false }` to the relevant `Type.Object(...)` definitions so unknown keys are rejected by `Value.Check` / `strictFetch` validation. Keep optional fields optional — this only forbids _unknown_ keys, it does not make existing optional fields required.
 
 ## Consumer impact
 
@@ -36,4 +36,3 @@ Add `{ additionalProperties: false }` to the relevant `Type.Object(...)` definit
 - A request/task object with exactly the known keys still validates.
 - The same object with one extra unknown key now **fails** `Value.Check` (previously passed).
 - An object missing an optional key still validates (optionality unchanged).
-

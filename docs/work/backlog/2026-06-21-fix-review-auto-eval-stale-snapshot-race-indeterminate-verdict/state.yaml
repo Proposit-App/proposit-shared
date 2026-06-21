@@ -1,6 +1,6 @@
 slug: 2026-06-21-fix-review-auto-eval-stale-snapshot-race-indeterminate-verdict
 title: Fix review auto-eval stale-snapshot race (Indeterminate verdict)
-phase: ''
-created: '2026-06-21'
+phase: ""
+created: "2026-06-21"
 resolution: null
 priority: null

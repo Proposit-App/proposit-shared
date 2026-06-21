@@ -69,4 +69,3 @@ The verdict intermittently reads `Indeterminate` instead of the driven verdict.
 - With the `waitForTimeout` workaround removed, `review-wizard.spec.ts` passes
   reliably under `--repeat-each 5`.
 - No public API surface change (or, if a signal is exposed, it is additive).
-
