@@ -2,7 +2,13 @@ slug: 2026-06-21-harden-ingest-schemas-with-additionalproperties-false-createarg
 title: Harden ingest schemas with additionalProperties:false (CreateArgumentSchema)
 phase: ""
 created: "2026-06-21"
-resolution: null
+resolution: done
 priority: 15
 worktree: .worktrees/2026-06-21-harden-ingest-schemas-with-additionalproperties-false-createargumentschema
 branch: work/2026-06-21-harden-ingest-schemas-with-additionalproperties-false-createargumentschema
+dod:
+    - tests pass
+    - docs synced
+    - capabilities reconciled
+    - reviewed
+    - version offered
