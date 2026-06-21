@@ -4,3 +4,5 @@ phase: ''
 created: '2026-06-21'
 resolution: null
 priority: null
+worktree: .worktrees/2026-06-21-add-optional-description-to-updateargumentrequestschema
+branch: work/2026-06-21-add-optional-description-to-updateargumentrequestschema
