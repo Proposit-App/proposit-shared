@@ -1,6 +1,6 @@
 {
     "name": "@proposit/shared",
-    "version": "0.21.0",
+    "version": "0.22.0",
     "description": "Runtime-agnostic TypeScript shared between proposit-server and proposit-mobile. Schemas, engine, api-client, and utilities.",
     "license": "MIT",
     "homepage": "https://github.com/Proposit-App/proposit-shared",
