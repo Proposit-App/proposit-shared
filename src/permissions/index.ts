@@ -1,7 +1,4 @@
-import {
-    SystemRoles,
-    type TParticipantRole,
-} from "../consts/roles.js"
+import { SystemRoles, type TParticipantRole } from "../consts/roles.js"
 
 export type TAction =
     | "create"
