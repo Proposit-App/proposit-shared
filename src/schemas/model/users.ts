@@ -27,6 +27,21 @@ export const AllUserTiersBuilder = (options?: TObjectOptions) =>
 export const AllUserTiers = AllUserTiersBuilder()
 export type TAllUserTiers = Static<typeof AllUserTiers>
 
+/**
+ * Per-user persistent settings, stored server-side as a `jsonb` column so new
+ * settings can be added without a DB migration. Extend this object as settings
+ * are added.
+ */
+export const UserPreferencesSchema = Type.Object({
+    // Grammar-tiers behavior toggle. When `false` (the default), the engine
+    // runs in `'assistive'` behavior — server enforces `validate('derivable')`
+    // on submit/save. When `true`, the engine runs in `'permissive'` behavior —
+    // server skips the derivable gate, and violations surface inline for the
+    // user to resolve.
+    advancedMode: Type.Boolean(),
+})
+export type TUserPreferences = Static<typeof UserPreferencesSchema>
+
 export const UserSchema = Type.Object({
     id: UUID,
     name: Nullable(Type.String()),
@@ -40,12 +55,9 @@ export const UserSchema = Type.Object({
     tokenResetOn: EncodableDate,
     deleted: Type.Boolean(),
     registrationDate: EncodableDate,
-    // Per-user grammar-tiers behavior toggle. When `false` (the default), the
-    // engine runs in `'assistive'` behavior — server enforces `validate('derivable')`
-    // on submit/save. When `true`, the engine runs in `'permissive'` behavior —
-    // server skips the derivable gate, and violations surface inline for the
-    // user to resolve. The DB-side `NOT NULL DEFAULT false` is owned by server.
-    advancedMode: Type.Boolean(),
+    // Per-user persistent settings (jsonb-backed; see UserPreferencesSchema).
+    // The DB-side `NOT NULL DEFAULT '{"advancedMode": false}'` is owned by server.
+    preferences: UserPreferencesSchema,
 })
 export type TUser = Static<typeof UserSchema>
 

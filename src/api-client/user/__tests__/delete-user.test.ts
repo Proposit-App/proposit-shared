@@ -17,7 +17,7 @@ const SAMPLE_USER_JSON = {
     tokenResetOn: "2026-01-01T00:00:00.000Z",
     deleted: true,
     registrationDate: "2026-01-01T00:00:00.000Z",
-    advancedMode: false,
+    preferences: { advancedMode: false },
 }
 
 function makeJsonResponse(status: number, body: unknown): Response {
