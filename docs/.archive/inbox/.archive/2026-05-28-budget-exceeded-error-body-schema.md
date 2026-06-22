@@ -68,23 +68,25 @@ existing convention; the repo already mixes both):
 
 1. **Re-export from the top-level barrel** — add to
    `src/schemas/index.ts`:
-   ```ts
-   export * from "./api/errors"
-   ```
-   Consumers import as `@proposit/shared/schemas`. Drawback: bundles
-   every other API schema into the same import.
+
+    ```ts
+    export * from "./api/errors"
+    ```
+
+    Consumers import as `@proposit/shared/schemas`. Drawback: bundles
+    every other API schema into the same import.
 
 2. **Add a dedicated export entry** (preferred — matches
    `./schemas/api/pipeline-status`, `./schemas/api/task-retry`, etc.):
-   ```jsonc
-   "./schemas/api/errors": {
-       "types": "./dist/schemas/api/errors.d.ts",
-       "import": "./dist/schemas/api/errors.js",
-       "default": "./dist/schemas/api/errors.js"
-   }
-   ```
-   Consumers import as `@proposit/shared/schemas/api/errors`. Cleaner
-   surface.
+    ```jsonc
+    "./schemas/api/errors": {
+        "types": "./dist/schemas/api/errors.d.ts",
+        "import": "./dist/schemas/api/errors.js",
+        "default": "./dist/schemas/api/errors.js"
+    }
+    ```
+    Consumers import as `@proposit/shared/schemas/api/errors`. Cleaner
+    surface.
 
 The server-side plan assumes option 2 (`import { BudgetExceededErrorBodySchema } from "@proposit/shared/schemas/api/errors"`).
 
@@ -105,8 +107,7 @@ Once published:
 
 1. Bump `@proposit/shared` from `^0.15.0` → `^0.15.1`.
 2. Add `createBudgetExceededErrorResponse({ message, usage })` helper in
-   `src/utils/server/utils.ts` that emits the canonical body with status
-   402.
+   `src/utils/server/utils.ts` that emits the canonical body with status 402.
 3. Replace 402 emission in the four routes listed above with the
    helper.
 4. Add per-route Vitest specs asserting 402 + body matches

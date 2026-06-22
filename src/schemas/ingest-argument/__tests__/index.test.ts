@@ -115,4 +115,9 @@ describe("IngestArgumentTaskInputSchema", () => {
         const input = { pipeline: "scholar" }
         expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
     })
+
+    it("rejects an unknown key (additionalProperties: false)", () => {
+        const input = { text: "hi", pipeline: "scholar", smuggled: 1 }
+        expect(Value.Check(IngestArgumentTaskInputSchema, input)).toBe(false)
+    })
 })

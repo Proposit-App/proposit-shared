@@ -2,9 +2,23 @@
 
 ## Product changes
 
+None in this repo. `@proposit/shared` is a runtime-agnostic library with no
+user-facing capabilities; the user-visible delta (argument description editing)
+lives downstream in `proposit-server`.
+
 ## Technical changes
 
+- Add `description: Type.Optional(Type.String())` to `MutableArgumentFieldsSchema`
+  (`schemas/model/arguments.ts`) — this is the schema `UpdateArgumentRequestSchema.newData`
+  resolves to. (The CR's "current code" was stale: `newData` is `MutableArgumentFieldsSchema`,
+  not an inline `{ title }` object.)
+- Export `ARGUMENT_DESCRIPTION_MAX_LEN` from `consts/argument.ts` so the server can
+  length-validate consistently, mirroring the existing `ARGUMENT_TITLE_MAX_LEN`.
+- Schema tests for the optional-description round-trip.
+
 ## Meta changes
+
+Minor version bump (additive optional field) + release-notes/changelog entries.
 
 # Change request: add optional `description` to `UpdateArgumentRequestSchema.newData`
 
@@ -71,4 +85,3 @@ No DB migration needed (the column already exists).
 - `UpdateArgumentRequestSchema` accepts a `newData` with `{ title, description }`.
 - It still accepts `newData` with `{ title }` only (description omitted).
 - It rejects a `newData` missing `title`.
-

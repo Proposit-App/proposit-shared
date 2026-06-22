@@ -17,15 +17,21 @@ export type TArgumentImportOrigin = Static<typeof ArgumentImportOrigin>
 
 // Common
 // For all origins other than manual
-const ExternalPlatformData = Type.Object({
-    argumentTitle: Type.Optional(Type.String()),
-    textContent: Type.String(),
-})
+const ExternalPlatformData = Type.Object(
+    {
+        argumentTitle: Type.Optional(Type.String()),
+        textContent: Type.String(),
+    },
+    { additionalProperties: false }
+)
 // If manual, there must be a title but never content
-const NoPlatformData = Type.Object({
-    argumentTitle: Type.String(),
-    textContent: Type.Null(),
-})
+const NoPlatformData = Type.Object(
+    {
+        argumentTitle: Type.String(),
+        textContent: Type.Null(),
+    },
+    { additionalProperties: false }
+)
 
 // Twitter specifics
 export const TwitterImportSelfMode = Type.Literal("self_author")
@@ -41,6 +47,8 @@ export const TwitterImportMode = Type.Union([
 ])
 export type TTwitterImportMode = Static<typeof TwitterImportMode>
 
+// Left open to unknown keys on purpose: this is X's oEmbed response, not our
+// trust boundary — X may add fields and we don't want to reject valid embeds.
 export const TwitterEmbedResponse = Type.Object({
     url: Type.String(),
     authorUrl: Type.String(),
@@ -64,7 +72,8 @@ export const TwitterArgumentPlatformData = Type.Interface(
         // From https://developer.x.com/en/docs/x-for-websites/oembed-api#item1
         embedResponse: Type.Optional(TwitterEmbedResponse),
         username: Type.Optional(Type.String()),
-    }
+    },
+    { additionalProperties: false }
 )
 export type TTwitterArgumentPlatformData = Static<
     typeof TwitterArgumentPlatformData
@@ -76,7 +85,8 @@ export const RedditArgumentPlatformData = Type.Interface(
     {
         postUrl: Type.String(),
         username: Type.Optional(Type.String()),
-    }
+    },
+    { additionalProperties: false }
 )
 export type TRedditArgumentPlatformData = Static<
     typeof RedditArgumentPlatformData

@@ -1,0 +1,14 @@
+slug: 2026-06-21-add-optional-description-to-updateargumentrequestschema
+title: Add optional description to UpdateArgumentRequestSchema
+phase: ""
+created: "2026-06-21"
+resolution: done
+priority: null
+worktree: .worktrees/2026-06-21-add-optional-description-to-updateargumentrequestschema
+branch: work/2026-06-21-add-optional-description-to-updateargumentrequestschema
+dod:
+    - tests pass
+    - docs synced
+    - capabilities reconciled
+    - reviewed
+    - version offered

@@ -17,6 +17,7 @@ export { ArgumentForkSchema, type TArgumentFork } from "./forks.js"
 
 export const MutableArgumentFieldsSchema = Type.Object({
     title: Type.String(),
+    description: Type.Optional(Type.String()),
 })
 export type TMutableArgumentFields = Static<typeof MutableArgumentFieldsSchema>
 
