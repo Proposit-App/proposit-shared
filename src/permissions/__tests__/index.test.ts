@@ -37,7 +37,7 @@ describe("canArgument", () => {
             })
         ).toBe(false)
     })
-    it("owner/editor can delete their own unpublished draft", () => {
+    it("only the owner (not an editor) can delete an unpublished draft", () => {
         expect(
             canArgument("delete", {
                 systemPermissions: none,
@@ -51,7 +51,7 @@ describe("canArgument", () => {
                 role: ParticipantRoles.EDITOR,
                 published: false,
             })
-        ).toBe(true)
+        ).toBe(false)
     })
     it("no one edits or publishes a published argument without admin", () => {
         expect(
@@ -144,6 +144,20 @@ describe("canArgument", () => {
                 published: false,
             })
         ).toBe(false)
+        expect(
+            canArgument("unhide", {
+                systemPermissions: new Set([SystemRoles.ARGUMENT.UNHIDE]),
+                role: null,
+                published: true,
+            })
+        ).toBe(true)
+        expect(
+            canArgument("unhide", {
+                systemPermissions: none,
+                role: ParticipantRoles.OWNER,
+                published: false,
+            })
+        ).toBe(false)
     })
 })
 
@@ -171,5 +185,21 @@ describe("can dispatcher", () => {
                 published: true,
             })
         ).toBe(true)
+    })
+    it("routes to the RegistrationInvitation predicate", () => {
+        expect(
+            can("grant-others", "RegistrationInvitation", {
+                systemPermissions: inviteGranter,
+                role: null,
+                published: false,
+            })
+        ).toBe(true)
+        expect(
+            can("grant-others", "RegistrationInvitation", {
+                systemPermissions: none,
+                role: null,
+                published: false,
+            })
+        ).toBe(false)
     })
 })

@@ -1,4 +1,8 @@
-import { SystemRoles, type TParticipantRole } from "../consts/roles.js"
+import {
+    SystemRoles,
+    ParticipantRoles,
+    type TParticipantRole,
+} from "../consts/roles.js"
 
 export type TAction =
     | "create"
@@ -51,8 +55,10 @@ export function canArgument(
         case "publish":
             return editable
         case "delete":
+            // Hard-delete is destructive, so it is OWNER-only among
+            // participants — an EDITOR can edit a draft but not destroy it.
             return (
-                editable ||
+                (!ctx.published && ctx.role === ParticipantRoles.OWNER) ||
                 ctx.systemPermissions.has(SystemRoles.ARGUMENT.DELETE)
             )
         case "hide":
