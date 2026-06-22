@@ -74,6 +74,15 @@ export const ErrorResponseSchema = Type.Object({
         description: "A message describing the error that occurred.",
     }),
     statusCode: Type.Number(),
+    errorCode: Type.Optional(
+        Type.String({
+            description:
+                "Optional machine-readable error code (e.g. a retry-refusal " +
+                "reason) so clients can branch on a stable discriminant " +
+                "instead of parsing errorMessage. Additive/optional: a " +
+                "response that omits it stays valid.",
+        })
+    ),
 })
 export type TErrorResponse = Static<typeof ErrorResponseSchema>
 
