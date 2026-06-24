@@ -3,6 +3,12 @@ title: Claim schema decoupling — version-as-trunk, originArgumentId, published
   expose ClaimForkSchema
 phase: ''
 created: '2026-06-23'
-resolution: null
+resolution: done
 priority: null
 initiative: 2026-06-23-independently-versioned-claims-publish-propagation-forking-searchability
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
