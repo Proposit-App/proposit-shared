@@ -726,8 +726,10 @@ function mkAxiomaticClaim(
 ): TAxiomaticClaim {
     return {
         id,
-        argumentId: ARG_ID,
+        originArgumentId: ARG_ID,
         version: ARG_VERSION,
+        published: false,
+        publishedOn: null,
         creatorId: USER_ID,
         createdOn: new Date("2026-01-01"),
         digest: `axiom-digest-${id}`,

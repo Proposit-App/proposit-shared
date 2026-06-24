@@ -46,8 +46,10 @@ describe("PropositArgumentEngine", () => {
     function makeClaim(overrides: Partial<TClaim> = {}): TClaim {
         const normalDefault: TClaim = {
             id: v4(),
-            argumentId,
+            originArgumentId: argumentId,
             version: argumentVersion,
+            published: false,
+            publishedOn: null,
             title: "Test Claim",
             body: "Test body",
             titleContentHash: "test-hash",

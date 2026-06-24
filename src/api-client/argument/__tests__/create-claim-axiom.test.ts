@@ -13,8 +13,10 @@ function makeAxiomAssignmentResponseBody() {
     return {
         axiomClaim: {
             id: "ax-1",
-            argumentId: "arg-1",
+            originArgumentId: "arg-1",
             version: 1,
+            published: false,
+            publishedOn: null,
             creatorId: "user-1",
             createdOn: new Date("2026-05-19").toISOString(),
             digest: "ax-1-digest",

@@ -25,8 +25,10 @@ export function mkTestArgument(overrides?: Partial<TArgument>): TArgument {
 export function mkTestClaim(overrides?: Partial<TClaim>): TClaim {
     const normalDefault: TClaim = {
         id: crypto.randomUUID(),
-        argumentId: "test-arg-id",
+        originArgumentId: "test-arg-id",
         version: 1,
+        published: false,
+        publishedOn: null,
         creatorId: "test-user-id",
         createdOn: new Date("2026-01-01"),
         title: "Test claim",

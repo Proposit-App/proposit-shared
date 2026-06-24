@@ -48,13 +48,13 @@ published + validated.
 
 ## Why
 
-Claims are becoming first-class, independently-versioned entities shared by reference across arguments (today `claims.version` mirrors the *argument* version). `@proposit/shared` owns the `ClaimSchema` contract, so the type/shape changes land here first.
+Claims are becoming first-class, independently-versioned entities shared by reference across arguments (today `claims.version` mirrors the _argument_ version). `@proposit/shared` owns the `ClaimSchema` contract, so the type/shape changes land here first.
 
 ## Scope
 
 In `src/schemas/model/claims.ts` (and package exports):
 
-- **`version`** — document/type as the claim's *own* trunk version (independent of argument version). No longer a denormalized argument version.
+- **`version`** — document/type as the claim's _own_ trunk version (independent of argument version). No longer a denormalized argument version.
 - **`argumentId` → nullable `originArgumentId`** — provenance only; a shared claim is no longer owned by one argument.
 - **Add `published` (bool) + `publishedOn` (nullable)** — per-claim-version publish state.
 - **Re-export `ClaimForkSchema`** (`src/schemas/model/forks.ts`) from the package index — it exists but isn't exported.
@@ -68,4 +68,3 @@ In `src/schemas/model/claims.ts` (and package exports):
 ## Next step for this node
 
 Run process-inbox → `tcw work new --initiative 2026-06-23-independently-versioned-claims-publish-propagation-forking-searchability` to adopt the slice, then write `spec.md`/`plan.md` in the work-item folder (invoke `writing-plans` for the bite-sized plan).
-

@@ -3,6 +3,7 @@ import { Value } from "typebox/value"
 import {
     AxiomaticClaimSchema,
     CitationClaimSchema,
+    ClaimForkSchema,
     ClaimSchema,
     ClaimWithChildrenSchema,
     isAxiomaticClaim,
@@ -11,6 +12,7 @@ import {
     NormalClaimSchema,
     type TAxiomaticClaim,
     type TCitationClaim,
+    type TClaimFork,
     type TNormalClaim,
 } from "../model/claims.js"
 
@@ -21,8 +23,10 @@ const NOW = new Date("2026-05-06T00:00:00Z")
 
 const normalBase = {
     id: ID,
-    argumentId: ARG_ID,
+    originArgumentId: ARG_ID,
     version: 1,
+    published: false,
+    publishedOn: null,
     claimForkId: null,
     creatorId: CREATOR_ID,
     createdOn: NOW,
@@ -41,8 +45,10 @@ const normalBase = {
 
 const citationBase = {
     id: ID,
-    argumentId: ARG_ID,
+    originArgumentId: ARG_ID,
     version: 1,
+    published: false,
+    publishedOn: null,
     claimForkId: null,
     creatorId: CREATOR_ID,
     createdOn: NOW,
@@ -84,8 +90,10 @@ const unparsedCitationBase = {
 
 const axiomaticBase = {
     id: ID,
-    argumentId: ARG_ID,
+    originArgumentId: ARG_ID,
     version: 1,
+    published: false,
+    publishedOn: null,
     claimForkId: null,
     creatorId: CREATOR_ID,
     createdOn: NOW,
@@ -336,5 +344,86 @@ describe("Claim type guards", () => {
         expect(isAxiomaticClaim(c)).toBe(true)
         expect(isNormalClaim(c)).toBe(false)
         expect(isCitationClaim(c)).toBe(false)
+    })
+})
+
+// Decoupling: a claim is its own independently-versioned entity. `version` is
+// the claim's own trunk version; `originArgumentId` is nullable provenance (the
+// argument the claim was first created in), not ownership; `published` /
+// `publishedOn` carry per-claim-version publish state. These fields live on the
+// shared base, so the same checks hold across all three variants — normalBase
+// exercises the base.
+describe("Claim identity & publish fields (decoupled from argument)", () => {
+    it("accepts a claim with a null originArgumentId (no single origin)", () => {
+        const orphan = { ...normalBase, originArgumentId: null }
+        expect(Value.Check(ClaimSchema, orphan)).toBe(true)
+    })
+
+    it("rejects a claim missing originArgumentId (required field)", () => {
+        const { originArgumentId: _omit, ...bad } = normalBase
+        expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a claim carrying the legacy argumentId without originArgumentId", () => {
+        const { originArgumentId: _omit, ...rest } = normalBase
+        const legacy = { ...rest, argumentId: ARG_ID }
+        expect(Value.Check(ClaimSchema, legacy)).toBe(false)
+    })
+
+    it("accepts a published claim with a publishedOn timestamp", () => {
+        const published = { ...normalBase, published: true, publishedOn: NOW }
+        expect(Value.Check(ClaimSchema, published)).toBe(true)
+    })
+
+    it("rejects a non-boolean published", () => {
+        const bad = { ...normalBase, published: "true" }
+        expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a claim missing published (required field)", () => {
+        const { published: _omit, ...bad } = normalBase
+        expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a claim missing publishedOn (required, but nullable)", () => {
+        const { publishedOn: _omit, ...bad } = normalBase
+        expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+
+    it("rejects a non-date, non-null publishedOn", () => {
+        const bad = { ...normalBase, publishedOn: 12345 }
+        expect(Value.Check(ClaimSchema, bad)).toBe(false)
+    })
+})
+
+describe("ClaimForkSchema (re-exported from the package index)", () => {
+    const claimFork = {
+        entityId: ID,
+        forkedFromEntityId: ARG_ID,
+        forkedFromArgumentId: ARG_ID,
+        forkedFromArgumentVersion: 1,
+        forkId: ID,
+        forkedFromEntityVersion: 2,
+        sourceUserId: CREATOR_ID,
+        forkedByUserId: CREATOR_ID,
+    }
+
+    it("validates a well-formed claim-fork provenance record", () => {
+        expect(Value.Check(ClaimForkSchema, claimFork)).toBe(true)
+    })
+
+    it("accepts null forkedFromEntityVersion (source version may be unknown)", () => {
+        const noVersion = { ...claimFork, forkedFromEntityVersion: null }
+        expect(Value.Check(ClaimForkSchema, noVersion)).toBe(true)
+    })
+
+    it("rejects a record missing the user attribution", () => {
+        const { sourceUserId: _omit, ...bad } = claimFork
+        expect(Value.Check(ClaimForkSchema, bad)).toBe(false)
+    })
+
+    it("the derived TClaimFork type carries the fork fields", () => {
+        const typed: TClaimFork = claimFork
+        expect(typed.forkedByUserId).toBe(CREATOR_ID)
     })
 })

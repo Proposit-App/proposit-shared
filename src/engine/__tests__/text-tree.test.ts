@@ -50,8 +50,10 @@ const VAR_DEFAULTS = {
 }
 
 const NORMAL_CLAIM_DEFAULTS = {
-    argumentId: "arg-1",
+    originArgumentId: "arg-1",
     version: 1,
+    published: false,
+    publishedOn: null,
     claimForkId: null,
     creatorId: "user-1",
     createdOn: new Date(),
@@ -67,8 +69,10 @@ const NORMAL_CLAIM_DEFAULTS = {
 }
 
 const CITATION_CLAIM_DEFAULTS = {
-    argumentId: "arg-1",
+    originArgumentId: "arg-1",
     version: 1,
+    published: false,
+    publishedOn: null,
     claimForkId: null,
     creatorId: "user-1",
     createdOn: new Date(),
@@ -92,8 +96,10 @@ const CITATION_CLAIM_DEFAULTS = {
 }
 
 const AXIOMATIC_CLAIM_DEFAULTS = {
-    argumentId: "arg-1",
+    originArgumentId: "arg-1",
     version: 1,
+    published: false,
+    publishedOn: null,
     claimForkId: null,
     creatorId: "user-1",
     createdOn: new Date(),

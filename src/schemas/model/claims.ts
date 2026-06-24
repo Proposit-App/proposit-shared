@@ -8,6 +8,11 @@ import {
     CoreClaimTypeSchema,
 } from "@proposit/proposit-core"
 
+// Claim-fork provenance type lives in forks.ts; re-export it here (the
+// claim-related entry point) so consumers can import it through the package,
+// paralleling the ArgumentForkSchema re-export in arguments.ts.
+export { ClaimForkSchema, type TClaimFork } from "./forks.js"
+
 // Re-export aliases so consumers that imported ClaimTypeSchema / TClaimType
 // from @proposit/shared/schemas keep working without code edits.
 export const ClaimTypeSchema = CoreClaimTypeSchema
@@ -91,8 +96,22 @@ export type TNormalClaimKinds = Static<typeof NormalClaimKindsSchema>
 // Identity / lineage fields shared by all variants, with digest inherited.
 const ClaimSharedFieldsSchema = Type.Interface([ClaimMetadataFieldsSchema], {
     id: UUID,
-    argumentId: UUID,
+    // Provenance only: the argument this claim was first created in. A claim is
+    // an independently-versioned entity shared by reference across arguments, so
+    // it is no longer owned by one argument — this is nullable and records where
+    // it originated, not where it lives. (Replaces the former `argumentId`,
+    // which keyed claims to a single argument.)
+    originArgumentId: Nullable(UUID),
+    // The claim's OWN trunk version, independent of any argument version. It
+    // advances only when this claim's content changes; it is NOT a denormalized
+    // copy of the referencing argument's version. Different arguments may pin
+    // different versions of the same claim.
     version: Type.Number(),
+    // Per-claim-version publish state. A `v0` draft is unpublished (`false`);
+    // a version becomes published as a side-effect of its argument's publish.
+    published: Type.Boolean(),
+    // Timestamp this claim version was published; null while unpublished.
+    publishedOn: Nullable(EncodableDate),
     claimForkId: Nullable(UUID),
     creatorId: UUID,
     createdOn: EncodableDate,

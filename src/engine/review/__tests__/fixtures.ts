@@ -83,8 +83,10 @@ const NOW = new Date("2026-04-14T00:00:00Z")
 function makeClaim(id: string, title: string): TClaim {
     return {
         id,
-        argumentId: ARGUMENT_ID,
+        originArgumentId: ARGUMENT_ID,
         version: ARGUMENT_VERSION,
+        published: false,
+        publishedOn: null,
         title,
         body: `Body of ${title}`,
         titleContentHash: `hash-of-${id}`,
@@ -299,8 +301,10 @@ export const buildEngine = buildEngineWithTwoPremises
 function makeAxiomaticClaim(id: string, title: string): TAxiomaticClaim {
     return {
         id,
-        argumentId: ARGUMENT_ID,
+        originArgumentId: ARGUMENT_ID,
         version: ARGUMENT_VERSION,
+        published: false,
+        publishedOn: null,
         creatorId: CREATOR_ID,
         createdOn: NOW,
         digest: `digest-${id}`,
