@@ -302,6 +302,13 @@ export function mutateCreateDerivationPremise(
         creatorId: string
         createdOn: Date
         derivedClaimId: string
+        // The claim's OWN trunk version that this derivation premise pins. A
+        // persistence-only pin (FK `(derivedClaimId, derivedClaimVersion) →
+        // claims(id, version)`), carried through to the persisted premise data
+        // but deliberately excluded from the premise checksum — it is not
+        // semantic content. Optional for back-compat with call sites that don't
+        // pin a version yet.
+        derivedClaimVersion?: number
         consequentVariableId?: string
         existingConsequentVariableId?: string
         consequentExpressionId: string
@@ -348,6 +355,11 @@ export function mutateCreateDerivationPremise(
     //    variable for the new premise, a claim-bound consequent variable
     //    (engine-generated id), and a naked-Q variable expression rooted on
     //    that consequent variable (engine-generated id).
+    //    `derivedClaimVersion`, when supplied, rides in the extras bag so
+    //    `toPremiseData()` carries it through to `persistChangeset`'s
+    //    `...dbFields` spread. Core's checksum hashes only the 4 default premise
+    //    fields (argumentId, argumentVersion, type, derivedClaimId), so this
+    //    extra does not perturb the premise checksum.
     const { result: pm, changes: premiseChanges } = engine.createPremiseWithId(
         premiseId,
         {
@@ -357,6 +369,9 @@ export function mutateCreateDerivationPremise(
                 creatorId: data.creatorId,
                 createdOn: data.createdOn,
                 role: "supporting" as const,
+                ...(data.derivedClaimVersion !== undefined
+                    ? { derivedClaimVersion: data.derivedClaimVersion }
+                    : {}),
             },
         }
     )

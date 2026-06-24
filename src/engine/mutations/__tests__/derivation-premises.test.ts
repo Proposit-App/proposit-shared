@@ -1257,3 +1257,80 @@ describe("fromServerData with wave-2 derivation premises", () => {
         if (root.type === "operator") expect(root.operator).toBe("implies")
     })
 })
+
+describe("mutateCreateDerivationPremise — derivedClaimVersion pin", () => {
+    test("carries derivedClaimVersion through to the persisted premise data", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const result = mutateCreateDerivationPremise(engine, "p-d-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            derivedClaimVersion: 3,
+            consequentVariableId: "v-1",
+            consequentExpressionId: "e-1",
+        })
+
+        expect(
+            (result.premise as { derivedClaimVersion?: number })
+                .derivedClaimVersion
+        ).toBe(3)
+
+        // The persisted changeset (what persistChangeset spreads) carries it.
+        const added = result.changes.premises?.added ?? []
+        expect(added).toContainEqual(
+            expect.objectContaining({ id: "p-d-1", derivedClaimVersion: 3 })
+        )
+    })
+
+    test("derivedClaimVersion does NOT enter the premise checksum", () => {
+        // Two engines built identically except for derivedClaimVersion. The
+        // premise checksum (core's 4-field default: argumentId, argumentVersion,
+        // type, derivedClaimId) must be identical — derivedClaimVersion is a
+        // persistence pin, not semantic content. Use a fixed createdOn so the
+        // expression/descendant checksums (which DO hash createdOn) match,
+        // isolating the variable under test.
+        const fixedNow = new Date("2026-01-01T00:00:00Z")
+        const withoutVersion = setupEngineWithClaims(["claim-q"])
+        const a = mutateCreateDerivationPremise(withoutVersion, "p-d-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: fixedNow,
+            derivedClaimId: "claim-q",
+            consequentVariableId: "v-1",
+            consequentExpressionId: "e-1",
+        })
+
+        const withVersion = setupEngineWithClaims(["claim-q"])
+        const b = mutateCreateDerivationPremise(withVersion, "p-d-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: fixedNow,
+            derivedClaimId: "claim-q",
+            derivedClaimVersion: 7,
+            consequentVariableId: "v-1",
+            consequentExpressionId: "e-1",
+        })
+
+        expect(b.premise.checksum).toBe(a.premise.checksum)
+        expect(b.premise.combinedChecksum).toBe(a.premise.combinedChecksum)
+    })
+
+    test("omitting derivedClaimVersion leaves the field absent (back-compat)", () => {
+        const engine = setupEngineWithClaims(["claim-q"])
+        const result = mutateCreateDerivationPremise(engine, "p-d-1", {
+            argumentId: ARG_ID,
+            argumentVersion: ARG_VERSION,
+            creatorId: USER_ID,
+            createdOn: new Date(),
+            derivedClaimId: "claim-q",
+            consequentVariableId: "v-1",
+            consequentExpressionId: "e-1",
+        })
+
+        expect("derivedClaimVersion" in result.premise).toBe(false)
+    })
+})

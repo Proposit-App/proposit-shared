@@ -4,6 +4,7 @@ dist
 .broker
 .DS_Store
 *.tsbuildinfo
+*.tgz
 .env
 .env.*
 !.env.example

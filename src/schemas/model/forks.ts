@@ -57,11 +57,19 @@ export type TVariableFork = Static<typeof VariableForkSchema>
 
 // ---------------------------------------------------------------------------
 // Claim fork record — tracks claim version and user attribution.
+//
+// `forkId` is nullable for claims ONLY. A claim-only fork (minted when a user
+// edits a claim pinned at a non-head version, with NO accompanying argument
+// fork) has no `argumentForks` row to reference, so `claimForks.forkId` can be
+// null. The other four fork records keep `forkId: UUID` (non-null); we drop the
+// base's non-null `forkId` here via `Type.Omit` and re-add it as nullable so
+// only this variant is loosened.
 // ---------------------------------------------------------------------------
 
 export const ClaimForkSchema = Type.Intersect([
-    EntityForkRecordBase,
+    Type.Omit(EntityForkRecordBase, ["forkId"]),
     Type.Object({
+        forkId: Nullable(UUID),
         forkedFromEntityVersion: Nullable(Type.Number()),
         sourceUserId: UUID,
         forkedByUserId: UUID,

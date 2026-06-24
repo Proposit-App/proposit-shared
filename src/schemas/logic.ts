@@ -116,6 +116,13 @@ export const PropositionalPremiseSchema = Type.Intersect([
         role: PremiseRoleType,
         createdOn: Type.Optional(EncodableDate),
         creatorId: Type.Optional(UUID),
+        // The claim's own trunk version that a derivation premise pins
+        // (persisted as `propositionalPremises.derivedClaimVersion`, FK
+        // `(derivedClaimId, derivedClaimVersion) → claims(id, version)`). A
+        // persistence pin only — deliberately NOT part of the premise checksum.
+        // Optional/nullable: absent on freeform premises and on derivation
+        // premises minted before a version is pinned.
+        derivedClaimVersion: Type.Optional(Nullable(Type.Number())),
     }),
 ])
 export type TPropositionalPremise = Static<typeof PropositionalPremiseSchema>
