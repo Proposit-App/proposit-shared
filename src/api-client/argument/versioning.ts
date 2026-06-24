@@ -4,9 +4,31 @@ import {
     AdvanceClaimReferenceRequestSchema,
     AdvanceClaimReferenceResponseSchema,
 } from "../../schemas/api/argument/versioning.js"
+import { ClaimSchema } from "../../schemas/model/claims.js"
 import { strictFetch } from "../../utils/utils.js"
 import type { TApiClientConfig } from "../config.js"
 import { resolveBaseUrl } from "../internal.js"
+
+/**
+ * `GET /api/v1/claim/[claimId]/latest`
+ *
+ * Returns the full claim object at its highest published version. The response
+ * IS a claim, so it is validated against `ClaimSchema` on the way out.
+ */
+export async function getLatestClaimImpl(
+    config: TApiClientConfig,
+    claimId: string
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await strictFetch(
+        `${baseUrl}/api/v1/claim/${claimId}/latest`,
+        { method: "GET" },
+        undefined,
+        undefined,
+        ClaimSchema,
+        config.fetchImpl
+    )
+}
 
 /**
  * `GET /api/v1/claim/[claimId]/latest-version?pinned=<number>`

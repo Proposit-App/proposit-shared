@@ -77,6 +77,78 @@ describe("apiClient.getLatestClaimVersion", () => {
     })
 })
 
+/**
+ * Helper: build a minimal axiomatic claim body that round-trips cleanly
+ * through ClaimSchema. The `GET /latest` endpoint returns a full claim, so
+ * the api-client method validates the response against ClaimSchema on the way
+ * out — callers get a typed rejection when the server's shape drifts.
+ */
+function makeClaimBody() {
+    return {
+        id: claimId,
+        originArgumentId: "arg-1",
+        version: 2,
+        published: true,
+        publishedOn: new Date("2026-05-19").toISOString(),
+        creatorId: "user-1",
+        createdOn: new Date("2026-05-19").toISOString(),
+        digest: "claim-digest",
+        claimForkId: null,
+        parentId: null,
+        type: "axiomatic",
+        kind: null,
+        title: null,
+        body: null,
+        titleContentHash: null,
+        url: null,
+        citation: null,
+        citationContentHash: null,
+        axiom: "logical-principle",
+    }
+}
+
+describe("apiClient.getLatestClaim", () => {
+    test("GETs /api/v1/claim/[claimId]/latest and round-trips a valid claim", async () => {
+        const calls: { url: string; method?: string }[] = []
+        const fetchImpl: typeof fetch = (input, init) => {
+            calls.push({ url: urlToString(input), method: init?.method })
+            return Promise.resolve(makeJsonResponse(200, makeClaimBody()))
+        }
+        const apiClient = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl,
+        })
+
+        const result = await apiClient.getLatestClaim(claimId)
+
+        expect(calls).toHaveLength(1)
+        expect(calls[0].url).toBe(
+            `https://example.test/api/v1/claim/${claimId}/latest`
+        )
+        expect(calls[0].method).toBe("GET")
+        expect(result.ok).toBe(true)
+        if (!result.ok) throw new Error("expected ok=true")
+        expect(result.value.id).toBe(claimId)
+        expect(result.value.version).toBe(2)
+        expect(result.value.type).toBe("axiomatic")
+    })
+
+    test("rejects malformed response bodies through strictFetch's schema validator", async () => {
+        // Drop a required field so the response no longer matches any ClaimSchema
+        // variant, surfacing a parse rejection rather than a silent pass-through.
+        const malformed = makeClaimBody() as Record<string, unknown>
+        delete malformed.type
+        const fetchImpl: typeof fetch = () =>
+            Promise.resolve(makeJsonResponse(200, malformed))
+        const apiClient = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl,
+        })
+
+        await expect(apiClient.getLatestClaim(claimId)).rejects.toThrowError()
+    })
+})
+
 describe("apiClient.advanceClaimReference", () => {
     test("POSTs to /api/v1/argument/[id]/[v]/claim/[claimId]/advance with an explicit toVersion", async () => {
         const calls: { url: string; method?: string; body?: unknown }[] = []
