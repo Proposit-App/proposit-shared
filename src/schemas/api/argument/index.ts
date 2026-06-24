@@ -17,6 +17,8 @@ import {
 } from "../../integrations/index.js"
 import Type, { type Static } from "typebox"
 
+export * from "./versioning.js"
+
 export const FullArgumentSchema = Type.Object({
     argument: ArgumentSchema,
     claims: Type.Array(ClaimSchema),
