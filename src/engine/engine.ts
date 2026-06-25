@@ -1,10 +1,15 @@
 import {
     ArgumentEngine,
     InvariantViolationError,
+    isClaimBound,
     type TArgumentEngineSnapshot,
+    type TClaimBoundVariable,
     type TClaimLookup,
     type TCoreClaim,
+    type TCorePropositionalVariable,
     type TCoreValidationIssue,
+    type TInvariantValidationResult,
+    type TInvariantViolation,
     type TReactiveSnapshot,
 } from "@proposit/proposit-core"
 
@@ -18,6 +23,21 @@ import type { TClaim } from "../schemas/model/claims.js"
 import type { TClaimCitation } from "../schemas/model/citations.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
 import { createClaimLookup } from "./library-adapters.js"
+
+// A non-derivation (freeform) premise must never reference a claim of type
+// `citation` or `axiomatic`: those claim types belong only in derivation
+// premises, where the citation/axiom is the antecedent supporting a derived
+// claim. Placing one in a freeform premise produces a domain-invalid argument
+// (e.g. a citation sitting as a bare antecedent renders as a visually empty
+// node). This rule is enforced here in the project engine; core leaves the
+// equivalent grammar tier informational.
+const PREMISE_TYPED_CLAIM_IN_FREEFORM = "PREMISE_TYPED_CLAIM_IN_FREEFORM"
+
+// Claim types that may only appear in derivation premises.
+const DERIVATION_ONLY_CLAIM_TYPES = new Set<TCoreClaim["type"]>([
+    "citation",
+    "axiomatic",
+])
 
 // Core 1.0 dropped the per-engine `grammarConfig` knob in favor of a single
 // `behavior: 'assistive' | 'permissive'` setting. Snapshot loading (rollback,
@@ -180,6 +200,10 @@ export class PropositArgumentEngine extends ArgumentEngine<
             super.rollback(snapshot)
         } finally {
             this.claimContext.permissiveForRestore = false
+            // rollback rebuilds the premise map and re-points each premise's
+            // validation callback to core's default; re-install the typed-claim
+            // guards so premise-level expression mutations stay enforced.
+            this.installFreeformTypedClaimGuards()
         }
     }
 
@@ -307,6 +331,132 @@ export class PropositArgumentEngine extends ArgumentEngine<
         return arg?.published === true
     }
 
+    // ──── Freeform-premise typed-claim invariant ────
+
+    /**
+     * Resolves the claim type a variable references, or `undefined` when the
+     * variable is not claim-bound (premise-bound variables reference no claim).
+     * Reads the engine's claim library (`getClaim`) rather than the per-engine
+     * `claimsMap`, because the library is populated for the whole load/mutation
+     * lifecycle while `claimsMap` is filled only after a snapshot restore — so
+     * the library is the reliable source during the load-validation sweep.
+     */
+    private resolveVariableClaimType(
+        variableId: string
+    ): TCoreClaim["type"] | undefined {
+        const variable = this.getVariable(variableId) as
+            | TCorePropositionalVariable
+            | undefined
+        if (!variable || !isClaimBound(variable)) return undefined
+        const bound = variable as TClaimBoundVariable
+        return this.getClaim(bound.claimId, bound.claimVersion)?.type
+    }
+
+    /**
+     * Collects a violation for every freeform premise that references a
+     * derivation-only claim type (`citation` / `axiomatic`) through one of its
+     * member variables. Walks each premise's expressions, resolves the claim
+     * type behind each variable expression, and flags the premise when any
+     * referenced claim is derivation-only.
+     */
+    private collectTypedClaimsInFreeformViolations(): TInvariantViolation[] {
+        const violations: TInvariantViolation[] = []
+        for (const pe of this.listPremises()) {
+            if (pe.toPremiseData().type !== "freeform") continue
+            const premiseId = pe.getId()
+            for (const expr of pe.getExpressions()) {
+                if (expr.type !== "variable") continue
+                const claimType = this.resolveVariableClaimType(expr.variableId)
+                if (claimType === undefined) continue
+                if (!DERIVATION_ONLY_CLAIM_TYPES.has(claimType)) continue
+                violations.push({
+                    code: PREMISE_TYPED_CLAIM_IN_FREEFORM,
+                    message: `Freeform premise ${premiseId} references a ${claimType} claim; ${claimType} claims may only appear in derivation premises.`,
+                    entityType: "premise",
+                    entityId: premiseId,
+                    premiseId,
+                })
+                // One violation per premise is enough to flag/repair it.
+                break
+            }
+        }
+        return violations
+    }
+
+    /**
+     * Runs the freeform-premise typed-claim check, gated on `assistive`
+     * behavior. Returns an `ok: false` result when a freeform premise
+     * references a derivation-only claim. The gate keeps the
+     * derivation-population helpers — which flip to `permissive` mid-build and
+     * may momentarily hold a transient intermediate tree — from being tripped
+     * while they construct a valid final shape.
+     */
+    private assertNoTypedClaimsInFreeform(): TInvariantValidationResult {
+        if (this.behavior !== "assistive") {
+            return { ok: true, violations: [] }
+        }
+        const violations = this.collectTypedClaimsInFreeformViolations()
+        return { ok: violations.length === 0, violations }
+    }
+
+    // ──── Mutation + load enforcement overrides ────
+
+    /**
+     * Folds the freeform-premise typed-claim invariant into core's invariant
+     * sweep. Because core's mutation wrapper (`withValidation`) and the
+     * snapshot-load paths (`fromSnapshot` / `fromData` / `rollback`) all run
+     * this method, overriding it enforces the invariant on both mutation and
+     * load: an argument-level mutation that would leave a citation/axiomatic
+     * claim in a freeform premise is rolled back and throws, and a snapshot
+     * carrying that placement fails to load. Premise-level expression
+     * mutations validate through a separate per-premise callback, re-wired in
+     * {@link installFreeformTypedClaimGuards} to enforce the same invariant.
+     */
+    public override validateInvariants(): TInvariantValidationResult {
+        const base = super.validateInvariants()
+        const typedClaims = this.assertNoTypedClaimsInFreeform()
+        if (typedClaims.ok) return base
+        return {
+            ok: false,
+            violations: [...base.violations, ...typedClaims.violations],
+        }
+    }
+
+    /**
+     * Wraps core's universal mutation wrapper. Core re-points every premise's
+     * after-mutation validation callback to its own default at the end of each
+     * argument-level mutation, so the typed-claim guards must be re-installed
+     * afterwards to stay in effect for the next premise-level expression
+     * mutation. The mutation itself is enforced by the overridden
+     * {@link validateInvariants} that core's wrapper invokes.
+     */
+    protected override withValidation<T>(fn: () => T): T {
+        try {
+            return super.withValidation(fn)
+        } finally {
+            this.installFreeformTypedClaimGuards()
+        }
+    }
+
+    /**
+     * Re-wires every premise's after-mutation validation callback so that
+     * premise-level expression mutations also enforce the freeform-premise
+     * typed-claim invariant. Core's default callback runs only its lighter
+     * after-premise-mutation sweep, which never reaches the typed-claim check;
+     * this callback runs the typed-claim check first and, when clean, the full
+     * invariant sweep ({@link validateInvariants}) so a violating placement is
+     * rolled back and throws at the moment the expression is added.
+     */
+    private installFreeformTypedClaimGuards(): void {
+        for (const pe of this.listPremises()) {
+            pe.setArgumentValidateCallback(() => {
+                const typedClaims = this.assertNoTypedClaimsInFreeform()
+                if (!typedClaims.ok) return typedClaims
+                return this.validateInvariants()
+            })
+        }
+    }
+
     // ──── Reactive snapshot override ────
 
     protected override buildReactiveSnapshot(): TProjectReactiveSnapshot {
@@ -331,7 +481,15 @@ export class PropositArgumentEngine extends ArgumentEngine<
                 : invariants.violations.map(
                       (v): TCoreValidationIssue => ({
                           code: v.code as TCoreValidationIssue["code"],
-                          severity: "error" as const,
+                          // The freeform-premise typed-claim violation is a
+                          // repairable placement issue (move the claim into a
+                          // derivation premise), so surface it as a warning
+                          // rather than a blocking error in the reactive view.
+                          // Mutation/load paths still throw on it.
+                          severity:
+                              v.code === PREMISE_TYPED_CLAIM_IN_FREEFORM
+                                  ? ("warning" as const)
+                                  : ("error" as const),
                           message: v.message,
                           premiseId: v.premiseId,
                       })

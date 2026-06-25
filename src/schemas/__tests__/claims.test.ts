@@ -156,8 +156,25 @@ describe("CitationClaimSchema", () => {
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
 
-    it("rejects a citation claim missing the URL", () => {
-        const bad = { ...citationBase, url: null }
+    // `url` is nullable: an ingestion-extracted citation may have no locator
+    // (the reference is carried entirely by the unparsed `citation.text`). The
+    // key must still be present — `Nullable` widens the value, not key
+    // presence (see the "missing the url field" test below).
+    it("accepts a citation claim with a null url (url-less unparsed citation)", () => {
+        const urlLess = {
+            ...unparsedCitationBase,
+            url: null,
+            citation: {
+                type: "unparsed",
+                text: "the Apologia",
+                citationTypeGuess: "unknown",
+            },
+        }
+        expect(Value.Check(CitationClaimSchema, urlLess)).toBe(true)
+    })
+
+    it("rejects a citation claim missing the url field entirely", () => {
+        const { url: _omit, ...bad } = citationBase
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
 
@@ -166,13 +183,13 @@ describe("CitationClaimSchema", () => {
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
 
-    // v2 ingestion produces url-only citation claims: a `url` is present but no
-    // structured IEEE reference was extracted, so `citation` is null. This is a
-    // legitimate, validatable shape — the entire-argument response 500'd before
-    // the citation field was widened to nullable.
-    it("accepts a url-only citation claim (null citation)", () => {
-        const urlOnly = { ...citationBase, citation: null }
-        expect(Value.Check(CitationClaimSchema, urlOnly)).toBe(true)
+    // `citation` is non-nullable: the legacy `citation:null` "url-only" shape
+    // has been migrated away in the backend, so null is no longer a valid
+    // citation representation — every citation claim carries an IEEE reference
+    // or an unparsed citation.
+    it("rejects a citation claim with a null citation", () => {
+        const nullCitation = { ...citationBase, citation: null }
+        expect(Value.Check(CitationClaimSchema, nullCitation)).toBe(false)
     })
 
     it("rejects a citation claim missing the citation field entirely", () => {
@@ -180,7 +197,7 @@ describe("CitationClaimSchema", () => {
         expect(Value.Check(CitationClaimSchema, bad)).toBe(false)
     })
 
-    // The citation field is a Nullable(IEEE | Unparsed) union. Ingestion-
+    // The citation field is a non-nullable Union([IEEE, Unparsed]). Ingestion-
     // extracted citations that have not been structured into IEEE attach here
     // as `{ type: "unparsed", text, citationTypeGuess, url? }`.
     it("accepts a citation claim carrying an unparsed citation", () => {
@@ -270,17 +287,33 @@ describe("ClaimSchema (union)", () => {
         expect(Value.Check(ClaimSchema, citationBase)).toBe(true)
     })
 
-    // Regression guard for the entire-argument response 500: the claims array in
-    // FullArgumentSchema is Type.Array(ClaimSchema). A url-only citation claim
-    // (citation: null) coming back from the server's getCitations read path must
-    // resolve to the citation branch of the union, not fail every branch.
-    it("accepts a url-only citation-variant claim (null citation)", () => {
-        const urlOnly = { ...citationBase, citation: null }
-        expect(Value.Check(ClaimSchema, urlOnly)).toBe(true)
+    // The legacy `citation:null` "url-only" shape is no longer valid (migrated
+    // away in the backend). A claim that still carries it must fail the union —
+    // no branch admits a null citation on a `type:"citation"` claim.
+    it("rejects a citation-variant claim with a null citation", () => {
+        const nullCitation = { ...citationBase, citation: null }
+        expect(Value.Check(ClaimSchema, nullCitation)).toBe(false)
     })
 
     it("accepts a citation-variant claim carrying an unparsed citation", () => {
         expect(Value.Check(ClaimSchema, unparsedCitationBase)).toBe(true)
+    })
+
+    // The union discriminates on the claim `type` literal, not `url`: a
+    // citation claim whose `url` is null still resolves to the Citation branch
+    // (and validates, because `url` is nullable and `citation` carries the
+    // reference).
+    it("resolves a url-less citation to the Citation branch via the type discriminant", () => {
+        const urlLess = {
+            ...unparsedCitationBase,
+            url: null,
+            citation: {
+                type: "unparsed",
+                text: "the Apologia",
+                citationTypeGuess: "unknown",
+            },
+        }
+        expect(Value.Check(ClaimSchema, urlLess)).toBe(true)
     })
 
     it("accepts an axiomatic-variant claim", () => {

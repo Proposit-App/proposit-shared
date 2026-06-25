@@ -1,9 +1,16 @@
 import { describe, test, expect, vi } from "vitest"
 import { v4 } from "uuid"
-import { ArgumentEngine } from "@proposit/proposit-core"
+import {
+    ArgumentEngine,
+    InvariantViolationError,
+} from "@proposit/proposit-core"
 import { CHECKSUM_CONFIG } from "../../checksum.js"
 import { PropositArgumentEngine } from "../engine.js"
 import { EMPTY_CLAIM_LOOKUP, createClaimLookup } from "../library-adapters.js"
+import {
+    mutateCreateDerivationPremise,
+    populateDerivationFromCitations,
+} from "../mutations/premises.js"
 import type { TArgument } from "../../schemas/model/arguments.js"
 import type {
     TPropositionalExpressionCombined,
@@ -638,6 +645,208 @@ describe("PropositArgumentEngine", () => {
                     e.type === "operator" && e.operator === "not"
             )
             expect(notExpr).toBeDefined()
+        })
+    })
+
+    // A non-derivation (freeform) premise must not reference a claim of type
+    // `citation` or `axiomatic`: those claim types belong only in derivation
+    // premises (where the citation/axiom is the supporting antecedent). The
+    // engine enforces this on both mutation and snapshot load.
+    describe("freeform premises reject citation/axiomatic claims", () => {
+        function buildEngineWithClaims(
+            claims: TClaim[]
+        ): PropositArgumentEngine {
+            const engine = new PropositArgumentEngine(
+                makeArgument(),
+                createClaimLookup(claims),
+                { checksumConfig: CHECKSUM_CONFIG }
+            )
+            for (const c of claims) engine.setClaim(c)
+            return engine
+        }
+
+        function makeCitationClaim(): TClaim {
+            return makeClaim({
+                type: "citation",
+                kind: null,
+                title: null,
+                body: null,
+                titleContentHash: null,
+                url: "https://example.com/source",
+                citation: {
+                    type: "unparsed",
+                    text: "an extracted source",
+                    citationTypeGuess: "unknown",
+                },
+                citationContentHash: "citation-hash",
+            } as Partial<TClaim>)
+        }
+
+        function makeAxiomaticClaim(): TClaim {
+            return makeClaim({
+                type: "axiomatic",
+                kind: null,
+                title: null,
+                body: null,
+                titleContentHash: null,
+                axiom: "definition",
+            } as Partial<TClaim>)
+        }
+
+        // Place a claim-bound variable expression for `claim` as the root of a
+        // freeform premise, returning the placement thunk so the caller can
+        // assert throw / no-throw.
+        function placeClaimInFreeformPremise(
+            engine: PropositArgumentEngine,
+            claim: TClaim
+        ): () => void {
+            const premiseId = v4()
+            engine.createPremiseWithId(premiseId, {
+                argumentId,
+                argumentVersion,
+                title: "Freeform premise",
+                role: "conclusion",
+                createdOn: now,
+                creatorId,
+            })
+            const pm = engine.getPremise(premiseId)!
+            const variable = engine.ensureClaimBoundVariable(claim.id)
+            return () => {
+                pm.addExpression({
+                    id: v4(),
+                    argumentId,
+                    argumentVersion,
+                    premiseId,
+                    parentId: null,
+                    position: 0,
+                    type: "variable",
+                    variableId: variable.id,
+                    operator: null,
+                    createdOn: now,
+                    creatorId,
+                } as unknown as Parameters<typeof pm.addExpression>[0])
+            }
+        }
+
+        test("(a) adding a citation claim to a freeform premise throws", () => {
+            const citationClaim = makeCitationClaim()
+            const engine = buildEngineWithClaims([citationClaim])
+            const place = placeClaimInFreeformPremise(engine, citationClaim)
+            expect(place).toThrow(InvariantViolationError)
+        })
+
+        test("(a) adding an axiomatic claim to a freeform premise throws", () => {
+            const axiomaticClaim = makeAxiomaticClaim()
+            const engine = buildEngineWithClaims([axiomaticClaim])
+            const place = placeClaimInFreeformPremise(engine, axiomaticClaim)
+            expect(place).toThrow(InvariantViolationError)
+        })
+
+        test("(a) a freeform premise with a normal claim does not throw", () => {
+            const normalClaim = makeClaim()
+            const engine = buildEngineWithClaims([normalClaim])
+            const place = placeClaimInFreeformPremise(engine, normalClaim)
+            expect(place).not.toThrow()
+        })
+
+        test("(b) adding a citation claim to a derivation premise succeeds", () => {
+            const derivedClaim = makeClaim()
+            const citationClaim = makeCitationClaim()
+            const engine = buildEngineWithClaims([derivedClaim, citationClaim])
+
+            const premiseId = v4()
+            mutateCreateDerivationPremise(engine, premiseId, {
+                argumentId,
+                argumentVersion,
+                creatorId,
+                createdOn: now,
+                derivedClaimId: derivedClaim.id,
+                consequentVariableId: v4(),
+                consequentExpressionId: v4(),
+            })
+
+            // The citation sits as the derivation premise's antecedent — the
+            // valid placement for a citation claim.
+            expect(() =>
+                populateDerivationFromCitations(engine, premiseId, [
+                    citationClaim.id,
+                ])
+            ).not.toThrow()
+
+            const pm = engine.getPremise(premiseId)!
+            expect(pm.toPremiseData().type).toBe("derivation")
+        })
+
+        test("(c) loading a snapshot with a citation in a freeform premise throws", () => {
+            const citationClaim = makeCitationClaim()
+            // Build the violating state in permissive behavior (the gate is
+            // off, so construction is allowed), then snapshot it.
+            const builder = buildEngineWithClaims([citationClaim])
+            builder.setBehavior("permissive")
+            placeClaimInFreeformPremise(builder, citationClaim)()
+            const snapshot = builder.snapshot()
+
+            // Loading via fromServerData runs the invariant sweep in the
+            // default `assistive` behavior, so the placement is rejected.
+            expect(() =>
+                PropositArgumentEngine.fromServerData(
+                    snapshot as unknown as Parameters<
+                        typeof PropositArgumentEngine.fromServerData
+                    >[0],
+                    [citationClaim],
+                    []
+                )
+            ).toThrow(/invariant violation/i)
+        })
+
+        test("(c) the reactive snapshot surfaces the violation as a warning", () => {
+            const citationClaim = makeCitationClaim()
+            const builder = buildEngineWithClaims([citationClaim])
+            builder.setBehavior("permissive")
+            placeClaimInFreeformPremise(builder, citationClaim)()
+
+            // Same engine, queried while still permissive, then flipped to
+            // assistive so the reactive sweep evaluates the invariant.
+            builder.setBehavior("assistive")
+            const snap = builder.getProjectSnapshot()
+            const typedClaimIssues = snap.validationIssues.filter(
+                (i) => String(i.code) === "PREMISE_TYPED_CLAIM_IN_FREEFORM"
+            )
+            expect(typedClaimIssues).toHaveLength(1)
+            expect(typedClaimIssues[0].severity).toBe("warning")
+        })
+
+        test("(d) the permissive derivation-population window does not throw", () => {
+            // populateDerivationFromCitations' multi-citation branch flips the
+            // engine to `permissive` and builds a transient tree. The gate must
+            // stay off through that window so a mid-construction state is never
+            // misread as a violation.
+            const derivedClaim = makeClaim()
+            const citationA = makeCitationClaim()
+            const citationB = makeCitationClaim()
+            const engine = buildEngineWithClaims([
+                derivedClaim,
+                citationA,
+                citationB,
+            ])
+
+            const premiseId = v4()
+            mutateCreateDerivationPremise(engine, premiseId, {
+                argumentId,
+                argumentVersion,
+                creatorId,
+                createdOn: now,
+                derivedClaimId: derivedClaim.id,
+                consequentVariableId: v4(),
+                consequentExpressionId: v4(),
+            })
+
+            expect(() =>
+                populateDerivationFromCitations(engine, premiseId, [
+                    citationA.id,
+                    citationB.id,
+                ])
+            ).not.toThrow()
         })
     })
 })

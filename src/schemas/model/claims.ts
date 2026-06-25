@@ -137,16 +137,18 @@ export const CitationClaimSchema = Type.Interface([ClaimSharedFieldsSchema], {
     title: Type.Null(),
     body: Type.Null(),
     titleContentHash: Type.Null(),
-    url: Type.String(),
-    // Full IEEE references and ingestion-extracted unparsed citations both
-    // attach here; null is the url-only citation claim (a `url` column with no
-    // structured reference). The single `type` discriminant — the 33 IEEE
-    // literals vs `"unparsed"` — keeps the union unambiguous, and the `url`
-    // string is what distinguishes a citation claim from the normal/axiomatic
-    // branches, so a null citation does not collide with them.
-    citation: Nullable(
-        Type.Union([IEEEReferenceSchema, UnparsedCitationSchema])
-    ),
+    // `url` is nullable: a url-less reference (its text carried entirely by the
+    // unparsed citation) persists with `url: null`. The key stays required —
+    // `Nullable` widens the value, not key presence.
+    url: Nullable(Type.String()),
+    // The claim `type` literal is the discriminant for the claim union (normal
+    // / citation / axiomatic) — not `url`, and not whether `citation` is set.
+    // `citation` is always a structured reference: either a full IEEE reference
+    // or an ingestion-extracted unparsed citation, discriminated by the single
+    // `citation.type` field (the 33 IEEE literals vs `"unparsed"`). It is never
+    // null — the legacy `citation:null` "url-only" shape has been migrated away,
+    // so every citation claim carries a reference.
+    citation: Type.Union([IEEEReferenceSchema, UnparsedCitationSchema]),
     citationContentHash: Type.String(),
     axiom: Type.Null(),
 })
