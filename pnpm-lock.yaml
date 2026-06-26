@@ -16,8 +16,8 @@ importers:
         specifier: ^9.39.4
         version: 9.39.4
       '@proposit/proposit-core':
-        specifier: ^2.1.0
-        version: 2.1.0(undici@7.25.0)
+        specifier: ^2.3.0
+        version: 2.3.0
       '@types/node':
         specifier: ^25.5.2
         version: 25.6.0
@@ -194,20 +194,14 @@ packages:
   '@oxc-project/types@0.126.0':
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
-  '@proposit/proposit-core@2.1.0':
-    resolution: {integrity: sha512-qBrnMCdS8vdpgpNmi7xt224EJDs7DTB4Hhu1TSft5EdJayAfcPm8/dy41M33TibcyBR3mFUxCoHinNvBDN3ybQ==}
+  '@proposit/proposit-core@2.3.0':
+    resolution: {integrity: sha512-V3WP9Te7TZjeQYOiIebyp3OcYQRdUqVoxNLlUSeb9bVewtedSv3UjSs5Apb0QtVnrOYfrm+3X+/u+tUTMzJmCg==}
     engines: {node: '>=22.3.0'}
     hasBin: true
     peerDependencies:
-      ollama: '>=0.5.0'
       openai: '>=4.0.0'
-      undici: '>=6.0.0'
     peerDependenciesMeta:
-      ollama:
-        optional: true
       openai:
-        optional: true
-      undici:
         optional: true
 
   '@rolldown/binding-android-arm64@1.0.0-rc.16':
@@ -1282,13 +1276,11 @@ snapshots:
 
   '@oxc-project/types@0.126.0': {}
 
-  '@proposit/proposit-core@2.1.0(undici@7.25.0)':
+  '@proposit/proposit-core@2.3.0':
     dependencies:
       commander: 14.0.3
       typebox: 1.1.28
       yaml: 2.8.3
-    optionalDependencies:
-      undici: 7.25.0
 
   '@rolldown/binding-android-arm64@1.0.0-rc.16':
     optional: true
