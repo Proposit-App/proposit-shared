@@ -2,5 +2,11 @@ slug: 2026-06-26-rewire-argument-build-executor-onto-core-executeturn
 title: Rewire argument-build executor onto core executeTurn
 phase: ''
 created: '2026-06-26'
-resolution: null
+resolution: duplicate
 priority: null
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
