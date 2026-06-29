@@ -1,10 +1,11 @@
 # Release notes — upcoming
 
-## Argument moderation — hide/unhide api-client methods
+## Argument moderation — hide/unhide/purge api-client methods
 
-The api-client now exposes `hideArgument` and `unhideArgument`, so clients can hide or
-restore a moderated argument version through the shared factory instead of a raw fetch.
-Both call the existing server moderation routes and return the new `{ hidden: boolean }`
-state. A matching `SetArgumentHiddenResponseSchema` is exported for validation.
+The api-client now exposes `hideArgument`, `unhideArgument`, and `purgeArgument`, so clients
+can moderate an argument through the shared factory instead of a raw fetch. Hide/unhide
+return the new `{ hidden: boolean }` state; `purgeArgument` is the moderation hard-delete
+(whole argument + every transitive fork) and returns `{ deletedArgumentIds }`. Matching
+`SetArgumentHiddenResponseSchema` / `PurgeArgumentResponseSchema` are exported for validation.
 
-This unblocks the web moderation control (hide/restore affordance on the argument view).
+This unblocks the web moderation control (hide/restore + delete affordances on the argument view).

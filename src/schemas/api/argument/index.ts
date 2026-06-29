@@ -102,3 +102,8 @@ export const SetArgumentHiddenResponseSchema = Type.Object({
 export type TSetArgumentHiddenResponse = Static<
     typeof SetArgumentHiddenResponseSchema
 >
+
+export const PurgeArgumentResponseSchema = Type.Object({
+    deletedArgumentIds: Type.Array(UUID),
+})
+export type TPurgeArgumentResponse = Static<typeof PurgeArgumentResponseSchema>

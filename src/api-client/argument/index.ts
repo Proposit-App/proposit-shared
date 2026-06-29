@@ -16,6 +16,7 @@ import {
     type TCreateArgument,
     PublishResponseSchema,
     SetArgumentHiddenResponseSchema,
+    PurgeArgumentResponseSchema,
 } from "../../schemas/api/argument/index.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
 import { Type } from "typebox"
@@ -263,6 +264,24 @@ export async function deleteArgumentImpl(
             { method: "DELETE" }
         ),
         Type.Boolean()
+    )
+}
+
+// Moderation hard-delete: removes the whole argument (all versions) AND every
+// transitive fork. Distinct from `deleteArgument` (single version); separately
+// permissioned server-side (requires `argument:delete` / `admin:full-access`).
+export async function purgeArgumentImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}?purge=true`,
+            { method: "DELETE" }
+        ),
+        PurgeArgumentResponseSchema
     )
 }
 

@@ -16,6 +16,7 @@ import {
     updateArgumentImpl,
     archiveArgumentImpl,
     deleteArgumentImpl,
+    purgeArgumentImpl,
     getEntireArgumentImpl,
 } from "./argument/index.js"
 import {
@@ -101,6 +102,7 @@ const impls = {
     updateArgument: updateArgumentImpl,
     archiveArgument: archiveArgumentImpl,
     deleteArgument: deleteArgumentImpl,
+    purgeArgument: purgeArgumentImpl,
     getEntireArgument: getEntireArgumentImpl,
     provisionArgument: provisionArgumentImpl,
     createExpressionWithOperator: createExpressionWithOperatorImpl,

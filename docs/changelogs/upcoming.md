@@ -7,3 +7,7 @@
   `/unhide` moderation routes and return the parsed `{ hidden: boolean }` flag.
 - `SetArgumentHiddenResponseSchema` (+ `TSetArgumentHiddenResponse`) exported from
   `@proposit/shared/schemas/api/argument`.
+- `apiClient.purgeArgument(argumentId, version)` — DELETEs `…?purge=true`, the moderation
+  hard-delete that removes the whole argument (all versions) and every transitive fork.
+  Returns `{ deletedArgumentIds }`. `PurgeArgumentResponseSchema` (+ `TPurgeArgumentResponse`)
+  exported from `@proposit/shared/schemas/api/argument`.
