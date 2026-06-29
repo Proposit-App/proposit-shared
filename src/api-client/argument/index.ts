@@ -15,6 +15,7 @@ import {
     CreateArgumentSchema,
     type TCreateArgument,
     PublishResponseSchema,
+    SetArgumentHiddenResponseSchema,
 } from "../../schemas/api/argument/index.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
 import { Type } from "typebox"
@@ -68,6 +69,36 @@ export async function resetArgumentImpl(
             { method: "POST" }
         ),
         ArgumentSchema
+    )
+}
+
+export async function hideArgumentImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/hide`,
+            { method: "POST" }
+        ),
+        SetArgumentHiddenResponseSchema
+    )
+}
+
+export async function unhideArgumentImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/unhide`,
+            { method: "POST" }
+        ),
+        SetArgumentHiddenResponseSchema
     )
 }
 

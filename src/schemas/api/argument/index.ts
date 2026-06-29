@@ -95,3 +95,10 @@ export const PublishResponseSchema = Type.Object({
     draft: ArgumentSchema,
 })
 export type TPublishResponse = Static<typeof PublishResponseSchema>
+
+export const SetArgumentHiddenResponseSchema = Type.Object({
+    hidden: Type.Boolean(),
+})
+export type TSetArgumentHiddenResponse = Static<
+    typeof SetArgumentHiddenResponseSchema
+>
