@@ -1,0 +1,3 @@
+name: operator-assignment
+relatesTo:
+  - core/argument/propositional-expression/operator-expression

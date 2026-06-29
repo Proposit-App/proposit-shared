@@ -1,0 +1,1 @@
+A user's persistent per-account settings, stored as a jsonb blob so new toggles need no migration (e.g. advancedMode for permissive grammar behavior).

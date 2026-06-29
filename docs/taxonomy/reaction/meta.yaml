@@ -1,0 +1,4 @@
+name: reaction
+relatesTo:
+  - user
+  - core/argument

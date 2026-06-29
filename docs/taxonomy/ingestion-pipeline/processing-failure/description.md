@@ -1,0 +1,1 @@
+A warning- or error-severity problem surfaced during pipeline processing.

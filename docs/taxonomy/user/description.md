@@ -1,0 +1,1 @@
+A person's account in Proposit: identity (name, email, username, image), access tier, LLM token quota, and persistent preferences. The owner/creator of arguments and the actor behind reviews, reactions, and tasks.

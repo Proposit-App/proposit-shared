@@ -1,0 +1,1 @@
+One execution of an ingestion pipeline for a task, with an overall output status (success, null-output, or aborted).

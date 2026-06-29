@@ -1,0 +1,1 @@
+The evaluated outcome rendered on a review's conclusion premise: Valid and Sound, Failing, Logically Invalid, Vacuous, or Indeterminate.

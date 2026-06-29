@@ -1,0 +1,1 @@
+The source an argument was imported from — Twitter, Reddit, raw text, or manual entry — carrying any platform-specific metadata.

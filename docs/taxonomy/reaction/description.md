@@ -1,0 +1,1 @@
+A user's upvote or downvote on a specific argument version.

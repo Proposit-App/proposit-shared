@@ -1,0 +1,1 @@
+A single granted capability string within a system role (e.g. argument:hide, registration-invitation:create, admin:full-access).

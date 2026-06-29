@@ -1,0 +1,1 @@
+A user's structured, phased evaluation of an argument's soundness — recording per-claim truth verdicts and per-operator accept/reject decisions, and progressing through claims then operators to a conclusion.

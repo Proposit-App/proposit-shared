@@ -1,0 +1,1 @@
+Within a review, the reviewer's truth verdict on a single claim: true, false, unknown, or skipped.

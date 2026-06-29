@@ -1,0 +1,1 @@
+The multi-stage process that turns raw or imported text into a structured argument. Runs in one of two flavors (scholar, scribe) selected from the import mode.

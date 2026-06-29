@@ -1,0 +1,1 @@
+Within a review, the reviewer's accept or reject decision on a premise- or expression-scoped operator.

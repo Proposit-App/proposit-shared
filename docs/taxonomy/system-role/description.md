@@ -1,0 +1,1 @@
+A named role-based-access bundle (Normal, Privileged, Moderator, Admin) granting a set of permissions over moderation and registration actions.

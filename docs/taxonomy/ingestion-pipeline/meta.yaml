@@ -1,0 +1,4 @@
+name: ingestion-pipeline
+relatesTo:
+  - task
+  - core/argument

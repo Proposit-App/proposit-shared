@@ -1,0 +1,1 @@
+An asynchronous server-side job tracked through a status lifecycle: pending, in-progress, then a terminal state (completed, failed, or user-cancelled) — or interrupted, which may resume.

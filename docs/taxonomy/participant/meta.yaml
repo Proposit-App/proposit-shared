@@ -1,0 +1,4 @@
+name: participant
+relatesTo:
+  - user
+  - core/argument

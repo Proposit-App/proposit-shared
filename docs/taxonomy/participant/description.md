@@ -1,0 +1,1 @@
+A user's role (owner or editor) on a specific argument, governing whether they may edit its content while unpublished.

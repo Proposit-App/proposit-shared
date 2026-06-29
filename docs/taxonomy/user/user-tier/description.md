@@ -1,0 +1,1 @@
+A user's access/subscription level gating features and quotas: UNVERIFIED, FREE, PREMIUM, ENTERPRISE, plus the restrictive states BANNED, DEACTIVATED, and NO_ASSIST.

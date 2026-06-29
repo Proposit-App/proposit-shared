@@ -1,0 +1,1 @@
+One ordered step within a pipeline run, progressing through pending, running, then completed, skipped, or failed.
