@@ -39,6 +39,10 @@ import {
 } from "./argument/versioning.js"
 import { createReactionImpl, deleteReactionImpl } from "./argument/reactions.js"
 import {
+    createClaimReactionImpl,
+    deleteClaimReactionImpl,
+} from "./argument/claim-reactions.js"
+import {
     getMyReviewImpl,
     createReviewRemoteImpl,
     getReviewByIdRemoteImpl,
@@ -118,6 +122,8 @@ const impls = {
     advanceClaimReference: advanceClaimReferenceImpl,
     createReaction: createReactionImpl,
     deleteReaction: deleteReactionImpl,
+    createClaimReaction: createClaimReactionImpl,
+    deleteClaimReaction: deleteClaimReactionImpl,
     getMyReview: getMyReviewImpl,
     createReviewRemote: createReviewRemoteImpl,
     getReviewByIdRemote: getReviewByIdRemoteImpl,

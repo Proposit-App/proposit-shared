@@ -9,6 +9,7 @@ import {
     getClaimReasonsForValue,
     getOperatorReasonsForDecision,
     findReasonByCode,
+    getStanceForClaimReason,
 } from "../../review/reasons.js"
 import {
     ClaimTrueReasonCodeSchema,
@@ -59,6 +60,42 @@ describe("reasons taxonomy", () => {
         expect(
             findReasonByCode("nonsense" as never as "common-knowledge")
         ).toBeUndefined()
+    })
+
+    it("getStanceForClaimReason maps every true-bucket code to true", () => {
+        for (const r of CLAIM_TRUE_REASONS)
+            expect(getStanceForClaimReason(r.code)).toBe(true)
+    })
+
+    it("getStanceForClaimReason maps every false-bucket code to false", () => {
+        for (const r of CLAIM_FALSE_REASONS)
+            expect(getStanceForClaimReason(r.code)).toBe(false)
+    })
+
+    it("getStanceForClaimReason maps every unknown-bucket code to null", () => {
+        for (const r of CLAIM_UNKNOWN_REASONS)
+            expect(getStanceForClaimReason(r.code)).toBeNull()
+    })
+
+    it("getStanceForClaimReason round-trips against getClaimReasonsForValue", () => {
+        for (const r of CLAIM_TRUE_REASONS)
+            expect(
+                getClaimReasonsForValue(getStanceForClaimReason(r.code))
+            ).toBe(CLAIM_TRUE_REASONS)
+        for (const r of CLAIM_FALSE_REASONS)
+            expect(
+                getClaimReasonsForValue(getStanceForClaimReason(r.code))
+            ).toBe(CLAIM_FALSE_REASONS)
+        for (const r of CLAIM_UNKNOWN_REASONS)
+            expect(
+                getClaimReasonsForValue(getStanceForClaimReason(r.code))
+            ).toBe(CLAIM_UNKNOWN_REASONS)
+    })
+
+    it("getStanceForClaimReason falls back to null for an unrecognized code", () => {
+        expect(
+            getStanceForClaimReason("nonsense" as never as "common-knowledge")
+        ).toBeNull()
     })
 
     it("codes are unique across all buckets", () => {

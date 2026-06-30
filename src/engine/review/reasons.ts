@@ -239,6 +239,18 @@ export function getClaimReasonsForValue(
     return CLAIM_UNKNOWN_REASONS
 }
 
+// Reverse of getClaimReasonsForValue: the trivalent stance a claim reason
+// expresses (true-bucket → true, false-bucket → false, otherwise null).
+// An unrecognized code resolves to null, mirroring how getClaimReasonsForValue
+// treats the null/unknown stance as the catch-all bucket.
+export function getStanceForClaimReason(
+    code: TClaimReasonCode
+): TTrivalentValue {
+    if (CLAIM_TRUE_REASONS.some((r) => r.code === code)) return true
+    if (CLAIM_FALSE_REASONS.some((r) => r.code === code)) return false
+    return null
+}
+
 export function getOperatorReasonsForDecision(
     d: "accepted" | "rejected"
 ): readonly TReasonEntry<TOperatorReasonCode>[] {

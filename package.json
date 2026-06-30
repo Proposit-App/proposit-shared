@@ -38,6 +38,11 @@
             "import": "./dist/schemas/api/auth/index.js",
             "default": "./dist/schemas/api/auth/index.js"
         },
+        "./schemas/api/claim-reaction": {
+            "types": "./dist/schemas/api/claim-reaction/index.d.ts",
+            "import": "./dist/schemas/api/claim-reaction/index.js",
+            "default": "./dist/schemas/api/claim-reaction/index.js"
+        },
         "./schemas/api/errors": {
             "types": "./dist/schemas/api/errors.d.ts",
             "import": "./dist/schemas/api/errors.js",
