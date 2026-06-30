@@ -18,6 +18,11 @@
             "import": "./dist/api-client/index.js",
             "default": "./dist/api-client/index.js"
         },
+        "./fixtures/argument-yaml": {
+            "types": "./dist/fixtures/argument-yaml/index.d.ts",
+            "import": "./dist/fixtures/argument-yaml/index.js",
+            "default": "./dist/fixtures/argument-yaml/index.js"
+        },
         "./fixtures/curated-argument": {
             "types": "./dist/fixtures/curated-argument/index.d.ts",
             "import": "./dist/fixtures/curated-argument/index.js",
@@ -205,7 +210,8 @@
         "@proposit/proposit-core": "^2.3.0"
     },
     "dependencies": {
-        "typebox": "^1.1.14"
+        "typebox": "^1.1.14",
+        "yaml": "^2.8.3"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",

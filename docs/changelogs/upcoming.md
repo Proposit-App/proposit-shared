@@ -2,6 +2,18 @@
 
 ## Added
 
+- New `./fixtures/argument-yaml` entry point — the foundation for the
+  curated-argument YAML lifecycle. Exports: `CuratedArgumentYamlSchema` (TypeBox
+  schema mirroring `CuratedArgument`/`ExprNode` plus optional `documentCurationId`
+  and `provenance`) with its `TCuratedArgumentYaml` type; `serializeArgumentYaml`
+  / `parseArgumentYaml` (validated `yaml.stringify`/`parse` wrappers, round-trip
+  safe); `lowerArgumentToCurated(input)` — pure inverse of the server seed's
+  `materializeExprTree` that reconstructs the authored `CuratedArgument` from the
+  persisted `{ argument, claims, variables, premises, expressions }` pieces,
+  excluding engine-synthesized derivation premises (`type === "derivation"`) and
+  premise-bound variables; and `curatedArgumentContentDigest` — an id-independent
+  SHA-256 over the normalized claims/premises for change detection. Adds `yaml`
+  (^2.8.3) as a runtime dependency and a dependency-free pure-JS `sha256Hex`.
 - New `./fixtures/curated-argument` entry point: the `ExprNode` /
   `CuratedArgument` data types plus the `v`/`and`/`or`/`not`/`implies`/`iff`/
   `formula` shorthand constructors for hand-authoring propositional argument
