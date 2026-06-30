@@ -11,6 +11,7 @@ const SAMPLE_USER_JSON = {
     emailVerified: null,
     image: null,
     username: "deleted",
+    curationId: null,
     tier: 1,
     tokensUsed: 0,
     lifetimeTokensUsed: 0,

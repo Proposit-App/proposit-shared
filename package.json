@@ -191,7 +191,8 @@
         "access": "public"
     },
     "scripts": {
-        "build": "rm -rf dist *.tsbuildinfo && pnpm exec tsc -p tsconfig.build.json",
+        "gen:fixtures": "node scripts/gen-fixtures-content.ts",
+        "build": "pnpm run gen:fixtures && rm -rf dist *.tsbuildinfo && pnpm exec tsc -p tsconfig.build.json",
         "typecheck": "pnpm exec tsc --noEmit",
         "lint": "pnpm run prettify:check && pnpm exec eslint .",
         "prettify": "pnpm exec prettier -w .",

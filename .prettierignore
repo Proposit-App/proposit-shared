@@ -7,3 +7,9 @@ pnpm-lock.yaml
 docs/inbox
 docs/work
 docs/taxonomy
+
+# Verbatim public-domain source texts + hand-authored fixture prose, and the
+# module generated from them. Their content is canonical and must not be
+# reflowed by the formatter.
+src/fixtures/historical-figures/*/*.md
+src/fixtures/historical-figures/content.generated.ts

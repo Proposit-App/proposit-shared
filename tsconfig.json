@@ -14,6 +14,6 @@
         "verbatimModuleSyntax": true,
         "types": ["node", "vitest/globals"]
     },
-    "include": ["src/**/*.ts", "eslint.config.mjs", "*.mjs"],
+    "include": ["src/**/*.ts", "scripts/**/*.ts", "eslint.config.mjs", "*.mjs"],
     "exclude": ["dist", "node_modules"]
 }

@@ -49,6 +49,10 @@ export const UserSchema = Type.Object({
     emailVerified: Nullable(EncodableDate),
     image: Nullable(Type.String()),
     username: Nullable(Type.String()),
+    // Human-readable id marking a synthetic/curated account (e.g. a showcase
+    // historical-figure author). `null` for normal users; a unique stable value
+    // for curated users. The DB column + unique index are owned server-side.
+    curationId: Nullable(Type.String()),
     tier: AllUserTiers,
     tokensUsed: Type.Integer(),
     lifetimeTokensUsed: Type.Integer(),
