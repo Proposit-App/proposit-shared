@@ -1,0 +1,231 @@
+title: On Liberty
+description: ""
+claims:
+    - symbol: NoExtremeException
+      title: No exception for certainty
+      body:
+          Permitting free discussion only for doubtful matters while forbidding
+          scrutiny of supposedly certain doctrines still assumes that one’s own
+          judges of certainty are infallible.
+    - symbol: FallibleTruthNeedsTesting
+      title: Truth needs open testing
+      body:
+          The beliefs with the strongest warrant are those that remain open to the
+          whole world’s challenge; if challenge fails, they attain the best
+          certainty fallible beings can have.
+    - symbol: SilencingStealsTruth
+      title: Silencing robs mankind
+      body:
+          Suppressing an opinion harms the human race because it prevents exchange
+          of error for truth when the opinion is right and prevents clearer truth
+          through collision with error when it is wrong.
+    - symbol: FreedomNeedsOpenDissent
+      title: Dissent sustains mental life
+      body: Open dissent keeps intellects courageous and active, while social
+          intolerance produces conformity, timidity, and suppression of genuine
+          thought.
+    - symbol: DebateClarifiesPartialTruth
+      title: Debate reveals partial truth
+      body: Many received opinions contain only part of the truth, and opposing
+          opinions often supply the neglected remainder; diversity of opinion is
+          therefore useful to reach fuller truth.
+    - symbol: UtilityDependsOnTruth
+      title: Utility depends on truth
+      body:
+          The usefulness of an opinion is itself disputable, and truth is part of
+          utility; therefore discussion cannot fairly protect utility while barring
+          debate over truth.
+    - symbol: ChristianMoralityIsIncomplete
+      title: Christian morality is incomplete
+      body:
+          Christian morality, as historically formed by the church, is one-sided and
+          incomplete; secular ethical elements and non-Christian moral insights are
+          needed alongside it.
+    - symbol: MajorityMayNotSilenceMinority
+      title: Majority may not silence one
+      body:
+          Mankind is not justified in silencing a lone dissenter even if all others
+          share the opposite opinion; the power to silence opinion is illegitimate.
+    - symbol: JudgmentNeedsDiscussion
+      title: Judgment needs criticism
+      body:
+          Human judgment becomes trustworthy through open criticism, discussion, and
+          experience; without free contradiction and refutation, no rational
+          assurance of being right is possible.
+    - symbol: p1
+      title: Press liberty resists tyranny
+      body:
+          Liberty of the press serves as a security against corrupt or tyrannical
+          government, and governments should not prescribe opinions or determine
+          what doctrines people may hear.
+    - symbol: ModerationRuleInsufficient
+      title: Temperate speech is not enough
+      body:
+          The free expression of opinion should not be restricted by vague demands
+          of temperance, because unfairness and intemperance are judged
+          asymmetrically and cannot be policed consistently by law.
+    - symbol: SocialPenaltyActsAsPersecution
+      title: Social stigma persecutes opinion
+      body:
+          Modern societies still persecute opinions through legal penalties and
+          social stigma, which can deter expression as effectively as imprisonment
+          for those dependent on public approval.
+    - symbol: NoIntellectualSlumber
+      title: Truth should stay contested
+      body:
+          When opinions stop being disputed, people stop thinking about them and
+          their truth becomes stale; therefore even true doctrines benefit from
+          being openly contested.
+    - symbol: FreeDiscussionNeededForTruth
+      title: Discussion keeps truth living
+      body:
+          Even when an opinion is true, it must be freely discussed to be held as a
+          living truth rather than a dead dogma or mere prejudice.
+    - symbol: PersecutionCanSuppressTruth
+      title: Persecution can suppress truth
+      body:
+          Persecution often succeeds in suppressing truth for long periods, and only
+          eventual rediscovery, not any inherent immunity, lets truth prevail in the
+          long run.
+    - symbol: SuppressionAssumesInfallibility
+      title: Suppression assumes infallibility
+      body:
+          All silencing of discussion presumes infallibility, because no person or
+          authority can claim certainty enough to exclude others from judging an
+          opinion.
+    - symbol: SocratesChristAureliusExamples
+      title: History condemns persecution
+      body:
+          The deaths of Socrates and Jesus, and Marcus Aurelius’s persecution of
+          Christianity, show that sincere and respectable people can persecute
+          profound truth in error.
+premises:
+    - title:
+          If "Utility depends on truth" and "Temperate speech is not enough" and
+          "Dissent sustains mental life" then "Debate reveals partial truth"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: UtilityDependsOnTruth
+                          - type: variable
+                            symbol: ModerationRuleInsufficient
+                          - type: variable
+                            symbol: FreedomNeedsOpenDissent
+              - type: variable
+                symbol: DebateClarifiesPartialTruth
+    - title:
+          If "Suppression assumes infallibility" and "Judgment needs criticism" and
+          "Truth needs open testing" and "No exception for certainty" then
+          "Discussion keeps truth living"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: SuppressionAssumesInfallibility
+                          - type: variable
+                            symbol: JudgmentNeedsDiscussion
+                          - type: variable
+                            symbol: FallibleTruthNeedsTesting
+                          - type: variable
+                            symbol: NoExtremeException
+              - type: variable
+                symbol: FreeDiscussionNeededForTruth
+    - title:
+          If "History condemns persecution" and "Persecution can suppress truth"
+          and "Social stigma persecutes opinion" then "Dissent sustains mental life"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: SocratesChristAureliusExamples
+                          - type: variable
+                            symbol: PersecutionCanSuppressTruth
+                          - type: variable
+                            symbol: SocialPenaltyActsAsPersecution
+              - type: variable
+                symbol: FreedomNeedsOpenDissent
+    - title:
+          If "Discussion keeps truth living" and "Debate reveals partial truth" and
+          "Truth should stay contested" then "Christian morality is incomplete"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: FreeDiscussionNeededForTruth
+                          - type: variable
+                            symbol: DebateClarifiesPartialTruth
+                          - type: variable
+                            symbol: NoIntellectualSlumber
+              - type: variable
+                symbol: ChristianMoralityIsIncomplete
+    - title: Christian morality is incomplete
+      role: conclusion
+      tree:
+          type: variable
+          symbol: ChristianMoralityIsIncomplete
+    - title:
+          If "Press liberty resists tyranny" and "Majority may not silence one" and
+          "Silencing robs mankind" and "Suppression assumes infallibility" then
+          "Social stigma persecutes opinion"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: p1
+                          - type: variable
+                            symbol: MajorityMayNotSilenceMinority
+                          - type: variable
+                            symbol: SilencingStealsTruth
+                          - type: variable
+                            symbol: SuppressionAssumesInfallibility
+              - type: variable
+                symbol: SocialPenaltyActsAsPersecution
+documentCurationId: mill-01
+provenance:
+    provider: openai
+    model: null
+    pipeline: scribe
+    pipelineVersion: 1.0.0
+    mode: fast
+    runAt: 2026-06-30T16:41:08.873Z
+    sourceFile: 02-on-liberty-ch2.txt
+    sourcePath: /Users/brian/Projects/Proposit-App/proposit-core/examples/texts/02-on-liberty-ch2.txt
+    coreVersion: 2.4.0
+    sharedVersion: 0.30.0
+    serverVersion: 0.32.0

@@ -27,6 +27,11 @@
   `documentAboutByCurationId` — built from per-figure Markdown fixtures so the
   author/document text ships in `dist`. Consumed by the server's figure-showcase
   seed.
+- Canonical `<documentCurationId>.argument.yaml` fixtures committed alongside
+  each figure's Markdown (`historical-figures-<figure>/`), exported from the
+  seeded DB via the server's `export:argument` CLI and verified to round-trip
+  back to the inline dataset (identical `curatedArgumentContentDigest`). These
+  are the source-of-truth argument representations the public can revise by PR.
 - `curationId` (nullable string) on `UserSchema` / `TUser`: a human-readable id
   marking a synthetic/curated account; `null` for normal users.
 - `gen:fixtures` build step that bundles the historical-figure Markdown into the
