@@ -19,6 +19,12 @@
   marking a synthetic/curated account; `null` for normal users.
 - `gen:fixtures` build step that bundles the historical-figure Markdown into the
   committed `content.generated.ts`; runs automatically at the start of `build`.
+- `ArgumentPlatform` (and `CuratedOrigin` / `CuratedArgumentPlatformData`): the
+  stored `arguments.platform` value is now the import-origin set plus `"curated"`,
+  and `ArgumentSchema.platformData` additionally accepts `{ curationId }`. Lets a
+  seeded curated argument serialize through `ArgumentSchema` / `FullArgumentSchema`
+  without tripping the strict origin union. The import-request `origin` stays the
+  narrower `ArgumentImportOrigin` (curated is not user-importable).
 
 ## Changed
 

@@ -1,8 +1,9 @@
 import Type, { type Static } from "typebox"
 import { CoreArgumentSchema } from "@proposit/proposit-core"
 import {
-    ArgumentImportOrigin,
+    ArgumentPlatform,
     ArgumentPlatformData,
+    CuratedArgumentPlatformData,
 } from "../integrations/index.js"
 import { EncodableDate, Nullable, UUID } from "../common.js"
 import { UserPublicFieldsSchema } from "./users.js"
@@ -32,8 +33,10 @@ export const ArgumentSchema = Type.Intersect([
         forkId: Nullable(UUID),
         digest: Type.String(),
         popularity: Type.Number(),
-        platform: ArgumentImportOrigin,
-        platformData: Nullable(ArgumentPlatformData),
+        platform: ArgumentPlatform,
+        platformData: Nullable(
+            Type.Union([ArgumentPlatformData, CuratedArgumentPlatformData])
+        ),
         platformUsername: Nullable(Type.String()),
         titleContentHash: Nullable(Type.String()),
         description: Nullable(Type.String()),

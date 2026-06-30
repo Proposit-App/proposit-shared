@@ -15,6 +15,23 @@ export const ArgumentImportOrigin = Type.Union([
 ])
 export type TArgumentImportOrigin = Static<typeof ArgumentImportOrigin>
 
+// Synthetic showcase arguments seeded by the curation pipeline. Not a
+// user-importable origin (the import flow uses ArgumentImportOrigin), but a
+// valid stored `arguments.platform` value, so it lives in ArgumentPlatform
+// below — the superset used by the stored-argument schema.
+export const CuratedOrigin = Type.Literal("curated")
+export type TCuratedOrigin = Static<typeof CuratedOrigin>
+
+// The stored `arguments.platform` value: every import origin plus "curated".
+export const ArgumentPlatform = Type.Union([
+    TwitterImport,
+    RedditImport,
+    FromText,
+    NoImport,
+    CuratedOrigin,
+])
+export type TArgumentPlatform = Static<typeof ArgumentPlatform>
+
 // Common
 // For all origins other than manual
 const ExternalPlatformData = Type.Object(
@@ -106,6 +123,20 @@ export const ArgumentPlatformData = Type.Index(
     Type.KeyOf(ArgumentPlatformDataMap)
 )
 export type TArgumentPlatformData = Static<typeof ArgumentPlatformData>
+
+// platformData for curated showcase arguments: a stable curation id linking the
+// argument to its source document content in the historical-figures fixtures
+// (the argument's own UUID is regenerated on each seed, so this is the durable
+// association key).
+export const CuratedArgumentPlatformData = Type.Object(
+    {
+        curationId: Type.String(),
+    },
+    { additionalProperties: false }
+)
+export type TCuratedArgumentPlatformData = Static<
+    typeof CuratedArgumentPlatformData
+>
 
 export const CreateArgumentFromImportSchema = Type.Object({
     origin: ArgumentImportOrigin,
