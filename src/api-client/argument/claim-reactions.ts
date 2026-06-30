@@ -30,13 +30,12 @@ export async function deleteClaimReactionImpl(
     config: TApiClientConfig,
     argumentId: string,
     version: number,
-    claimId: string,
-    reactionId: string
+    claimId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
     return await parseResponse(
         await config.fetchImpl(
-            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claim/${claimId}/reactions/${reactionId}`,
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claim/${claimId}/reactions`,
             { method: "DELETE" }
         ),
         ClaimReactionDeleteResponse

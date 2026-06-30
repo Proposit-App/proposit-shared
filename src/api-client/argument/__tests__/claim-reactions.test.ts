@@ -71,7 +71,7 @@ describe("apiClient.createClaimReaction / deleteClaimReaction", () => {
         })
     })
 
-    test("deleteClaimReaction DELETEs the reaction by id under the claim route", async () => {
+    test("deleteClaimReaction DELETEs the caller's reaction via the collection route (natural-key, no reaction id)", async () => {
         const calls: { url: string; method?: string }[] = []
         const fetchImpl: typeof fetch = (input, init) => {
             calls.push({ url: urlToString(input), method: init?.method })
@@ -84,19 +84,14 @@ describe("apiClient.createClaimReaction / deleteClaimReaction", () => {
             fetchImpl,
         })
 
-        const res = await apiClient.deleteClaimReaction(
-            "arg-1",
-            3,
-            "claim-1",
-            "reaction-1"
-        )
+        const res = await apiClient.deleteClaimReaction("arg-1", 3, "claim-1")
 
         expect(res.ok).toBe(true)
         if (res.ok) expect(res.value.removedReaction.id).toBe(REACTION_ID)
         expect(calls).toHaveLength(1)
         expect(calls[0].method).toBe("DELETE")
         expect(calls[0].url).toBe(
-            "https://example.test/api/v1/argument/arg-1/3/claim/claim-1/reactions/reaction-1"
+            "https://example.test/api/v1/argument/arg-1/3/claim/claim-1/reactions"
         )
     })
 })

@@ -68,6 +68,32 @@ behind the orchestrator consumer-validation sequence (`pnpm pack` → `pnpm add`
 in `proposit-server` → server `pnpm run check:full`). This slice is left at
 `active`; the server slice (Phase B) depends on the published `@proposit/shared`.
 
+## Refinement — natural-key delete
+
+A review of the consuming server slice found `deleteClaimReaction` should be
+natural-key rather than id-keyed. Because claim reactions are single-select
+(`UNIQUE(argumentId, argumentVersion, claimId, userId)`), the row is fully
+addressed by the path coordinates plus the session user, so the `reactionId` in
+the delete path was redundant — and it forced the server to add an SSR loader
+just to fetch the id, creating an optimistic-clear race.
+
+- `deleteClaimReactionImpl` now takes `(config, argumentId, version, claimId)`
+  (dropped `reactionId`) and issues `DELETE` to the collection route
+  `/api/v1/argument/[id]/[version]/claim/[claimId]/reactions` (no
+  `/[reactionId]` segment) — still via `parseResponse` +
+  `ClaimReactionDeleteResponse`.
+- `src/api-client/factory.ts` needed no edit: the public `deleteClaimReaction`
+  type is derived from the impl signature via `TStripConfig`, so dropping the
+  impl param updated the client type automatically.
+- `ClaimReactionGetResponse.own` (`{ value, reasonCode }`, no id) and
+  `ClaimReactionSchema` (create/delete still echo the full row incl. `id`) were
+  left intact — correct under natural-key delete.
+- api-client test updated for the new signature + collection URL. `docs/changelogs/upcoming.md`
+  + `docs/release-notes/upcoming.md` note the breaking signature change (rides a
+  minor bump pre-1.0).
+- `pnpm run check` — PASS (typecheck + lint + 581 tests / 72 files + build).
+  Still NOT versioned / NOT published (human-gated).
+
 ## Open questions / deviations
 
 - Stance count keys are named `affirm` / `disagree` / `neutral` (mapping to value
