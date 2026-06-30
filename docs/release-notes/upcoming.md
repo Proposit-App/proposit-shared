@@ -1,1 +1,18 @@
 # Release notes — upcoming
+
+## Claim quick-reactions — wire schema, API bodies & api-client
+
+The shared library now carries the contract for reacting to a single claim of a published argument:
+a stance (`value`: affirmation / disagreement / neutral, reusing the review `TrivalentValue`) plus a
+required named reason (`reasonCode`, reusing the review `ClaimReasonCode` vocabulary). Reactions are
+single-select per user, scoped to `(argumentId, argumentVersion, claimId)`.
+
+This release adds the `ClaimReactionSchema` model shape, the new
+`@proposit/shared/schemas/api/claim-reaction` request/response bodies (create / get-aggregate /
+delete), the `createClaimReaction` / `deleteClaimReaction` api-client methods, and the
+`getStanceForClaimReason` reverse helper used to validate a reason against its stance server-side.
+The get-aggregate response returns public per-stance counts (`affirm` / `disagree` / `neutral`) plus
+the caller's own current selection.
+
+No vocabulary was forked: stances and reason codes are the existing review schemas. This unblocks the
+server slice (migration + model + routes + claim-card stance control). Web/mobile UI lands separately.
