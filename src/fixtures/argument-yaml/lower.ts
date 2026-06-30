@@ -5,13 +5,17 @@
 // `{symbol,title,body}` claims and `ExprNode` premise trees a human authored,
 // while dropping everything the engine synthesized.
 //
-// Two classes of synthesized structure are excluded:
+// Three classes of synthesized structure are excluded:
 //   - Derivation premises — the per-claim hidden premises `addClaim` mints. They
 //     carry `type: "derivation"` (vs `"freeform"` for authored premises); we keep
 //     only freeform premises.
 //   - Premise-bound / auto variables — only CLAIM-bound variables (those that
 //     reference a claim) become curated claims; premise-bound variables (which
 //     have no `claimId`) are skipped.
+//   - Derivation-only claim-bound variables — each claim is persisted with both
+//     an authored claim-bound variable AND an engine-synthesized one bound to the
+//     same claim but referenced solely by the derivation premise. Only the
+//     authored variable becomes a curated claim (see the dedup below).
 // AN-normalization expression nodes (formula buffers, etc.) are NOT stripped:
 // the curated form mirrors the persisted, normalized tree, so reconstructing the
 // stored expression tree verbatim reproduces the authored structure.
@@ -112,10 +116,43 @@ export function lowerArgumentToCurated(
         variables.map((variable) => [variable.id, variable])
     )
 
-    // One curated claim per claim-bound variable, in input order.
+    // A persisted claim carries TWO claim-bound variables: the authored one
+    // (descriptive symbol, referenced by the freeform premises) and an
+    // engine-synthesized one (auto symbol) that lives in the per-claim hidden
+    // derivation premise `addClaim` mints. Recover only the authored claims by
+    // dropping every claim-bound variable referenced ONLY by derivation-premise
+    // expressions — that also drops engine-added axiomatic background claims,
+    // whose variable likewise appears solely in a derivation premise. An
+    // authored variable that no freeform premise happens to reference (an
+    // "orphan" claim) is referenced by neither set and is therefore kept.
+    const derivationPremiseIds = new Set(
+        premises
+            .filter((premise) => premise.type === "derivation")
+            .map((premise) => premise.id)
+    )
+    const referencedByFreeform = new Set<string>()
+    const referencedByDerivation = new Set<string>()
+    for (const expression of expressions) {
+        if (expression.type !== "variable") {
+            continue
+        }
+        if (derivationPremiseIds.has(expression.premiseId)) {
+            referencedByDerivation.add(expression.variableId)
+        } else {
+            referencedByFreeform.add(expression.variableId)
+        }
+    }
+
+    // One curated claim per AUTHORED claim-bound variable, in input order.
     const curatedClaims: CuratedClaim[] = []
     for (const variable of variables) {
         if (!isClaimBoundVariable(variable)) {
+            continue
+        }
+        if (
+            referencedByDerivation.has(variable.id) &&
+            !referencedByFreeform.has(variable.id)
+        ) {
             continue
         }
         const claim = claimsById.get(variable.claimId)

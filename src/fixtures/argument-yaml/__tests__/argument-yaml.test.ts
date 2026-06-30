@@ -26,6 +26,10 @@ function normalClaim(id: string, title: string, body: string): TClaim {
     return { id, type: "normal", title, body } as unknown as TClaim
 }
 
+function axiomaticClaim(id: string, title: string, body: string): TClaim {
+    return { id, type: "axiomatic", title, body } as unknown as TClaim
+}
+
 function claimBoundVariable(
     id: string,
     symbol: string,
@@ -98,8 +102,17 @@ function argument(title: string, description: string | null): TArgument {
     return { title, description } as unknown as TArgument
 }
 
-// Modus ponens: premises implies(P,Q), P, and conclusion Q, plus one derivation
-// premise that must be excluded.
+// Modus ponens: freeform premises implies(P,Q), P, and conclusion Q.
+//
+// Modeled on REAL persistence, not a toy: `addClaim` mints a per-claim hidden
+// derivation premise AND binds a second, engine-synthesized variable (auto
+// symbol) to each claim — that variable is referenced ONLY by the claim's
+// derivation premise. The argument also carries an axiomatic background claim
+// whose variable likewise appears only inside a derivation premise. None of
+// these synthesized claim-bound variables are authored claims; lowering must
+// drop them and recover exactly the two authored claims (P, Q). (An earlier
+// fixture reused the authored `var-q` inside the derivation premise, which hid
+// the double-count + axiomatic-throw bug entirely.)
 function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
     const s = idSuffix
     return {
@@ -107,16 +120,26 @@ function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
         claims: [
             normalClaim(`claim-p${s}`, "P title", "P body"),
             normalClaim(`claim-q${s}`, "Q title", "Q body"),
+            axiomaticClaim(`claim-axiom${s}`, "Axiom title", "Axiom body"),
         ],
         variables: [
+            // Authored claim-bound variables (appear in the freeform premises).
             claimBoundVariable(`var-p${s}`, "P", `claim-p${s}`),
             claimBoundVariable(`var-q${s}`, "Q", `claim-q${s}`),
+            // Engine-synthesized derivation variables — same claims, auto
+            // symbols, referenced only by the derivation premises.
+            claimBoundVariable(`var-p-deriv${s}`, "P1", `claim-p${s}`),
+            claimBoundVariable(`var-q-deriv${s}`, "P3", `claim-q${s}`),
+            // Axiomatic background claim's variable — referenced only by a
+            // derivation premise; previously triggered the non-normal throw.
+            claimBoundVariable(`var-axiom${s}`, "P55", `claim-axiom${s}`),
         ],
         premises: [
             freeformPremise(`prem-imp${s}`, "supporting", "If P then Q"),
             freeformPremise(`prem-p${s}`, "supporting", null),
             freeformPremise(`prem-q${s}`, "conclusion", "Q"),
-            derivationPremise(`prem-deriv${s}`, `claim-q${s}`),
+            derivationPremise(`prem-deriv-p${s}`, `claim-p${s}`),
+            derivationPremise(`prem-deriv-q${s}`, `claim-q${s}`),
         ],
         expressions: [
             // implies(P, Q)
@@ -127,8 +150,30 @@ function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
             variableExpr(`e4${s}`, `prem-p${s}`, null, 0, `var-p${s}`),
             // Q (conclusion)
             variableExpr(`e5${s}`, `prem-q${s}`, null, 0, `var-q${s}`),
-            // derivation premise content — must be ignored
-            variableExpr(`e6${s}`, `prem-deriv${s}`, null, 0, `var-q${s}`),
+            // Derivation premise content — must be ignored. The Q-derivation
+            // references both the synthesized Q-variable and the axiom.
+            variableExpr(
+                `e6${s}`,
+                `prem-deriv-p${s}`,
+                null,
+                0,
+                `var-p-deriv${s}`
+            ),
+            operatorExpr(`e7${s}`, `prem-deriv-q${s}`, null, 0, "and"),
+            variableExpr(
+                `e8${s}`,
+                `prem-deriv-q${s}`,
+                `e7${s}`,
+                0,
+                `var-q-deriv${s}`
+            ),
+            variableExpr(
+                `e9${s}`,
+                `prem-deriv-q${s}`,
+                `e7${s}`,
+                1,
+                `var-axiom${s}`
+            ),
         ],
     }
 }
@@ -194,6 +239,16 @@ describe("lowerArgumentToCurated", () => {
         expect(
             curated.premises.every((premise) => premise.role !== undefined)
         ).toBe(true)
+    })
+
+    test("drops per-claim derivation variables and axiomatic background claims", () => {
+        // Every persisted claim binds a second engine-synthesized variable that
+        // appears only in its derivation premise, and axiomatic background claims
+        // appear only inside derivation premises. None are authored claims, so
+        // only the two authored claims (P, Q) survive — no double-counting, and
+        // the axiomatic claim does not trip the non-normal-claim guard.
+        const curated = lowerArgumentToCurated(modusPonensInput())
+        expect(curated.claims.map((claim) => claim.symbol)).toEqual(["P", "Q"])
     })
 })
 
