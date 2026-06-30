@@ -1,25 +1,32 @@
-// Codegen: bundle the historical-figure Markdown fixtures into a committed TS
-// module so consumers that only see `dist/` (e.g. the server importing this as
-// an npm package) get the content. `tsc` does not copy `.md` files, so the
-// canonical text lives in `.md` files under
-// `src/fixtures/historical-figures/<figureCurationId>/` and is baked into
-// `content.generated.ts` here.
+// Codegen: bundle the historical-figure fixtures into a committed TS module so
+// consumers that only see `dist/` (e.g. the server importing this as an npm
+// package) get the content. `tsc` does not copy `.md` / `.yaml` files, so the
+// canonical sources live under `src/fixtures/historical-figures/<curationId>/`
+// and are baked into `content.generated.ts` here.
 //
-// Each figure folder holds exactly three Markdown files:
-//   - `about.md`             — about the figure (keyed by figureCurationId)
-//   - `<docId>.md`           — the source-document text (keyed by docId)
-//   - `<docId>-about.md`     — about that document (keyed by docId)
+// Each figure folder holds:
+//   - `about.md`               — about the figure (keyed by figureCurationId)
+//   - `<docId>.md`             — the source-document text (keyed by docId)
+//   - `<docId>-about.md`       — about that document (keyed by docId)
+//   - `<docId>.argument.yaml`  — the curated argument, exported from the seeded
+//                                DB via the server `export:argument` CLI. Parsed
+//                                + schema-validated here (a malformed public-PR
+//                                YAML fails the build) and emitted as a typed
+//                                literal, so the dataset carries no runtime parse.
 //
-// This script is run by `pnpm run gen:fixtures`, which also runs at the start
-// of `build`, so `dist/` always reflects the current `.md` files.
+// This script is run by `pnpm run gen:fixtures` (under tsx, so it can import the
+// shared parse/validate helper), which also runs at the start of `build`, so
+// `dist/` always reflects the current source fixtures.
 
 import { readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { parseArgumentYaml } from "../src/fixtures/argument-yaml/index.js"
 
 const ABOUT_BASENAME = "about"
 const ABOUT_SUFFIX = "-about"
 const MD_EXT = ".md"
+const ARGUMENT_YAML_EXT = ".argument.yaml"
 
 const here = dirname(fileURLToPath(import.meta.url))
 const figuresDir = join(here, "..", "src", "fixtures", "historical-figures")
@@ -28,6 +35,8 @@ const outputPath = join(figuresDir, "content.generated.ts")
 const figureAbout: [string, string][] = []
 const documentMarkdown: [string, string][] = []
 const documentAbout: [string, string][] = []
+// One entry per figure folder: its curationId and the parsed arguments it owns.
+const argumentsByFigure: [string, unknown[]][] = []
 
 const figureDirs = readdirSync(figuresDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -36,8 +45,9 @@ const figureDirs = readdirSync(figuresDir, { withFileTypes: true })
 
 for (const figureCurationId of figureDirs) {
     const dirPath = join(figuresDir, figureCurationId)
-    const mdFiles = readdirSync(dirPath).filter((name) => name.endsWith(MD_EXT))
-    for (const fileName of mdFiles) {
+    const fileNames = readdirSync(dirPath)
+
+    for (const fileName of fileNames.filter((name) => name.endsWith(MD_EXT))) {
         const base = fileName.slice(0, fileName.length - MD_EXT.length)
         const content = readFileSync(join(dirPath, fileName), "utf8")
         if (base === ABOUT_BASENAME) {
@@ -49,6 +59,17 @@ for (const figureCurationId of figureDirs) {
             documentMarkdown.push([base, content])
         }
     }
+
+    // Parse + validate each argument YAML (sorted by filename for determinism).
+    // `parseArgumentYaml` runs the TypeBox `Value.Check`, so a malformed YAML
+    // throws here and fails the build before anything is emitted.
+    const parsedArguments = fileNames
+        .filter((name) => name.endsWith(ARGUMENT_YAML_EXT))
+        .sort()
+        .map((name) =>
+            parseArgumentYaml(readFileSync(join(dirPath, name), "utf8"))
+        )
+    argumentsByFigure.push([figureCurationId, parsedArguments])
 }
 
 function renderMap(name: string, entries: [string, string][]): string {
@@ -63,17 +84,46 @@ function renderMap(name: string, entries: [string, string][]): string {
     )}\n}\n`
 }
 
+// Render the parsed arguments as a typed literal. A type-only import of
+// `HistoricalFigureArgument` keeps the dataset's public type as the source of
+// truth without creating a runtime import cycle (index.ts imports this file at
+// runtime; this file imports the type only, which is erased).
+function renderArguments(entries: [string, unknown[]][]): string {
+    const indented = JSON.stringify(
+        Object.fromEntries(
+            [...entries].sort((a, b) => a[0].localeCompare(b[0]))
+        ),
+        null,
+        4
+    )
+    return (
+        "export const argumentsByFigureCurationId: Record<\n" +
+        "    string,\n" +
+        "    HistoricalFigureArgument[]\n" +
+        `> = ${indented}\n`
+    )
+}
+
 const header =
     "// AUTO-GENERATED by scripts/gen-fixtures-content.ts — do not edit by hand.\n" +
-    "// Source of truth: the .md files under\n" +
+    "// Source of truth: the .md and .argument.yaml files under\n" +
     "// src/fixtures/historical-figures/<figureCurationId>/.\n" +
-    "// Regenerate with `pnpm run gen:fixtures` (runs at the start of `build`).\n\n"
+    "// Regenerate with `pnpm run gen:fixtures` (runs at the start of `build`).\n\n" +
+    'import type { HistoricalFigureArgument } from "./index.js"\n\n'
 
 const body = [
     renderMap("figureAboutByCurationId", figureAbout),
     renderMap("documentMarkdownByCurationId", documentMarkdown),
     renderMap("documentAboutByCurationId", documentAbout),
+    renderArguments(argumentsByFigure),
 ].join("\n")
 
 writeFileSync(outputPath, header + body)
-console.log(`gen:fixtures — wrote ${outputPath} (${figureDirs.length} figures)`)
+const argCount = argumentsByFigure.reduce(
+    (sum, [, args]) => sum + args.length,
+    0
+)
+console.log(
+    `gen:fixtures — wrote ${outputPath} ` +
+        `(${figureDirs.length} figures, ${argCount} arguments)`
+)

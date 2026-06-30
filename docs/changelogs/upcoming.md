@@ -34,8 +34,12 @@
   are the source-of-truth argument representations the public can revise by PR.
 - `curationId` (nullable string) on `UserSchema` / `TUser`: a human-readable id
   marking a synthetic/curated account; `null` for normal users.
-- `gen:fixtures` build step that bundles the historical-figure Markdown into the
-  committed `content.generated.ts`; runs automatically at the start of `build`.
+- `gen:fixtures` build step (now run under `tsx`) that bundles the
+  historical-figure Markdown AND parses + schema-validates each
+  `<documentCurationId>.argument.yaml` (via `parseArgumentYaml`) into the
+  committed `content.generated.ts` — emitting `argumentsByFigureCurationId` as a
+  typed literal. Runs automatically at the start of `build`; a malformed
+  public-PR YAML fails the build.
 - `ArgumentPlatform` (and `CuratedOrigin` / `CuratedArgumentPlatformData`): the
   stored `arguments.platform` value is now the import-origin set plus `"curated"`,
   and `ArgumentSchema.platformData` additionally accepts `{ curationId }`. Lets a
@@ -47,3 +51,9 @@
 
 - Argument `description` on historical-figure arguments is now intentionally
   empty; that context lives in the bundled Markdown instead.
+- `historicalFigures` arguments are now sourced from the committed
+  `<documentCurationId>.argument.yaml` fixtures (parsed + validated at build)
+  instead of hand-written inline TS objects; the ~600-line inline argument
+  dataset is retired, so the YAML is the single source of truth a public PR
+  revises. The dataset content is unchanged (identical content digests). Adds
+  `tsx` as a dev dependency for the codegen step.
