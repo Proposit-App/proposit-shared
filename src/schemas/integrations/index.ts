@@ -131,6 +131,13 @@ export type TArgumentPlatformData = Static<typeof ArgumentPlatformData>
 export const CuratedArgumentPlatformData = Type.Object(
     {
         curationId: Type.String(),
+        // SHA-256 content digest of the curated argument's claims + premises
+        // (`curatedArgumentContentDigest`), stamped on the row when the version
+        // is seeded or reconciled. The deploy-time reconcile compares this
+        // against the committed fixture's digest to detect a drifted argument.
+        // Optional: rows seeded before digest tracking have none, which the
+        // reconcile treats as "needs reconcile".
+        contentDigest: Type.Optional(Type.String()),
     },
     { additionalProperties: false }
 )

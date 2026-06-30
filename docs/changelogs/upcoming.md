@@ -46,6 +46,11 @@
   seeded curated argument serialize through `ArgumentSchema` / `FullArgumentSchema`
   without tripping the strict origin union. The import-request `origin` stays the
   narrower `ArgumentImportOrigin` (curated is not user-importable).
+- `CuratedArgumentPlatformData` gains an optional `contentDigest` — the
+  `curatedArgumentContentDigest` of the published curated argument, stamped on the
+  row at seed/reconcile time so the deploy-time reconcile can detect a drifted
+  fixture without re-lowering. Optional, so rows seeded before digest tracking
+  still validate.
 
 ## Changed
 
