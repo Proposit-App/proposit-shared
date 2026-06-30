@@ -18,6 +18,16 @@
             "import": "./dist/api-client/index.js",
             "default": "./dist/api-client/index.js"
         },
+        "./fixtures/curated-argument": {
+            "types": "./dist/fixtures/curated-argument/index.d.ts",
+            "import": "./dist/fixtures/curated-argument/index.js",
+            "default": "./dist/fixtures/curated-argument/index.js"
+        },
+        "./fixtures/historical-figures": {
+            "types": "./dist/fixtures/historical-figures/index.d.ts",
+            "import": "./dist/fixtures/historical-figures/index.js",
+            "default": "./dist/fixtures/historical-figures/index.js"
+        },
         "./schemas": {
             "types": "./dist/schemas/index.d.ts",
             "import": "./dist/schemas/index.js",
