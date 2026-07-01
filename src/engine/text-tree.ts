@@ -5,6 +5,7 @@ import type {
 } from "../schemas/logic.js"
 import type { TClaim, TClaimType } from "../schemas/model/claims.js"
 import { isNormalClaim } from "../schemas/model/claims.js"
+import { orderPremisesForReading } from "./premise-reading-order.js"
 
 /** Operator display labels for the text view. */
 export const OPERATOR_LABELS: Record<
@@ -195,15 +196,15 @@ export function buildTextTree(
     const items: TTextTreeItem[] = []
     const conclusionPremiseId = snapshot.roles.conclusionPremiseId
 
-    // Sort premises: conclusion first, then supporting
-    const premiseEntries = Object.entries(snapshot.premises)
-    const sortedPremises = premiseEntries.sort(([idA], [idB]) => {
-        const aIsConclusion = idA === conclusionPremiseId
-        const bIsConclusion = idB === conclusionPremiseId
-        if (aIsConclusion && !bIsConclusion) return -1
-        if (!aIsConclusion && bIsConclusion) return 1
-        return 0
-    })
+    // Sort premises into reading order: conclusion first, then a depth-first
+    // unpacking of its support so a reader only scrolls down (see
+    // orderPremisesForReading). Derivation premises are still skipped below.
+    const rank = new Map(
+        orderPremisesForReading(snapshot).map((id, i) => [id, i])
+    )
+    const sortedPremises = Object.entries(snapshot.premises).sort(
+        ([idA], [idB]) => (rank.get(idA) ?? 0) - (rank.get(idB) ?? 0)
+    )
 
     for (const [premiseId, premiseSnap] of sortedPremises) {
         // Derivation premises render via citation badges + naked-Q indicator on

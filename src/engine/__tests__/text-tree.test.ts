@@ -733,4 +733,134 @@ describe("buildTextTree", () => {
         expect(claimItems).toHaveLength(1)
         expect(claimItems[0]).toMatchObject({ claimId: "claim-free" })
     })
+
+    test("orders premise headers by reading-order, not lexicographic id", () => {
+        // conclusion `a-concl` asserts A; `z-proof-a` proves A (B⇒A); `m-leaf`
+        // is disconnected. Premises are *inserted* [a-concl, m-leaf, z-proof-a]
+        // so the old conclusion-first-then-insertion-order sort would yield
+        // [a-concl, m-leaf, z-proof-a]. Reading order is [a-concl, z-proof-a,
+        // m-leaf] — the proof of A sits right under the conclusion.
+        const snapshot = makeSnapshot({
+            roles: { conclusionPremiseId: "a-concl" },
+            variables: {
+                va: {
+                    ...VAR_DEFAULTS,
+                    id: "va",
+                    symbol: "A",
+                    claimId: "claim-a",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+                "va-con": {
+                    ...VAR_DEFAULTS,
+                    id: "va-con",
+                    symbol: "A",
+                    claimId: "claim-a",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+                vb: {
+                    ...VAR_DEFAULTS,
+                    id: "vb",
+                    symbol: "B",
+                    claimId: "claim-b",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+                vm: {
+                    ...VAR_DEFAULTS,
+                    id: "vm",
+                    symbol: "M",
+                    claimId: "claim-m",
+                    claimVersion: 1,
+                } as unknown as TProjectReactiveSnapshot["variables"][string],
+            },
+            premises: {
+                "a-concl": {
+                    premise: {
+                        id: "a-concl",
+                        title: null,
+                        type: "freeform",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "e-concl",
+                    expressions: {
+                        "e-concl": {
+                            ...EXPR_DEFAULTS,
+                            id: "e-concl",
+                            type: "variable",
+                            variableId: "va",
+                            operator: null,
+                            premiseId: "a-concl",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+                "m-leaf": {
+                    premise: {
+                        id: "m-leaf",
+                        title: null,
+                        type: "freeform",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "e-m",
+                    expressions: {
+                        "e-m": {
+                            ...EXPR_DEFAULTS,
+                            id: "e-m",
+                            type: "variable",
+                            variableId: "vm",
+                            operator: null,
+                            premiseId: "m-leaf",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+                "z-proof-a": {
+                    premise: {
+                        id: "z-proof-a",
+                        title: null,
+                        type: "freeform",
+                    } as TProjectReactiveSnapshot["premises"][string]["premise"],
+                    rootExpressionId: "z-imp",
+                    expressions: {
+                        "z-imp": {
+                            ...EXPR_DEFAULTS,
+                            id: "z-imp",
+                            type: "operator",
+                            operator: "implies",
+                            variableId: null,
+                            premiseId: "z-proof-a",
+                            parentId: null,
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                        "z-ant": {
+                            ...EXPR_DEFAULTS,
+                            id: "z-ant",
+                            type: "variable",
+                            variableId: "vb",
+                            operator: null,
+                            premiseId: "z-proof-a",
+                            parentId: "z-imp",
+                            position: 0,
+                        } as unknown as TPropositionalExpressionCombined,
+                        "z-con": {
+                            ...EXPR_DEFAULTS,
+                            id: "z-con",
+                            type: "variable",
+                            variableId: "va-con",
+                            operator: null,
+                            premiseId: "z-proof-a",
+                            parentId: "z-imp",
+                            position: 1,
+                        } as unknown as TPropositionalExpressionCombined,
+                    },
+                },
+            },
+        })
+
+        const headers = buildTextTree(snapshot).filter(
+            (i) => i.type === "premise-header"
+        )
+        expect(
+            headers.map((h) => (h as { premiseId: string }).premiseId)
+        ).toEqual(["a-concl", "z-proof-a", "m-leaf"])
+    })
 })
