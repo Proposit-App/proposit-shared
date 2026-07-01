@@ -200,8 +200,8 @@
         "build": "pnpm run gen:fixtures && rm -rf dist *.tsbuildinfo && pnpm exec tsc -p tsconfig.build.json",
         "typecheck": "pnpm exec tsc --noEmit",
         "lint": "pnpm run prettify:check && pnpm exec eslint .",
-        "prettify": "pnpm exec prettier -w .",
-        "prettify:check": "pnpm exec prettier --check .",
+        "prettify": "pnpm exec prettier --cache -w .",
+        "prettify:check": "pnpm exec prettier --cache --check .",
         "test": "pnpm exec vitest run",
         "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
         "prepublishOnly": "pnpm run check"
