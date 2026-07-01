@@ -2,5 +2,11 @@ slug: 2026-06-30-reading-order-for-premises-scroll-down-dfs
 title: Reading-order for premises (scroll-down DFS)
 phase: ''
 created: '2026-06-30'
-resolution: null
+resolution: done
 priority: null
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
