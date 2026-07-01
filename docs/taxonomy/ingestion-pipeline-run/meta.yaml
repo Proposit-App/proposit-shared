@@ -1,0 +1,8 @@
+name: Ingestion Pipeline Run
+kind: Feature
+relatesTo: []
+vocabulary:
+- ingestion-pipeline
+- ingestion-pipeline/pipeline-run
+- ingestion-pipeline/pipeline-stage
+- task

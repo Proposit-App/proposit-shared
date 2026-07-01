@@ -1,0 +1,6 @@
+name: Citation Management
+kind: Feature
+relatesTo: []
+vocabulary:
+- reference
+- argument/claim

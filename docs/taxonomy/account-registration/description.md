@@ -1,0 +1,1 @@
+Registering an account by redeeming an invitation or promo code, with the preset tier and role it carries.

@@ -1,0 +1,7 @@
+name: Roles And Permissions
+kind: Feature
+relatesTo: []
+vocabulary:
+- system-role
+- system-role/permission
+- participant

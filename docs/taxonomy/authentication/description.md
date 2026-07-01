@@ -1,0 +1,1 @@
+Signing in and maintaining an authenticated session across platforms.

@@ -1,0 +1,1 @@
+Viewing a user's public profile and their contributed claims and citations.

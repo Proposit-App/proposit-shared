@@ -1,0 +1,6 @@
+name: Claim Editing
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument/claim
+- argument

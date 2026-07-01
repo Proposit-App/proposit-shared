@@ -1,0 +1,6 @@
+name: Usage Quota
+kind: Feature
+relatesTo: []
+vocabulary:
+- user/user-tier
+- user

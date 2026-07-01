@@ -1,0 +1,5 @@
+name: Preferences
+kind: Feature
+relatesTo: []
+vocabulary:
+- user/user-preferences

@@ -1,0 +1,1 @@
+Watching a pipeline run's stages, output status, and processing failures.

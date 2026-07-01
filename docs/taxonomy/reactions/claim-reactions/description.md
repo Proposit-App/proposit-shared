@@ -1,0 +1,1 @@
+Registering a stance-and-reason reaction on an individual claim.

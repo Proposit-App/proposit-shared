@@ -1,0 +1,6 @@
+name: Argument Publishing
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument
+- participant

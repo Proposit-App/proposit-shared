@@ -1,0 +1,6 @@
+name: Argument Authoring
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument
+- participant

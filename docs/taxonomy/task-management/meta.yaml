@@ -1,0 +1,7 @@
+name: Task Management
+kind: Feature
+relatesTo: []
+vocabulary:
+- task
+- ingestion-pipeline/pipeline-stage
+- ingestion-pipeline/processing-failure

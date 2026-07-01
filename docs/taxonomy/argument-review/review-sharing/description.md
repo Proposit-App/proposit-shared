@@ -1,0 +1,1 @@
+Setting a review's visibility and sharing its verdict.

@@ -1,0 +1,6 @@
+name: Review Sharing
+kind: Feature
+relatesTo: []
+vocabulary:
+- review
+- review/conclusion-verdict

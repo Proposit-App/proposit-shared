@@ -1,0 +1,7 @@
+name: Logic Editing
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument/premise
+- argument/propositional-expression
+- argument

@@ -1,0 +1,7 @@
+name: Moderation
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument
+- system-role
+- system-role/permission

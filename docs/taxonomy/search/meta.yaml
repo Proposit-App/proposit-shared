@@ -1,0 +1,8 @@
+name: Search
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument/claim
+- argument
+- argument/premise
+- reference

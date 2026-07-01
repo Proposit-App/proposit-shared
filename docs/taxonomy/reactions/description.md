@@ -1,0 +1,1 @@
+Registering reactions on published content.

@@ -1,0 +1,7 @@
+name: Claim Reactions
+kind: Feature
+relatesTo: []
+vocabulary:
+- reaction
+- argument/claim
+- review

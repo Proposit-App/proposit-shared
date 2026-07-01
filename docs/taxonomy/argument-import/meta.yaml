@@ -1,0 +1,8 @@
+name: Argument Import
+kind: Feature
+relatesTo: []
+vocabulary:
+- import-origin
+- argument
+- participant
+- ingestion-pipeline

@@ -1,0 +1,6 @@
+name: Argument Browse
+kind: Feature
+relatesTo: []
+vocabulary:
+- argument
+- participant

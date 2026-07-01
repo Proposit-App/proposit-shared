@@ -1,0 +1,9 @@
+name: Account Registration
+kind: Feature
+relatesTo: []
+vocabulary:
+- user
+- user/user-tier
+- system-role
+- registration-invitation
+- registration-invitation/promo-code

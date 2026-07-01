@@ -1,0 +1,8 @@
+name: Pipeline Monitoring
+kind: Feature
+relatesTo: []
+vocabulary:
+- ingestion-pipeline/pipeline-run
+- ingestion-pipeline/pipeline-stage
+- ingestion-pipeline/processing-failure
+- task

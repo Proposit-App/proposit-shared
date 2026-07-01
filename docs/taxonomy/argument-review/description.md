@@ -1,0 +1,1 @@
+Stepping through an argument to judge each claim and inferential operator toward a soundness verdict.

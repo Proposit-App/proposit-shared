@@ -1,0 +1,6 @@
+name: Argument Voting
+kind: Feature
+relatesTo: []
+vocabulary:
+- reaction
+- argument

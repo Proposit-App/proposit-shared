@@ -1,0 +1,8 @@
+name: Argument Review
+kind: Feature
+relatesTo: []
+vocabulary:
+- review
+- review/claim-assignment
+- review/operator-assignment
+- review/conclusion-verdict

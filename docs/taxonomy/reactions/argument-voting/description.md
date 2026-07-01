@@ -1,0 +1,1 @@
+Upvoting or downvoting a published argument.

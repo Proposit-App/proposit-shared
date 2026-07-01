@@ -1,0 +1,1 @@
+A shareable code that authorizes registration under preset limits.
