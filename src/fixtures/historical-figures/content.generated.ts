@@ -327,7 +327,7 @@ export const argumentsByFigureCurationId: Record<
                 "mode": "fast",
                 "runAt": "2026-06-30T16:41:08.873Z",
                 "sourceFile": "02-on-liberty-ch2.txt",
-                "sourcePath": "/Users/brian/Projects/Proposit-App/proposit-core/examples/texts/02-on-liberty-ch2.txt",
+                "sourcePath": "examples/texts/02-on-liberty-ch2.txt",
                 "coreVersion": "2.4.0",
                 "sharedVersion": "0.30.0",
                 "serverVersion": "0.32.0"
@@ -652,7 +652,7 @@ export const argumentsByFigureCurationId: Record<
                 "mode": "fast",
                 "runAt": "2026-06-30T16:39:25.958Z",
                 "sourceFile": "01-crito.txt",
-                "sourcePath": "/Users/brian/Projects/Proposit-App/proposit-core/examples/texts/01-crito.txt",
+                "sourcePath": "examples/texts/01-crito.txt",
                 "coreVersion": "2.4.0",
                 "sharedVersion": "0.30.0",
                 "serverVersion": "0.32.0"
