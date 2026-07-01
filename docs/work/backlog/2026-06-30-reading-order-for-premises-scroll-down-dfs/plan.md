@@ -17,9 +17,10 @@ roles shape). Cover the 6 behavioral acceptance criteria from `spec.md`:
 3. Cycle → terminates, each premise emitted exactly once, deterministic.
 4. Rebuttal concluding `¬B` while an antecedent needs `B` → rebuttal appended
    off-chain, not woven into B's slot.
-5. `conclusionPremiseId` undefined → equals `Object.keys(snapshot.premises)`
-   order.
-6. (in `text-tree.test.ts`) `buildTextTree` emits premise-headers in the new
+5. `conclusionPremiseId` undefined → equals `baseOrder`.
+6. `conclusionPremiseId` set but not in `snapshot.premises` (dangling) → no
+   throw; output = all premises in `baseOrder`.
+7. (in `text-tree.test.ts`) `buildTextTree` emits premise-headers in the new
    order and still skips derivation premises.
 
 Run `pnpm run test` → these fail (module/behavior absent).
@@ -38,9 +39,12 @@ Run `pnpm run test` → these fail (module/behavior absent).
 - Compute `frontier(premise)` = antecedent signatures (or the bare premise's own
   signatures) in position order; collect premise-bound antecedent edges
   (`boundPremiseId`).
-- Pre-order DFS from `conclusionPremiseId` (visited-set, stable tie-break by
-  `Object.keys(snapshot.premises)` order); append all remaining premise ids in
-  that same base order.
+- `baseOrder` = premise ids sorted by `localeCompare` (matches engine
+  `listPremiseIds`); used for the off-chain append and `provenBy` sibling
+  tie-break.
+- Pre-order DFS from `conclusionPremiseId` (visited-set; **guard: `visit` returns
+  early if the id is missing from `snapshot.premises`** — dangling role id);
+  append all remaining premise ids in `baseOrder`.
 - Keep it pure/data-only (no DOM/Node globals; relative imports end in `.js`).
 
 **Edit:** `src/engine/text-tree.ts` `buildTextTree` — replace the conclusion-

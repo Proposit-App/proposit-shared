@@ -78,22 +78,38 @@ pulled in as the proof of an antecedent `B`; it falls off-chain.
 
 **Ordering.**
 
+`baseOrder` = premise ids sorted by `localeCompare` (matches the engine's
+`listPremiseIds` enumeration). Used for both the off-chain append and the
+`provenBy` sibling tie-break, so the whole result is deterministic and
+independent of `snapshot.premises` iteration order.
+
 ```
 order = []
 visited = set()
 visit(conclusionPremiseId)      // skipped if undefined
+  if pid not in snapshot.premises: return   // dangling role id — no crash
   if pid in visited: return
   visited.add(pid); order.push(pid)
   for sig in frontier(pid) (antecedents in position order):
-    for p in provenBy[sig] (unvisited, stable order): visit(p)
-  for q in boundPremiseEdges(pid) (unvisited, stable order): visit(q)
+    for p in provenBy[sig] (unvisited, baseOrder order): visit(p)
+  for q in boundPremiseEdges(pid) (unvisited, baseOrder order): visit(q)
 append every remaining premise id (off-chain freeform + all derivations)
-  in Object.keys(snapshot.premises) order
+  in baseOrder
 return order
 ```
 
 `buildTextTree` builds a rank from `order` and sorts its premise entries by rank;
 emit loop and derivation-skip unchanged.
+
+**Invariants relied upon** (no new guards beyond the dangling-id one above):
+- Expression trees are acyclic (enforced on persist by `topologicalSortExpressions`);
+  the existing `walkPremiseExpression` renderer already assumes this every render,
+  so claim-leaf extraction adds no new stack risk.
+- Ordering never dereferences `snapshot.claims` — only `variable.claimId`
+  identity — so a dangling `claimId` is harmless (just a signature that matches
+  nothing).
+- A premise with a missing `rootExpressionId` → no consequent, empty frontier →
+  treated as a leaf; no crash.
 
 ## Acceptance criteria
 
@@ -106,9 +122,11 @@ emit loop and derivation-skip unchanged.
 4. A rebuttal / off-chain / disconnected premise → appended after the reached
    chain in existing stable order; polarity-opposite consequent is not woven in.
 5. `conclusionPremiseId` undefined → output equals today's order (no reorder).
-6. Derivation premises → still excluded from emitted list; web + mobile unaffected
+6. `conclusionPremiseId` set but absent from `snapshot.premises` (dangling role
+   id) → no crash; output = all premises in `baseOrder`.
+7. Derivation premises → still excluded from emitted list; web + mobile unaffected
    beyond order.
-7. `pnpm run check` green (typecheck, lint, existing tests).
+8. `pnpm run check` green (typecheck, lint, existing tests).
 
 ## Risks / dependencies
 
