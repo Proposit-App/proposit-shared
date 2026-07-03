@@ -77,6 +77,11 @@ export function getClaimProofState(
     }
 
     const exprs = Object.values(derivationPremiseSnap.expressions)
+    // Relies on proposit-core's populate-from.ts writing a literal
+    // `position: 0` for the antecedent slot of engine-synthesized derivation
+    // premises (never the sparse/midpoint scheme freeform premises use). If
+    // that writer ever changes, see the same fragility warning documented at
+    // proposit-core's src/lib/grammar/repair.ts (~line 276).
     const antecedent = exprs.find(
         (expr) => expr.parentId === rootExpr.id && expr.position === 0
     )
