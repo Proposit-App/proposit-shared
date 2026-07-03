@@ -19,8 +19,8 @@ function taskWithStatus(status: number): TTask {
         errorData: null,
         resultData: null,
         createdOn: new Date("2026-06-01T12:00:00.000Z"),
-        startedOn: null,
-        completedOn: null,
+        startedAt: null,
+        settledAt: null,
         status,
     } as TTask
 }

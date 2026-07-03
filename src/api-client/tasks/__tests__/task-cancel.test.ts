@@ -32,8 +32,8 @@ const sampleCancelledTask = {
     errorData: null,
     resultData: null,
     createdOn: "2026-06-01T12:00:00.000Z",
-    startedOn: "2026-06-01T12:00:01.000Z",
-    completedOn: "2026-06-01T12:00:03.000Z",
+    startedAt: "2026-06-01T12:00:01.000Z",
+    settledAt: "2026-06-01T12:00:03.000Z",
     status: TaskStatus.CANCELLED,
 }
 

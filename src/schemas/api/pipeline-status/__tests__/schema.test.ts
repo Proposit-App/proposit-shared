@@ -31,7 +31,7 @@ const sampleRun = {
     pipelineId: "v2-multi-stage",
     pipelineVersion: "v2-multi-stage",
     startedAt: "2026-05-25T12:00:00.000Z",
-    finishedAt: "2026-05-25T12:00:05.000Z",
+    settledAt: "2026-05-25T12:00:05.000Z",
     outputStatus: "success" as const,
     tokenUsage: sampleTokenUsage,
     errorData: null,
@@ -43,10 +43,11 @@ const sampleStage = {
     ordinal: 0,
     status: "completed" as const,
     startedAt: "2026-05-25T12:00:00.000Z",
-    finishedAt: "2026-05-25T12:00:01.500Z",
+    settledAt: "2026-05-25T12:00:01.500Z",
     tokenUsage: sampleTokenUsage,
     retryCount: 0,
     failures: [],
+    warnings: [],
     responseId: null,
 }
 
@@ -173,15 +174,15 @@ describe("PipelineStageStatusSchema", () => {
 })
 
 describe("PipelineRunSchema", () => {
-    it("accepts a fully populated row (terminal: outputStatus + finishedAt)", () => {
+    it("accepts a fully populated row (terminal: outputStatus + settledAt)", () => {
         expect(Value.Check(PipelineRunSchema, sampleRun)).toBe(true)
     })
 
-    it("accepts a still-running row (outputStatus=null, finishedAt=null)", () => {
+    it("accepts a still-running row (outputStatus=null, settledAt=null)", () => {
         const running = {
             ...sampleRun,
             outputStatus: null,
-            finishedAt: null,
+            settledAt: null,
             errorData: null,
         }
         expect(Value.Check(PipelineRunSchema, running)).toBe(true)
@@ -221,6 +222,12 @@ describe("PipelineRunSchema", () => {
         const bad = { ...sampleRun, startedAt: "not-a-date" }
         expect(() => Value.Parse(PipelineRunSchema, bad)).toThrow()
     })
+
+    it("rejects a payload carrying the old finishedAt key once settledAt is omitted (proves the new key is required — the schema has no additionalProperties:false, so the stale key alone is not what's rejected)", () => {
+        const { settledAt: _omitted, ...withoutSettledAt } = sampleRun
+        const stale = { ...withoutSettledAt, finishedAt: sampleRun.settledAt }
+        expect(Value.Check(PipelineRunSchema, stale)).toBe(false)
+    })
 })
 
 describe("PipelineStageSchema", () => {
@@ -228,22 +235,22 @@ describe("PipelineStageSchema", () => {
         expect(Value.Check(PipelineStageSchema, sampleStage)).toBe(true)
     })
 
-    it("accepts a pre-created pending stage (status=pending, startedAt=null, finishedAt=null)", () => {
+    it("accepts a pre-created pending stage (status=pending, startedAt=null, settledAt=null)", () => {
         const pending = {
             ...sampleStage,
             status: "pending" as const,
             startedAt: null,
-            finishedAt: null,
+            settledAt: null,
             tokenUsage: null,
         }
         expect(Value.Check(PipelineStageSchema, pending)).toBe(true)
     })
 
-    it("accepts an in-progress stage (status=running, finishedAt=null)", () => {
+    it("accepts an in-progress stage (status=running, settledAt=null)", () => {
         const running = {
             ...sampleStage,
             status: "running" as const,
-            finishedAt: null,
+            settledAt: null,
         }
         expect(Value.Check(PipelineStageSchema, running)).toBe(true)
     })
@@ -252,7 +259,7 @@ describe("PipelineStageSchema", () => {
         const historical = {
             ...sampleStage,
             status: null,
-            finishedAt: null,
+            settledAt: null,
         }
         expect(Value.Check(PipelineStageSchema, historical)).toBe(true)
     })
@@ -300,6 +307,61 @@ describe("PipelineStageSchema", () => {
     it("rejects a missing required field", () => {
         const { retryCount: _omitted, ...without } = sampleStage
         expect(Value.Check(PipelineStageSchema, without)).toBe(false)
+    })
+
+    it("rejects a payload carrying the old finishedAt key once settledAt is omitted (proves the new key is required — the schema has no additionalProperties:false, so the stale key alone is not what's rejected)", () => {
+        const { settledAt: _omitted, ...withoutSettledAt } = sampleStage
+        const stale = {
+            ...withoutSettledAt,
+            finishedAt: sampleStage.settledAt,
+        }
+        expect(Value.Check(PipelineStageSchema, stale)).toBe(false)
+    })
+
+    it("accepts warnings populated independently of an empty failures array", () => {
+        const withWarnings = {
+            ...sampleStage,
+            failures: [],
+            warnings: [
+                {
+                    stage: "claim-canonicalization",
+                    code: "LOW_CONFIDENCE",
+                    message: "Canonicalization confidence below threshold",
+                    severity: "warning" as const,
+                },
+            ],
+        }
+        expect(Value.Check(PipelineStageSchema, withWarnings)).toBe(true)
+    })
+
+    it("accepts failures populated independently of an empty warnings array", () => {
+        const withFailures = {
+            ...sampleStage,
+            status: "failed" as const,
+            failures: [
+                {
+                    stage: "claim-canonicalization",
+                    code: "OUTPUT_VALIDATION",
+                    message: "Schema validation failed",
+                    severity: "error" as const,
+                },
+            ],
+            warnings: [],
+        }
+        expect(Value.Check(PipelineStageSchema, withFailures)).toBe(true)
+    })
+
+    it("rejects a stage that omits warnings entirely (required array, not Optional)", () => {
+        const { warnings: _omitted, ...without } = sampleStage
+        expect(Value.Check(PipelineStageSchema, without)).toBe(false)
+    })
+
+    it("rejects warnings containing a malformed entry", () => {
+        const bad = {
+            ...sampleStage,
+            warnings: [{ stage: "x", code: "X", severity: "warning" }], // message missing
+        }
+        expect(Value.Check(PipelineStageSchema, bad)).toBe(false)
     })
 })
 

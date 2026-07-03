@@ -32,8 +32,8 @@ const sampleRetryTask = {
     errorData: null,
     resultData: null,
     createdOn: "2026-05-27T12:00:00.000Z",
-    startedOn: null,
-    completedOn: null,
+    startedAt: null,
+    settledAt: null,
     status: 0,
 }
 

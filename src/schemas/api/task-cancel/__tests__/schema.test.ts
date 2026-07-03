@@ -28,8 +28,8 @@ const sampleCancelledTask = {
     errorData: null,
     resultData: null,
     createdOn: new Date("2026-06-01T12:00:00.000Z"),
-    startedOn: new Date("2026-06-01T12:00:01.000Z"),
-    completedOn: new Date("2026-06-01T12:00:03.000Z"),
+    startedAt: new Date("2026-06-01T12:00:01.000Z"),
+    settledAt: new Date("2026-06-01T12:00:03.000Z"),
     status: TaskStatus.CANCELLED,
 }
 
@@ -42,8 +42,8 @@ describe("CancelTaskResponse", () => {
         const wire = {
             ...sampleCancelledTask,
             createdOn: "2026-06-01T12:00:00.000Z",
-            startedOn: "2026-06-01T12:00:01.000Z",
-            completedOn: "2026-06-01T12:00:03.000Z",
+            startedAt: "2026-06-01T12:00:01.000Z",
+            settledAt: "2026-06-01T12:00:03.000Z",
         }
         const converted = Value.Convert(CancelTaskResponse, wire)
         const parsed = Value.Parse(CancelTaskResponse, converted)
@@ -64,5 +64,19 @@ describe("CancelTaskResponse", () => {
     it("rejects a non-numeric status", () => {
         const bad = { ...sampleCancelledTask, status: "cancelled" }
         expect(Value.Check(CancelTaskResponse, bad)).toBe(false)
+    })
+
+    it("rejects a payload carrying the old startedOn/completedOn keys once startedAt/settledAt are omitted (proves the new keys are required — the schema has no additionalProperties:false, so the stale keys alone are not what's rejected)", () => {
+        const {
+            startedAt: _startedAt,
+            settledAt: _settledAt,
+            ...withoutRenamedFields
+        } = sampleCancelledTask
+        const stale = {
+            ...withoutRenamedFields,
+            startedOn: sampleCancelledTask.startedAt,
+            completedOn: sampleCancelledTask.settledAt,
+        }
+        expect(Value.Check(CancelTaskResponse, stale)).toBe(false)
     })
 })

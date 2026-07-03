@@ -45,8 +45,8 @@ const BaseTaskSchema = Type.Interface([], {
     resultData: Type.Null(),
 
     createdOn: EncodableDate,
-    startedOn: Nullable(EncodableDate),
-    completedOn: Nullable(EncodableDate),
+    startedAt: Nullable(EncodableDate),
+    settledAt: Nullable(EncodableDate),
     status: Type.Number(),
 })
 

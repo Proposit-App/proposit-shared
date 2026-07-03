@@ -43,3 +43,59 @@ describe("ArgumentCreateTask.data.pipeline", () => {
         >().toEqualTypeOf<TIngestionPipeline | undefined>()
     })
 })
+
+// `BaseTaskSchema` fields shared by every concrete task type. Exercised
+// through `ArgumentCreateTask` since `BaseTaskSchema` itself isn't exported.
+const sampleTask = {
+    id: "22222222-2222-4222-8222-222222222222",
+    userId: "33333333-3333-4333-8333-333333333333",
+    previousId: null,
+    type: "argument_create" as const,
+    data: baseData,
+    errorData: null,
+    resultData: null,
+    createdOn: new Date("2026-06-01T12:00:00.000Z"),
+    startedAt: null,
+    settledAt: null,
+    status: 0,
+}
+
+describe("BaseTaskSchema.startedAt / settledAt", () => {
+    it("accepts both fields null (task not yet started)", () => {
+        expect(Value.Check(ArgumentCreateTask, sampleTask)).toBe(true)
+    })
+
+    it("accepts both fields populated (settled task)", () => {
+        const settled = {
+            ...sampleTask,
+            startedAt: new Date("2026-06-01T12:00:01.000Z"),
+            settledAt: new Date("2026-06-01T12:00:05.000Z"),
+            status: 2,
+        }
+        expect(Value.Check(ArgumentCreateTask, settled)).toBe(true)
+    })
+
+    it("rejects a payload carrying the old startedOn/completedOn keys once startedAt/settledAt are omitted (proves the new keys are required — BaseTaskSchema has no additionalProperties:false, so the stale keys alone are not what's rejected)", () => {
+        const {
+            startedAt: _startedAt,
+            settledAt: _settledAt,
+            ...withoutRenamedFields
+        } = sampleTask
+        const stale = {
+            ...withoutRenamedFields,
+            startedOn: null,
+            completedOn: null,
+        }
+        expect(Value.Check(ArgumentCreateTask, stale)).toBe(false)
+    })
+
+    it("rejects a task that omits startedAt entirely", () => {
+        const { startedAt: _omitted, ...without } = sampleTask
+        expect(Value.Check(ArgumentCreateTask, without)).toBe(false)
+    })
+
+    it("rejects a task that omits settledAt entirely", () => {
+        const { settledAt: _omitted, ...without } = sampleTask
+        expect(Value.Check(ArgumentCreateTask, without)).toBe(false)
+    })
+})

@@ -15,7 +15,7 @@ const samplePreviousUuid = "33333333-3333-4333-8333-333333333333"
 const sampleArgumentUuid = "44444444-4444-4444-8444-444444444444"
 
 // A fresh retry task: `previousId` set (lineage points at the failed task),
-// not yet started (status PENDING, startedOn/completedOn null, resultData null).
+// not yet started (status PENDING, startedAt/settledAt null, resultData null).
 const sampleRetryTask = {
     id: sampleTaskUuid,
     userId: sampleUserUuid,
@@ -28,8 +28,8 @@ const sampleRetryTask = {
     errorData: null,
     resultData: null,
     createdOn: new Date("2026-05-27T12:00:00.000Z"),
-    startedOn: null,
-    completedOn: null,
+    startedAt: null,
+    settledAt: null,
     status: 0,
 }
 
@@ -42,8 +42,8 @@ describe("RetryTaskResponse", () => {
         const completed = {
             ...sampleRetryTask,
             status: 2,
-            startedOn: new Date("2026-05-27T12:00:01.000Z"),
-            completedOn: new Date("2026-05-27T12:00:05.000Z"),
+            startedAt: new Date("2026-05-27T12:00:01.000Z"),
+            settledAt: new Date("2026-05-27T12:00:05.000Z"),
             resultData: { tokensUsed: 123 },
         }
         expect(Value.Check(RetryTaskResponse, completed)).toBe(true)
@@ -66,8 +66,8 @@ describe("RetryTaskResponse", () => {
         const wire = {
             ...sampleRetryTask,
             createdOn: "2026-05-27T12:00:00.000Z",
-            startedOn: null,
-            completedOn: null,
+            startedAt: null,
+            settledAt: null,
         }
         const converted = Value.Convert(RetryTaskResponse, wire)
         const parsed = Value.Parse(RetryTaskResponse, converted)
@@ -98,5 +98,19 @@ describe("RetryTaskResponse", () => {
     it("rejects a non-numeric status", () => {
         const bad = { ...sampleRetryTask, status: "pending" }
         expect(Value.Check(RetryTaskResponse, bad)).toBe(false)
+    })
+
+    it("rejects a payload carrying the old startedOn/completedOn keys once startedAt/settledAt are omitted (proves the new keys are required — the schema has no additionalProperties:false, so the stale keys alone are not what's rejected)", () => {
+        const {
+            startedAt: _startedAt,
+            settledAt: _settledAt,
+            ...withoutRenamedFields
+        } = sampleRetryTask
+        const stale = {
+            ...withoutRenamedFields,
+            startedOn: null,
+            completedOn: null,
+        }
+        expect(Value.Check(RetryTaskResponse, stale)).toBe(false)
     })
 })

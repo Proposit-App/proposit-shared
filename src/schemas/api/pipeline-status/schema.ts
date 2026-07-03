@@ -97,7 +97,7 @@ export const PipelineRunSchema = Type.Object({
     pipelineId: Type.String(),
     pipelineVersion: Type.String(),
     startedAt: Type.String({ format: "date-time" }),
-    finishedAt: Nullable(Type.String({ format: "date-time" })),
+    settledAt: Nullable(Type.String({ format: "date-time" })),
     outputStatus: PipelineOutputStatusSchema,
     tokenUsage: TokenUsageSchema,
     // The persisted run/task-level failure cause (`tasks.errorData`), e.g.
@@ -115,10 +115,11 @@ export const PipelineStageSchema = Type.Object({
     ordinal: Type.Integer(),
     status: PipelineStageStatusSchema,
     startedAt: Nullable(Type.String({ format: "date-time" })),
-    finishedAt: Nullable(Type.String({ format: "date-time" })),
+    settledAt: Nullable(Type.String({ format: "date-time" })),
     tokenUsage: Nullable(TokenUsageSchema),
     retryCount: Type.Integer(),
     failures: Type.Array(ProcessingFailureSchema),
+    warnings: Type.Array(ProcessingFailureSchema),
     responseId: Nullable(Type.String()),
 })
 export type TPipelineStage = Static<typeof PipelineStageSchema>
