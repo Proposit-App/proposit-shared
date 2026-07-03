@@ -1,0 +1,10 @@
+slug: 2026-07-02-rename-task-pipeline-terminal-timestamps-to-settledat-split-warnings-out-of-failures
+title: Rename task/pipeline terminal timestamps to settledAt; split warnings out of
+  failures
+phase: ''
+created: '2026-07-02'
+resolution: null
+priority: 15
+effort: medium
+complexity: low
+initiative: 2026-06-21-task-pipeline-schema-honesty-terminal-timestamp-renames-warnings-out-of-failures
