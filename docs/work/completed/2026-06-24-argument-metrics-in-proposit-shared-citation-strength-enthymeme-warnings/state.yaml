@@ -2,7 +2,13 @@ slug: 2026-06-24-argument-metrics-in-proposit-shared-citation-strength-enthymeme
 title: Argument metrics in @proposit/shared — citation strength & enthymeme warnings
 phase: ''
 created: '2026-06-24'
-resolution: null
+resolution: done
 priority: 6
 effort: medium
 complexity: high
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
