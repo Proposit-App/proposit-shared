@@ -20,7 +20,7 @@ importers:
         version: 9.39.4
       '@proposit/proposit-core':
         specifier: ^2.3.1
-        version: 2.3.1
+        version: 2.4.1
       '@types/node':
         specifier: ^25.5.2
         version: 25.6.0
@@ -356,8 +356,8 @@ packages:
   '@oxc-project/types@0.126.0':
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
-  '@proposit/proposit-core@2.3.1':
-    resolution: {integrity: sha512-/O+OxOSk9MAM6I22znn3sNfuD+aWuc+Dp6N2Z7hxG+ZE9rGQmOlldHru1HfSHV5pFaSFf9DK1kvsSgj86863UQ==}
+  '@proposit/proposit-core@2.4.1':
+    resolution: {integrity: sha512-Zw203tXt0f9qHwZqs1HjOh6vBuhwq0S3lB8tZo11S/FQVr5e1v1UANrwDo6Yi2fu21Ww2nXoYJzWqoxoaOPG7g==}
     engines: {node: '>=22.3.0'}
     hasBin: true
     peerDependencies:
@@ -1025,8 +1025,12 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
-  postcss@8.5.15:
-    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
+  picomatch@4.0.5:
+    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
+    engines: {node: '>=12'}
+
+  postcss@8.5.16:
+    resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
     engines: {node: ^10 || ^12 || >=14}
 
   prelude-ls@1.2.1:
@@ -1530,7 +1534,7 @@ snapshots:
 
   '@oxc-project/types@0.126.0': {}
 
-  '@proposit/proposit-core@2.3.1':
+  '@proposit/proposit-core@2.4.1':
     dependencies:
       commander: 14.0.3
       typebox: 1.1.28
@@ -1957,6 +1961,10 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.4
 
+  fdir@6.5.0(picomatch@4.0.5):
+    optionalDependencies:
+      picomatch: 4.0.5
+
   file-entry-cache@8.0.0:
     dependencies:
       flat-cache: 4.0.1
@@ -2185,7 +2193,9 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  postcss@8.5.15:
+  picomatch@4.0.5: {}
+
+  postcss@8.5.16:
     dependencies:
       nanoid: 3.3.15
       picocolors: 1.1.1
@@ -2261,8 +2271,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   tinyrainbow@3.1.0: {}
 
@@ -2329,8 +2339,8 @@ snapshots:
   vite@8.0.9(@types/node@25.6.0)(esbuild@0.28.1)(tsx@4.22.4)(yaml@2.8.3):
     dependencies:
       lightningcss: 1.32.0
-      picomatch: 4.0.4
-      postcss: 8.5.15
+      picomatch: 4.0.5
+      postcss: 8.5.16
       rolldown: 1.0.0-rc.16
       tinyglobby: 0.2.17
     optionalDependencies:
