@@ -2,5 +2,11 @@ slug: 2026-07-08-x-variant-on-tmobilesessionrequest
 title: X variant on TMobileSessionRequest
 phase: ''
 created: '2026-07-08'
-resolution: null
+resolution: done
 initiative: 2026-07-08-sign-in-with-x-twitter-on-mobile
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
