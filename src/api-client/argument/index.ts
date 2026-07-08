@@ -18,6 +18,7 @@ import {
     SetArgumentHiddenResponseSchema,
     PurgeArgumentResponseSchema,
 } from "../../schemas/api/argument/index.js"
+import { ArgumentCreateTask } from "../../schemas/tasks.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
 import { Type } from "typebox"
 import type { TApiClientConfig } from "../config.js"
@@ -199,6 +200,21 @@ export async function createArgumentImpl(
         data,
         CreateArgumentSchema,
         ArgumentSchema,
+        config.fetchImpl
+    )
+}
+
+export async function importArgumentImpl(
+    config: TApiClientConfig,
+    data: TCreateArgument
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await strictFetch(
+        `${baseUrl}/api/v1/argument/import/${data.origin}`,
+        { method: "POST" },
+        data,
+        CreateArgumentSchema,
+        ArgumentCreateTask,
         config.fetchImpl
     )
 }
