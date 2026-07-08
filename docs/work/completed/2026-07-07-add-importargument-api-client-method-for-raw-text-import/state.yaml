@@ -2,6 +2,12 @@ slug: 2026-07-07-add-importargument-api-client-method-for-raw-text-import
 title: Add importArgument api-client method for raw-text import
 phase: ''
 created: '2026-07-07'
-resolution: null
+resolution: done
 effort: low
 complexity: low
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
