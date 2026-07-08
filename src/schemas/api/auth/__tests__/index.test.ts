@@ -22,8 +22,21 @@ describe("MobileSessionRequest", () => {
         expect(Value.Check(MobileSessionRequest, input)).toBe(true)
     })
 
-    it("rejects an unsupported provider", () => {
-        const input = { provider: "twitter", idToken: "eyJ.xxx.yyy" }
+    it("accepts a valid x request with an accessToken", () => {
+        const input = { provider: "x", accessToken: "x-oauth2-access-token" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(true)
+    })
+
+    it("rejects an x request missing accessToken", () => {
+        const input = { provider: "x" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects the stored provider identity 'twitter' as a wire discriminator", () => {
+        const input = {
+            provider: "twitter",
+            accessToken: "x-oauth2-access-token",
+        }
         expect(Value.Check(MobileSessionRequest, input)).toBe(false)
     })
 

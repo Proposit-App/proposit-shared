@@ -3,11 +3,20 @@ import { UUID } from "../../common.js"
 
 // Schemas for POST /api/v1/auth/mobile-session and POST /api/v1/auth/mobile-refresh.
 
-export const MobileSessionRequest = Type.Object({
-    provider: Type.Union([Type.Literal("google"), Type.Literal("apple")]),
-    idToken: Type.String(),
-    nonce: Type.Optional(Type.String()),
-})
+// Discriminated on `provider`. Google/Apple sign-in yields an OIDC ID token;
+// X (Twitter) uses OAuth 2.0 (PKCE), which yields an access token, not an ID
+// token — so the X member carries `accessToken` and has no `idToken`.
+export const MobileSessionRequest = Type.Union([
+    Type.Object({
+        provider: Type.Union([Type.Literal("google"), Type.Literal("apple")]),
+        idToken: Type.String(),
+        nonce: Type.Optional(Type.String()),
+    }),
+    Type.Object({
+        provider: Type.Literal("x"),
+        accessToken: Type.String(),
+    }),
+])
 export type TMobileSessionRequest = Static<typeof MobileSessionRequest>
 
 export const MobileSessionResponse = Type.Object({
