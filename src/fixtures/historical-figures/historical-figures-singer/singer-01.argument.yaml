@@ -1,0 +1,166 @@
+title: Moral duty exceeds human nature
+description: ""
+claims:
+    - symbol: DoraOrgansChildAnalogy
+      title: Dora case parallels luxury spending
+      body: Selling a child to organ traffickers is morally comparable to spending
+          money on a luxury upgrade when that money could instead save a child's
+          life, because both acts sacrifice a child’s life for nonessential
+          comfort.
+    - symbol: NoClearMoralDifference
+      title: No clear moral distinction exists
+      body: There is no morally important distinction between a Brazilian who sells a
+          homeless child to organ traffickers and an affluent American who
+          spends on a TV upgrade instead of donating to save children.
+    - symbol: LuxuryMoneyShouldBeDonated
+      title: Luxury spending should be donated
+      body: Money spent on luxuries rather than necessities should be given to help
+          the world's poor, because necessities already account for much of a
+          household budget.
+    - symbol: BobBugattiAnalogy
+      title: Bob's inaction is gravely wrong
+      body: Bob acts gravely wrongly when he refuses to divert the train to save the
+          child, even though the sacrifice would destroy his Bugatti and its
+          financial value.
+    - symbol: CrowdDoesNotExcuse
+      title: Others' inaction gives no excuse
+      body: The fact that many others also fail to donate does not make it morally
+          acceptable for one person to withhold aid, just as widespread
+          wrongdoing does not excuse Bob.
+    - symbol: AffluentSpendingCanSaveLives
+      title: Luxury spending can save lives
+      body: People in affluent countries spend large amounts on nonessential goods and
+          services, and donating that money to charity could save children’s
+          lives.
+    - symbol: DonationCanSaveChild
+      title: $200 can save a child
+      body: About $200 donated to organizations like Unicef or Oxfam America can help
+          save a child's life by funding effective aid.
+    - symbol: DonorsResembleBob
+      title: Refusing to donate mirrors Bob
+      body: A person who can afford to donate $200 to overseas aid but does not do so
+          is acting in a way that closely resembles Bob's refusal to save the
+          child on the tracks.
+    - symbol: WeAreAllInThatSituation
+      title: Everyone faces the same choice
+      body: "All people with surplus wealth are in the same basic moral situation as
+          Bob: they must choose between preserving personal comfort and saving
+          an innocent child's life."
+    - symbol: GiveMostSurplusWealth
+      title: Surplus wealth should be given away
+      body: People with wealth beyond their essential needs ought to give most of it
+          to help people suffering life-threatening poverty, rather than spend
+          it on luxuries.
+    - symbol: MoralDutyExceedsHumanNature
+      title: Moral duty exceeds human nature
+      body: Even if human nature makes such sacrifice unlikely, people still ought to
+          make it, and knowing that duty helps them live morally decent lives.
+premises:
+    - title: Moral duty exceeds human nature
+      role: conclusion
+      tree:
+          type: variable
+          symbol: MoralDutyExceedsHumanNature
+    - title: If "Surplus wealth should be given away" and "Luxury spending should be
+          donated" then "Moral duty exceeds human nature"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: GiveMostSurplusWealth
+                          - type: variable
+                            symbol: LuxuryMoneyShouldBeDonated
+              - type: variable
+                symbol: MoralDutyExceedsHumanNature
+    - title: If "Dora case parallels luxury spending" and "No clear moral distinction
+          exists" then "Everyone faces the same choice"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: DoraOrgansChildAnalogy
+                          - type: variable
+                            symbol: NoClearMoralDifference
+              - type: variable
+                symbol: WeAreAllInThatSituation
+    - title: If "No clear moral distinction exists" and "Everyone faces the same
+          choice" then "Surplus wealth should be given away"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: NoClearMoralDifference
+                          - type: variable
+                            symbol: WeAreAllInThatSituation
+              - type: variable
+                symbol: GiveMostSurplusWealth
+    - title: If "Bob's inaction is gravely wrong" and "Refusing to donate mirrors Bob"
+          then "Others' inaction gives no excuse"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: BobBugattiAnalogy
+                          - type: variable
+                            symbol: DonorsResembleBob
+              - type: variable
+                symbol: CrowdDoesNotExcuse
+    - title: If "Luxury spending can save lives" and "$200 can save a child" then
+          "Refusing to donate mirrors Bob"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: AffluentSpendingCanSaveLives
+                          - type: variable
+                            symbol: DonationCanSaveChild
+              - type: variable
+                symbol: DonorsResembleBob
+documentCurationId: singer-01
+provenance:
+    provider: openai
+    model: null
+    pipeline: scribe
+    pipelineVersion: 1.0.0
+    mode: fast
+    runAt: 2026-07-08T19:49:14.308Z
+    sourceFile: 06-singer-solution-to-world-poverty.txt
+    sourcePath: examples/texts/06-singer-solution-to-world-poverty.txt
+    coreVersion: 2.4.3
+    sharedVersion: 0.35.0
+    serverVersion: 0.36.4

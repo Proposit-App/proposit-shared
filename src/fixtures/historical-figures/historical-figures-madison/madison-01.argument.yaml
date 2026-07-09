@@ -1,0 +1,244 @@
+title: The Union outcontrols state factions
+description: ""
+claims:
+    - symbol: self_interest_biases_judgment
+      title: Self-interest biases judgment
+      body: A person cannot be a judge in his own cause because interest biases
+          judgment and may corrupt integrity; the same problem applies even more
+          strongly to legislative bodies deciding on classes that include their
+          own members.
+    - symbol: union_checks_faction
+      title: The Union checks faction
+      body: A well-constructed Union tends to break and control the violence of
+          faction, making it a safeguard against domestic faction and
+          insurrection.
+    - symbol: p1
+      title: Faction ruins popular government
+      body: Instability, injustice, and confusion are the mortal diseases under which
+          popular governments have perished, and faction drives those harms.
+    - symbol: faction_remedies
+      title: Faction has two remedies
+      body: The mischiefs of faction can be cured only by removing its causes or by
+          controlling its effects.
+    - symbol: liberty_cannot_be_abolished
+      title: Liberty cannot be removed
+      body: Destroying liberty would be a worse remedy than the disease, because
+          liberty is essential to political life even though it nourishes
+          faction.
+    - symbol: pure_democracy_unfits_faction
+      title: Pure democracy cannot cure faction
+      body: A pure democracy, with citizens assembling and governing in person, can
+          admit no cure for faction and is prone to turbulence, contention,
+          insecurity, and property violations.
+    - symbol: majority_faction_can_oppress
+      title: Majority factions can oppress
+      body: When a faction includes a majority, popular government can let it
+          sacrifice the public good and others’ rights to its ruling passion or
+          interest.
+    - symbol: republic_representation_cures
+      title: Republics can cure faction
+      body: A republic, which uses representation, offers a cure for faction that a
+          pure democracy lacks.
+    - symbol: property_divides_society
+      title: Property creates interests
+      body: Unequal distribution of property creates distinct interests and parties,
+          and regulating those interests is a principal task of modern
+          legislation.
+    - symbol: faction_arises_from_nature
+      title: Faction arises from human nature
+      body: The latent causes of faction are sown in human nature and are activated by
+          religion, politics, leadership rivalries, and unequal property.
+    - symbol: opinion_and_interest_diversity
+      title: Uniform opinion is impossible
+      body: It is impracticable to make every citizen hold the same opinions,
+          passions, and interests, because human reason is fallible and unequal
+          property interests arise naturally.
+    - symbol: union_superior_to_states
+      title: The Union outcontrols state factions
+      body: The Union’s greater size and structure make factious combinations harder
+          to form, coordinate, and spread than within the individual States.
+    - symbol: large_republic_advantage
+      title: Large republics control faction better
+      body: A large republic is more favorable than a small republic for choosing
+          proper representatives and for preventing oppressive faction because
+          it contains more interests, more candidates, and more obstacles to
+          conspiracy.
+    - symbol: faction_definition
+      title: Faction serves adverse interests
+      body: A faction is a group of citizens, majorities or minorities, united by
+          passion or interest adverse to the rights of others or the community’s
+          permanent aggregate interests.
+    - symbol: federal_compound_structure
+      title: The federal Constitution balances scale
+      body: The federal Constitution usefully divides authority by sending great and
+          aggregate interests to the national government and local and
+          particular interests to state legislatures.
+premises:
+    - title: If "Pure democracy cannot cure faction" then "Republics can cure faction"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: variable
+                symbol: pure_democracy_unfits_faction
+              - type: variable
+                symbol: republic_representation_cures
+    - title: If "The federal Constitution balances scale" and "Large republics control
+          faction better" then "The Union outcontrols state factions"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: federal_compound_structure
+                          - type: variable
+                            symbol: large_republic_advantage
+              - type: variable
+                symbol: union_superior_to_states
+    - title: If "Uniform opinion is impossible" then "Faction arises from human
+          nature"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: variable
+                symbol: opinion_and_interest_diversity
+              - type: variable
+                symbol: faction_arises_from_nature
+    - title: If "The Union checks faction" and "The Union outcontrols state factions"
+          then "The federal Constitution balances scale"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: union_checks_faction
+                          - type: variable
+                            symbol: union_superior_to_states
+              - type: variable
+                symbol: federal_compound_structure
+    - title: If "Faction serves adverse interests" then "Faction arises from human
+          nature"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: variable
+                symbol: faction_definition
+              - type: variable
+                symbol: faction_arises_from_nature
+    - title: The Union outcontrols state factions
+      role: conclusion
+      tree:
+          type: variable
+          symbol: union_superior_to_states
+    - title: If "Republics can cure faction" and "Large republics control faction
+          better" then "The Union outcontrols state factions"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: republic_representation_cures
+                          - type: variable
+                            symbol: large_republic_advantage
+              - type: variable
+                symbol: union_superior_to_states
+    - title: If "Self-interest biases judgment" and "Property creates interests" then
+          "Majority factions can oppress"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: self_interest_biases_judgment
+                          - type: variable
+                            symbol: property_divides_society
+              - type: variable
+                symbol: majority_faction_can_oppress
+    - title: If "Liberty cannot be removed" and "Faction has two remedies" then
+          "Republics can cure faction"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: liberty_cannot_be_abolished
+                          - type: variable
+                            symbol: faction_remedies
+              - type: variable
+                symbol: republic_representation_cures
+    - title: If "Majority factions can oppress" and "Faction ruins popular government"
+          then "The Union checks faction"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: formula
+                children:
+                    - type: operator
+                      operator: and
+                      children:
+                          - type: variable
+                            symbol: majority_faction_can_oppress
+                          - type: variable
+                            symbol: p1
+              - type: variable
+                symbol: union_checks_faction
+    - title: If "Faction arises from human nature" then "Faction has two remedies"
+      role: supporting
+      tree:
+          type: operator
+          operator: implies
+          children:
+              - type: variable
+                symbol: faction_arises_from_nature
+              - type: variable
+                symbol: faction_remedies
+documentCurationId: madison-01
+provenance:
+    provider: openai
+    model: null
+    pipeline: scribe
+    pipelineVersion: 1.0.0
+    mode: fast
+    runAt: 2026-07-08T19:49:12.907Z
+    sourceFile: 05-federalist-no-10.txt
+    sourcePath: examples/texts/05-federalist-no-10.txt
+    coreVersion: 2.4.3
+    sharedVersion: 0.35.0
+    serverVersion: 0.36.4

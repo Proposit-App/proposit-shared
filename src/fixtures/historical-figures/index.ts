@@ -102,4 +102,22 @@ export const historicalFigures: HistoricalFigure[] = [
         bio: "John Stuart Mill (1806–1873) was an English philosopher and political economist, a leading liberal thinker best known for his defense of individual liberty in On Liberty.",
         arguments: argumentsByFigureCurationId["historical-figures-mill"] ?? [],
     },
+    {
+        name: "James Madison",
+        username: "James Madison",
+        curationId: "historical-figures-madison",
+        imageFile: "james-madison.jpg",
+        bio: "James Madison (1751–1836) was an American statesman and political theorist, the fourth U.S. President and \"Father of the Constitution,\" who argued in Federalist No. 10 that a large republic best controls the violence of faction.",
+        arguments:
+            argumentsByFigureCurationId["historical-figures-madison"] ?? [],
+    },
+    {
+        name: "Peter Singer",
+        username: "Peter Singer",
+        curationId: "historical-figures-singer",
+        imageFile: "peter-singer.jpg",
+        bio: "Peter Singer (b. 1946) is an Australian moral philosopher and a leading figure in contemporary applied ethics, best known for his utilitarian arguments on global poverty and animal ethics.",
+        arguments:
+            argumentsByFigureCurationId["historical-figures-singer"] ?? [],
+    },
 ]
