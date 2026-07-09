@@ -2,5 +2,11 @@ slug: 2026-07-09-expose-profile-image-getreaction-on-the-api-surface
 title: Expose profile image + getReaction on the api surface
 phase: ''
 created: '2026-07-09'
-resolution: null
+resolution: done
 initiative: 2026-07-09-mobile-ui-ux-polish-pre-next-feature
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
