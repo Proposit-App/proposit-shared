@@ -7,8 +7,8 @@ import {
 } from "../historical-figures/index.js"
 
 describe("historicalFigures", () => {
-    test("has two figures", () => {
-        expect(historicalFigures).toHaveLength(2)
+    test("has four figures", () => {
+        expect(historicalFigures).toHaveLength(4)
     })
 
     test("contains no removed copyrighted figure", () => {
