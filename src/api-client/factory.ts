@@ -80,7 +80,9 @@ import {
 } from "./search.js"
 import { getUserClaimsImpl } from "./user/claims.js"
 import { deleteUserImpl } from "./user/delete-user.js"
+import { getCurrentUserImpl } from "./user/get-current-user.js"
 import { getUserCitationsImpl } from "./user/citations.js"
+import { modifyCurrentUserImpl } from "./user/modify-current-user.js"
 import {
     getTaskPipelineImpl,
     getTaskPipelineStagePayloadsImpl,
@@ -159,6 +161,8 @@ const impls = {
     searchUserEntities: searchUserEntitiesImpl,
     getUserClaims: getUserClaimsImpl,
     getUserCitations: getUserCitationsImpl,
+    getCurrentUser: getCurrentUserImpl,
+    modifyCurrentUser: modifyCurrentUserImpl,
     deleteUser: deleteUserImpl,
     getTaskPipeline: getTaskPipelineImpl,
     getTaskPipelineStagePayloads: getTaskPipelineStagePayloadsImpl,

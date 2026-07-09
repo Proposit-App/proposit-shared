@@ -141,6 +141,18 @@ export const GetUserUsageDataResponse = Type.Object({
 })
 export type TGetUserUsageDataResponse = Static<typeof GetUserUsageDataResponse>
 
+// Body for `GET /api/v1/user/me`. The usage/limits of the above, plus the
+// caller's own username and preferences — everything a profile/settings surface
+// needs from one read. `username` is nullable (a freshly-provisioned account may
+// not have chosen one yet).
+export const GetCurrentUserResponse = Type.Object({
+    usage: UserUsageDataSchema,
+    limits: UserTierLimitsSchema,
+    username: Nullable(Type.String()),
+    preferences: UserPreferencesSchema,
+})
+export type TGetCurrentUserResponse = Static<typeof GetCurrentUserResponse>
+
 export const RegistrationInvitationSchema = Type.Object({
     code: Type.String(),
     createdBy: UUID,
