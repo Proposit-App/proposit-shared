@@ -18,6 +18,7 @@ const SAMPLE_CURRENT_USER_JSON = {
         maxTokensPerMonth: 100000,
     },
     username: "alice",
+    image: "https://cdn.test/avatar.png",
     preferences: { advancedMode: false },
 }
 
@@ -48,6 +49,7 @@ describe("apiClient.getCurrentUser", () => {
         expect(result.ok).toBe(true)
         if (!result.ok) throw new Error("expected ok")
         expect(result.value.username).toBe("alice")
+        expect(result.value.image).toBe("https://cdn.test/avatar.png")
         expect(result.value.preferences.advancedMode).toBe(false)
         expect(result.value.usage.argumentCount).toBe(3)
         expect(result.value.limits.maxArguments).toBe(10)

@@ -38,7 +38,11 @@ import {
     getLatestClaimVersionImpl,
     advanceClaimReferenceImpl,
 } from "./argument/versioning.js"
-import { createReactionImpl, deleteReactionImpl } from "./argument/reactions.js"
+import {
+    createReactionImpl,
+    getReactionImpl,
+    deleteReactionImpl,
+} from "./argument/reactions.js"
 import {
     createClaimReactionImpl,
     deleteClaimReactionImpl,
@@ -127,6 +131,7 @@ const impls = {
     getLatestClaimVersion: getLatestClaimVersionImpl,
     advanceClaimReference: advanceClaimReferenceImpl,
     createReaction: createReactionImpl,
+    getReaction: getReactionImpl,
     deleteReaction: deleteReactionImpl,
     createClaimReaction: createClaimReactionImpl,
     deleteClaimReaction: deleteClaimReactionImpl,

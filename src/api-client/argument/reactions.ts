@@ -2,6 +2,7 @@ import {
     ReactionCreateRequest,
     ReactionCreateResponse,
     ReactionDeleteResponse,
+    ReactionGetResponse,
     type TReactionCreateRequest,
 } from "../../schemas/api/reaction/index.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
@@ -22,6 +23,21 @@ export async function createReactionImpl(
         ReactionCreateRequest,
         ReactionCreateResponse,
         config.fetchImpl
+    )
+}
+
+export async function getReactionImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/reactions`,
+            { method: "GET" }
+        ),
+        ReactionGetResponse
     )
 }
 

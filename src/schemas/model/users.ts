@@ -149,6 +149,7 @@ export const GetCurrentUserResponse = Type.Object({
     usage: UserUsageDataSchema,
     limits: UserTierLimitsSchema,
     username: Nullable(Type.String()),
+    image: Nullable(Type.String()),
     preferences: UserPreferencesSchema,
 })
 export type TGetCurrentUserResponse = Static<typeof GetCurrentUserResponse>
