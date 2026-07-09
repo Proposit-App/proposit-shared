@@ -107,7 +107,7 @@ export const historicalFigures: HistoricalFigure[] = [
         username: "James Madison",
         curationId: "historical-figures-madison",
         imageFile: "james-madison.jpg",
-        bio: "James Madison (1751–1836) was an American statesman and political theorist, the fourth U.S. President and \"Father of the Constitution,\" who argued in Federalist No. 10 that a large republic best controls the violence of faction.",
+        bio: 'James Madison (1751–1836) was an American statesman and political theorist, the fourth U.S. President and "Father of the Constitution," who argued in Federalist No. 10 that a large republic best controls the violence of faction.',
         arguments:
             argumentsByFigureCurationId["historical-figures-madison"] ?? [],
     },

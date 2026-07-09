@@ -14,11 +14,13 @@ claims:
           insurrection.
     - symbol: p1
       title: Faction ruins popular government
-      body: Instability, injustice, and confusion are the mortal diseases under which
+      body:
+          Instability, injustice, and confusion are the mortal diseases under which
           popular governments have perished, and faction drives those harms.
     - symbol: faction_remedies
       title: Faction has two remedies
-      body: The mischiefs of faction can be cured only by removing its causes or by
+      body:
+          The mischiefs of faction can be cured only by removing its causes or by
           controlling its effects.
     - symbol: liberty_cannot_be_abolished
       title: Liberty cannot be removed
@@ -27,7 +29,8 @@ claims:
           faction.
     - symbol: pure_democracy_unfits_faction
       title: Pure democracy cannot cure faction
-      body: A pure democracy, with citizens assembling and governing in person, can
+      body:
+          A pure democracy, with citizens assembling and governing in person, can
           admit no cure for faction and is prone to turbulence, contention,
           insecurity, and property violations.
     - symbol: majority_faction_can_oppress
@@ -37,16 +40,19 @@ claims:
           interest.
     - symbol: republic_representation_cures
       title: Republics can cure faction
-      body: A republic, which uses representation, offers a cure for faction that a
+      body:
+          A republic, which uses representation, offers a cure for faction that a
           pure democracy lacks.
     - symbol: property_divides_society
       title: Property creates interests
-      body: Unequal distribution of property creates distinct interests and parties,
+      body:
+          Unequal distribution of property creates distinct interests and parties,
           and regulating those interests is a principal task of modern
           legislation.
     - symbol: faction_arises_from_nature
       title: Faction arises from human nature
-      body: The latent causes of faction are sown in human nature and are activated by
+      body:
+          The latent causes of faction are sown in human nature and are activated by
           religion, politics, leadership rivalries, and unequal property.
     - symbol: opinion_and_interest_diversity
       title: Uniform opinion is impossible
@@ -55,22 +61,26 @@ claims:
           property interests arise naturally.
     - symbol: union_superior_to_states
       title: The Union outcontrols state factions
-      body: The Union’s greater size and structure make factious combinations harder
+      body:
+          The Union’s greater size and structure make factious combinations harder
           to form, coordinate, and spread than within the individual States.
     - symbol: large_republic_advantage
       title: Large republics control faction better
-      body: A large republic is more favorable than a small republic for choosing
+      body:
+          A large republic is more favorable than a small republic for choosing
           proper representatives and for preventing oppressive faction because
           it contains more interests, more candidates, and more obstacles to
           conspiracy.
     - symbol: faction_definition
       title: Faction serves adverse interests
-      body: A faction is a group of citizens, majorities or minorities, united by
+      body:
+          A faction is a group of citizens, majorities or minorities, united by
           passion or interest adverse to the rights of others or the community’s
           permanent aggregate interests.
     - symbol: federal_compound_structure
       title: The federal Constitution balances scale
-      body: The federal Constitution usefully divides authority by sending great and
+      body:
+          The federal Constitution usefully divides authority by sending great and
           aggregate interests to the national government and local and
           particular interests to state legislatures.
 premises:
@@ -84,7 +94,8 @@ premises:
                 symbol: pure_democracy_unfits_faction
               - type: variable
                 symbol: republic_representation_cures
-    - title: If "The federal Constitution balances scale" and "Large republics control
+    - title:
+          If "The federal Constitution balances scale" and "Large republics control
           faction better" then "The Union outcontrols state factions"
       role: supporting
       tree:
@@ -113,7 +124,8 @@ premises:
                 symbol: opinion_and_interest_diversity
               - type: variable
                 symbol: faction_arises_from_nature
-    - title: If "The Union checks faction" and "The Union outcontrols state factions"
+    - title:
+          If "The Union checks faction" and "The Union outcontrols state factions"
           then "The federal Constitution balances scale"
       role: supporting
       tree:
@@ -131,7 +143,8 @@ premises:
                             symbol: union_superior_to_states
               - type: variable
                 symbol: federal_compound_structure
-    - title: If "Faction serves adverse interests" then "Faction arises from human
+    - title:
+          If "Faction serves adverse interests" then "Faction arises from human
           nature"
       role: supporting
       tree:
@@ -147,7 +160,8 @@ premises:
       tree:
           type: variable
           symbol: union_superior_to_states
-    - title: If "Republics can cure faction" and "Large republics control faction
+    - title:
+          If "Republics can cure faction" and "Large republics control faction
           better" then "The Union outcontrols state factions"
       role: supporting
       tree:
@@ -165,7 +179,8 @@ premises:
                             symbol: large_republic_advantage
               - type: variable
                 symbol: union_superior_to_states
-    - title: If "Self-interest biases judgment" and "Property creates interests" then
+    - title:
+          If "Self-interest biases judgment" and "Property creates interests" then
           "Majority factions can oppress"
       role: supporting
       tree:
@@ -201,7 +216,8 @@ premises:
                             symbol: faction_remedies
               - type: variable
                 symbol: republic_representation_cures
-    - title: If "Majority factions can oppress" and "Faction ruins popular government"
+    - title:
+          If "Majority factions can oppress" and "Faction ruins popular government"
           then "The Union checks faction"
       role: supporting
       tree:
