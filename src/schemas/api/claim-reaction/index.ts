@@ -37,6 +37,14 @@ export const ClaimReactionDeleteResponse = Type.Object({
     removedReaction: ClaimReactionSchema,
 })
 
+// Bulk read for one argument version: every claim's public counts plus the
+// caller's own selection, keyed by `claimId`. Reuses the single-claim GET shape
+// as the map value.
+export const ClaimReactionMapResponse = Type.Record(
+    Type.String(),
+    ClaimReactionGetResponse
+)
+
 export type TClaimReactionCreateRequest = Static<
     typeof ClaimReactionCreateRequest
 >
@@ -53,3 +61,4 @@ export type TClaimReactionGetResponse = Static<typeof ClaimReactionGetResponse>
 export type TClaimReactionDeleteResponse = Static<
     typeof ClaimReactionDeleteResponse
 >
+export type TClaimReactionMapResponse = Static<typeof ClaimReactionMapResponse>

@@ -2,6 +2,8 @@ import {
     ClaimReactionCreateRequest,
     ClaimReactionCreateResponse,
     ClaimReactionDeleteResponse,
+    ClaimReactionGetResponse,
+    ClaimReactionMapResponse,
     type TClaimReactionCreateRequest,
 } from "../../schemas/api/claim-reaction/index.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
@@ -23,6 +25,37 @@ export async function createClaimReactionImpl(
         ClaimReactionCreateRequest,
         ClaimReactionCreateResponse,
         config.fetchImpl
+    )
+}
+
+export async function getClaimReactionImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number,
+    claimId: string
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claim/${claimId}/reactions`,
+            { method: "GET" }
+        ),
+        ClaimReactionGetResponse
+    )
+}
+
+export async function getClaimReactionMapImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/claim-reactions`,
+            { method: "GET" }
+        ),
+        ClaimReactionMapResponse
     )
 }
 
