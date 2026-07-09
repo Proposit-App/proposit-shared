@@ -40,6 +40,9 @@ Purely additive to `@proposit/shared`:
 
 **v0.36.0** (minor). `package.json` bumped, `docs/release-notes/v0.36.0.md` +
 `docs/changelogs/v0.36.0.md` written, `upcoming.md` working files left fresh,
-tag `v0.36.0` created locally. NOT published, NOT pushed — the human publish +
-consumer re-pin gate (orchestrator) completes this slice. `tcw work complete`
-intentionally NOT run.
+tag `v0.36.0` created.
+
+**Publish gate satisfied:** `@proposit/shared@0.36.0` published to npm, tag
+`v0.36.0` pushed, `origin/main` up to date. `proposit-server` re-pinned to
+`^0.36.0`. Mobile stays on `^0.35.0` — its re-pin rides epic slice ②
+(mobile claim-reaction stance UI), not this slice. Slice ① complete.
