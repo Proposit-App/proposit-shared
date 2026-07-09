@@ -3,5 +3,11 @@ title: 'Claim-reaction read methods: getClaimReaction + getClaimReactionMap + Cl
   schema'
 phase: ''
 created: '2026-07-09'
-resolution: null
+resolution: done
 initiative: 2026-07-09-claim-reaction-stance-ui-on-mobile-shared-read-methods-server-bulk-route-mobile-ui
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
