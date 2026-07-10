@@ -298,6 +298,115 @@ export function buildEngineWithTwoPremises(): PropositArgumentEngine {
 /** Alias used by later tasks. */
 export const buildEngine = buildEngineWithTwoPremises
 
+/**
+ * Builds an engine where one claim (`cShared`) is referenced by variables in
+ * two *different* premises — the supporting inference and the conclusion —
+ * so `buildClaimQueue` can be asserted to emit that claimId exactly once
+ * (dedupe delegated to core's `collectArgumentReferencedClaims`).
+ *
+ *   - Supporting premise `pSupportShared`: implies(S1, S2), S1 → cShared, S2 → cOther
+ *   - Conclusion premise `pConclusionShared`: implies(A, B),  A → cShared, B → cConcl
+ *
+ * Both variables that bind `cShared` use claimVersion 1, so the collector's
+ * same-claim-different-version guard stays silent. Expected claim queue
+ * (proof order, deduped): [cShared, cOther, cConcl].
+ */
+export function buildEngineWithClaimSharedAcrossPremises(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cShared", "Claim shared across premises"),
+        makeClaim("cOther", "Claim cOther"),
+        makeClaim("cConcl", "Claim cConcl"),
+    ]
+    const claimLookup = createClaimLookup(claims)
+
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+
+    engine.addVariable(makeVariable("vSup1", "S1", "cShared"))
+    engine.addVariable(makeVariable("vSup2", "S2", "cOther"))
+    engine.addVariable(makeVariable("vCon1", "A", "cShared"))
+    engine.addVariable(makeVariable("vCon2", "B", "cConcl"))
+
+    const supportId = "pSupportShared"
+    const { result: pSupport } = engine.createPremiseWithId(supportId, {
+        type: "freeform",
+        extras: {
+            title: "Supporting — S1 implies S2",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    const wireImplies = (
+        premise: typeof pSupport,
+        premiseId: string,
+        rootId: string,
+        leftVarId: string,
+        rightVarId: string
+    ): void => {
+        premise.addExpression({
+            id: rootId,
+            argumentId: ARGUMENT_ID,
+            argumentVersion: ARGUMENT_VERSION,
+            parentId: null,
+            premiseId,
+            position: 0,
+            type: "operator",
+            variableId: null,
+            operator: "implies",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        })
+        premise.addExpression({
+            id: `${rootId}-l`,
+            argumentId: ARGUMENT_ID,
+            argumentVersion: ARGUMENT_VERSION,
+            parentId: rootId,
+            premiseId,
+            position: 0,
+            type: "variable",
+            variableId: leftVarId,
+            operator: null,
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        })
+        premise.addExpression({
+            id: `${rootId}-r`,
+            argumentId: ARGUMENT_ID,
+            argumentVersion: ARGUMENT_VERSION,
+            parentId: rootId,
+            premiseId,
+            position: 1,
+            type: "variable",
+            variableId: rightVarId,
+            operator: null,
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        })
+    }
+    wireImplies(pSupport, supportId, "eSupShared", "vSup1", "vSup2")
+
+    const conclusionId = "pConclusionShared"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — A implies B",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    wireImplies(pConclusion, conclusionId, "eConShared", "vCon1", "vCon2")
+
+    engine.setConclusionPremise(conclusionId)
+    for (const c of claims) engine.setClaim(c)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
 function makeAxiomaticClaim(id: string, title: string): TAxiomaticClaim {
     return {
         id,

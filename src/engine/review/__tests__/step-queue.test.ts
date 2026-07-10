@@ -5,12 +5,42 @@ import {
     advanceQueue,
     type TStepQueue,
 } from "../../review/step-queue.js"
-import { buildEngineWithTwoPremises } from "./fixtures.js"
+import {
+    buildEngineWithTwoPremises,
+    buildEngineWithClaimSharedAcrossPremises,
+} from "./fixtures.js"
 
 describe("step-queue", () => {
     it("buildClaimQueue yields supporting-first, conclusion-last claim IDs", () => {
         const engine = buildEngineWithTwoPremises()
         expect(buildClaimQueue(engine)).toEqual(["sA", "cA", "cB"])
+    })
+
+    it("buildClaimQueue emits a claim referenced across multiple premises exactly once, in proof order", () => {
+        // cShared is bound by a variable in the supporting premise AND a
+        // variable in the conclusion premise. Core's dedupe must fold both
+        // references into a single first-appearance entry.
+        const engine = buildEngineWithClaimSharedAcrossPremises()
+        const queue = buildClaimQueue(engine)
+        expect(queue).toEqual(["cShared", "cOther", "cConcl"])
+        expect(queue.filter((id) => id === "cShared")).toHaveLength(1)
+    })
+
+    it("buildClaimQueue excludes null-claimId (premise-bound derivation) rows", () => {
+        // The engine synthesizes premise-bound derivation-consequent variables
+        // (no claimId) for every non-conclusion normal claim. The queue must
+        // carry only genuine claim-bound references, never those wrapper rows.
+        const engine = buildEngineWithTwoPremises()
+        const nullClaimVarCount = engine
+            .getVariables()
+            .filter((v) => !("claimId" in v)).length
+        expect(nullClaimVarCount).toBeGreaterThan(0)
+        const queue = buildClaimQueue(engine)
+        // Every queued id is a real claim on the engine — no synthesized rows.
+        for (const id of queue) {
+            expect(engine.getProjectClaim(id)).toBeDefined()
+        }
+        expect(queue).toEqual(["sA", "cA", "cB"])
     })
 
     it("buildOperatorQueue returns premises that have at least one decidable operator", () => {
