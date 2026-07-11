@@ -2,5 +2,11 @@ slug: 2026-07-11-build-the-master-product-capability-layer
 title: Build the master product-capability layer
 phase: ''
 created: '2026-07-11'
-resolution: null
+resolution: done
 initiative: 2026-07-11-federate-a-master-capability-layer-in-proposit-shared
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
