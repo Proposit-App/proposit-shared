@@ -1,0 +1,5 @@
+id: cap-0057e5
+name: Re-authenticate silently when the session expires
+Status: Missing
+Planning doc: 2026-07-11-build-the-master-product-capability-layer
+Feature: authentication

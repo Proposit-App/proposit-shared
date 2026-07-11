@@ -1,0 +1,1 @@
+Walk through an argument one claim at a time and record a verdict on each — true, false, unknown, or skip — optionally with a reason, building up your review as you advance. Claims are presented in proof order and deduplicated so a shared claim is reviewed once.

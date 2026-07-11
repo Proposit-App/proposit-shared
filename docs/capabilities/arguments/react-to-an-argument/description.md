@@ -1,0 +1,1 @@
+Attach an upvote or downvote to an argument as a whole; your reaction is saved and reflected in the argument's counts for everyone. You can switch or remove it, and publishing an argument records your own upvote automatically.
