@@ -88,9 +88,9 @@ describe("composeArgumentDiff", () => {
             type: "freeform",
         }
         // Control: the raw core premise is NOT valid on its own (role required).
-        expect(Value.Check(PropositionalPremiseSchema, coreModifiedPremise)).toBe(
-            false
-        )
+        expect(
+            Value.Check(PropositionalPremiseSchema, coreModifiedPremise)
+        ).toBe(false)
 
         const appPremise = { ...coreModifiedPremise, role: "supporting" }
         const coreWithModified = {

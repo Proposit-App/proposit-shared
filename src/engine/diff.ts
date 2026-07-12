@@ -8,7 +8,7 @@ import type {
     TPropositionalExpressionCombined,
 } from "../schemas/logic.js"
 
-export interface ComposeArgumentDiffInput {
+export interface TComposeArgumentDiffInput {
     coreDiff: TCoreArgumentDiff<
         TArgument,
         TPropositionalVariable,
@@ -41,7 +41,7 @@ export interface ComposeArgumentDiffInput {
  * the entity arrays the caller supplies (the caller owns data access).
  */
 export function composeArgumentDiff(
-    input: ComposeArgumentDiffInput
+    input: TComposeArgumentDiffInput
 ): TArgumentDiff {
     const { coreDiff, derivationPremiseIds } = input
 
@@ -67,7 +67,11 @@ export function composeArgumentDiff(
                 before,
                 after,
                 changes: [
-                    { field: "digest", before: before.digest, after: after.digest },
+                    {
+                        field: "digest",
+                        before: before.digest,
+                        after: after.digest,
+                    },
                 ],
                 state: "modified-own",
             })
@@ -88,7 +92,8 @@ export function composeArgumentDiff(
     const changedCitationClaimIds = new Set<string>()
     for (const c of citations.added) changedCitationClaimIds.add(c.claimId)
     for (const c of citations.removed) changedCitationClaimIds.add(c.claimId)
-    for (const m of citations.modified) changedCitationClaimIds.add(m.after.claimId)
+    for (const m of citations.modified)
+        changedCitationClaimIds.add(m.after.claimId)
     const citesModifiedOwnClaim = new Set<string>()
     for (const cite of input.citationsAfter) {
         if (ownModifiedClaimIds.has(cite.supportingClaimId)) {
@@ -134,18 +139,14 @@ export function composeArgumentDiff(
         ),
     })
 
-    type ModifiedPremise = TArgumentDiff["premises"]["modified"][number]
+    type TModifiedPremise = TArgumentDiff["premises"]["modified"][number]
     const premises: TArgumentDiff["premises"] = {
         added: coreDiff.premises.added
             .filter(keepPremise)
-            .map(
-                (p) => afterPremiseById.get(p.id) ?? p
-            ) as TArgumentDiff["premises"]["added"],
+            .map((p) => afterPremiseById.get(p.id) ?? p),
         removed: coreDiff.premises.removed
             .filter(keepPremise)
-            .map(
-                (p) => beforePremiseById.get(p.id) ?? p
-            ) as TArgumentDiff["premises"]["removed"],
+            .map((p) => beforePremiseById.get(p.id) ?? p),
         modified: coreDiff.premises.modified
             .filter((m) => keepPremise(m.after))
             .map(
@@ -156,7 +157,7 @@ export function composeArgumentDiff(
                         changes: m.changes,
                         state: m.state,
                         expressions: keepExprSet(m.expressions),
-                    }) as ModifiedPremise
+                    }) as TModifiedPremise
             ),
     }
 
@@ -166,8 +167,7 @@ export function composeArgumentDiff(
             removed: claimsRemoved,
             modified: claimsModified,
         },
-        variables:
-            coreDiff.variables as unknown as TArgumentDiff["variables"],
+        variables: coreDiff.variables as unknown as TArgumentDiff["variables"],
         premises,
         citations,
         roles: {
@@ -188,7 +188,7 @@ export function composeArgumentDiff(
 const citationKey = (c: TClaimCitation) => `${c.claimId}:${c.supportingClaimId}`
 
 function composeCitations(
-    input: ComposeArgumentDiffInput
+    input: TComposeArgumentDiffInput
 ): TArgumentDiff["citations"] {
     const beforeByKey = new Map(
         input.citationsBefore.map((c) => [citationKey(c), c])
