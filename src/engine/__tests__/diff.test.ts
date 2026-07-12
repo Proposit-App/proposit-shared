@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest"
 import { Value } from "typebox/value"
 import { composeArgumentDiff } from "../diff.js"
-import { PropositionalPremiseSchema } from "../../schemas/logic.js"
+import {
+    PropositionalPremiseSchema,
+    PropositionalVariableSchema,
+} from "../../schemas/logic.js"
 import type { TClaimCitation } from "../../schemas/model/citations.js"
 
 // minimal TCoreArgumentDiff-shaped fixture (unchanged structural diff)
@@ -130,6 +133,79 @@ describe("composeArgumentDiff", () => {
             Value.Check(
                 PropositionalPremiseSchema,
                 out.premises.modified[0].before
+            )
+        ).toBe(true)
+    })
+
+    it("throws when a core-referenced premise is missing from the supplied arrays", () => {
+        const coreWithAdded = {
+            ...emptyCore,
+            premises: {
+                added: [{ id: "pX", type: "freeform" }],
+                removed: [],
+                modified: [],
+            },
+        }
+        expect(() =>
+            composeArgumentDiff({
+                coreDiff: coreWithAdded as never,
+                claimsBefore: [],
+                claimsAfter: [],
+                citationsBefore: [],
+                citationsAfter: [],
+                derivationPremiseIds: new Set(),
+                premisesBefore: [],
+                premisesAfter: [], // pX absent — must fail loud, not emit invalid output
+            })
+        ).toThrow(/pX/)
+    })
+
+    it("passes core variables through as schema-valid app-level variables", () => {
+        // Unlike premises (core strips `role`), the engine returns stored
+        // variable objects whole — so a caller supplying app-level variables
+        // yields a schema-valid composed `variables` with no re-sourcing.
+        const appVariable = {
+            id: "v1",
+            argumentId: "a1",
+            argumentVersion: 1,
+            symbol: "P",
+            checksum: "cs",
+            claimId: "cl1",
+            claimVersion: 0,
+            createdOn: new Date(),
+            creatorId: "u1",
+            descendantChecksum: null,
+            combinedChecksum: "cs",
+        }
+        const coreWithVar = {
+            ...emptyCore,
+            variables: {
+                added: [],
+                removed: [],
+                modified: [
+                    {
+                        before: appVariable,
+                        after: appVariable,
+                        changes: [{ field: "symbol", before: "P", after: "P" }],
+                        state: "modified-own",
+                    },
+                ],
+            },
+        }
+        const out = composeArgumentDiff({
+            coreDiff: coreWithVar as never,
+            claimsBefore: [],
+            claimsAfter: [],
+            citationsBefore: [],
+            citationsAfter: [],
+            derivationPremiseIds: new Set(),
+            premisesBefore: [],
+            premisesAfter: [],
+        })
+        expect(
+            Value.Check(
+                PropositionalVariableSchema,
+                out.variables.modified[0].after
             )
         ).toBe(true)
     })

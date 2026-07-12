@@ -122,6 +122,23 @@ export function composeArgumentDiff(
         input.premisesBefore.map((p) => [p.id, p])
     )
     const afterPremiseById = new Map(input.premisesAfter.map((p) => [p.id, p]))
+    // Core's diff premise objects lack `role`; the full app-level premise must
+    // be re-sourced from the caller's arrays. A missing id means the caller's
+    // premise arrays disagree with the core diff — fail loud rather than emit a
+    // schema-invalid identity-only premise onto the wire.
+    const requirePremise = (
+        byId: ReadonlyMap<string, TPropositionalPremise>,
+        id: string,
+        source: "premisesBefore" | "premisesAfter"
+    ): TPropositionalPremise => {
+        const premise = byId.get(id)
+        if (!premise) {
+            throw new Error(
+                `composeArgumentDiff: premise "${id}" from the core diff is missing from ${source}`
+            )
+        }
+        return premise
+    }
     const keepPremise = (p: { id: string }) => !derivationPremiseIds.has(p.id)
     const keepExprSet = <E extends { premiseId?: string }>(set: {
         added: E[]
@@ -143,17 +160,29 @@ export function composeArgumentDiff(
     const premises: TArgumentDiff["premises"] = {
         added: coreDiff.premises.added
             .filter(keepPremise)
-            .map((p) => afterPremiseById.get(p.id) ?? p),
+            .map((p) =>
+                requirePremise(afterPremiseById, p.id, "premisesAfter")
+            ),
         removed: coreDiff.premises.removed
             .filter(keepPremise)
-            .map((p) => beforePremiseById.get(p.id) ?? p),
+            .map((p) =>
+                requirePremise(beforePremiseById, p.id, "premisesBefore")
+            ),
         modified: coreDiff.premises.modified
             .filter((m) => keepPremise(m.after))
             .map(
                 (m) =>
                     ({
-                        before: beforePremiseById.get(m.before.id) ?? m.before,
-                        after: afterPremiseById.get(m.after.id) ?? m.after,
+                        before: requirePremise(
+                            beforePremiseById,
+                            m.before.id,
+                            "premisesBefore"
+                        ),
+                        after: requirePremise(
+                            afterPremiseById,
+                            m.after.id,
+                            "premisesAfter"
+                        ),
                         changes: m.changes,
                         state: m.state,
                         expressions: keepExprSet(m.expressions),
