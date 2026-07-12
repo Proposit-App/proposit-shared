@@ -19,8 +19,8 @@ importers:
         specifier: ^9.39.4
         version: 9.39.4
       '@proposit/proposit-core':
-        specifier: ^2.3.1
-        version: 2.4.1
+        specifier: ^2.5.0
+        version: 2.5.0
       '@types/node':
         specifier: ^25.5.2
         version: 25.6.0
@@ -356,8 +356,8 @@ packages:
   '@oxc-project/types@0.126.0':
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
-  '@proposit/proposit-core@2.4.1':
-    resolution: {integrity: sha512-Zw203tXt0f9qHwZqs1HjOh6vBuhwq0S3lB8tZo11S/FQVr5e1v1UANrwDo6Yi2fu21Ww2nXoYJzWqoxoaOPG7g==}
+  '@proposit/proposit-core@2.5.0':
+    resolution: {integrity: sha512-A+U+Ah66nZSI0n46lh1eZjQfRn5pZjS/lB7G9oFrJjirOL/cMFAJ/PIZknMtQxWzAjJwM/Y8IhESH9Kmx3jdxQ==}
     engines: {node: '>=22.3.0'}
     hasBin: true
     peerDependencies:
@@ -1534,7 +1534,7 @@ snapshots:
 
   '@oxc-project/types@0.126.0': {}
 
-  '@proposit/proposit-core@2.4.1':
+  '@proposit/proposit-core@2.5.0':
     dependencies:
       commander: 14.0.3
       typebox: 1.1.28
