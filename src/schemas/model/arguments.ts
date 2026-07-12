@@ -1,4 +1,4 @@
-import Type, { type Static } from "typebox"
+import Type, { type Static, type TSchema } from "typebox"
 import { CoreArgumentSchema } from "@proposit/proposit-core"
 import {
     ArgumentPlatform,
@@ -70,33 +70,63 @@ export const ReactionSchema = Type.Object({
 export type TReaction = Static<typeof ReactionSchema>
 export type TReactionSafe = Omit<TReaction, "userId" | "createdOn">
 
+// The two states a matched (non-added, non-removed) entity can occupy. Mirrors
+// core's `TCoreEntityFieldDiff.state`: `modified-own` — the entity's own fields
+// changed; `modified-within` — own fields unchanged, but a contained child or a
+// referenced entity changed. `added`/`removed` are carried by array membership,
+// never stored on a record.
+export const DiffStateSchema = Type.Union([
+    Type.Literal("modified-own"),
+    Type.Literal("modified-within"),
+])
+export type TDiffState = Static<typeof DiffStateSchema>
+
+// A single field-level change on a matched entity.
+export const FieldChangeSchema = Type.Object({
+    field: Type.String(),
+    before: Type.Unknown(),
+    after: Type.Unknown(),
+})
+
+// Field-level diff for one matched entity: both sides, the field changes, and
+// which of the two matched states it is in.
+export const entityFieldDiff = <T extends TSchema>(schema: T) =>
+    Type.Object({
+        before: schema,
+        after: schema,
+        changes: Type.Array(FieldChangeSchema),
+        state: DiffStateSchema,
+    })
+
+// Set-level diff for a collection of id-keyed entities.
+export const entitySetDiff = <T extends TSchema>(schema: T) =>
+    Type.Object({
+        added: Type.Array(schema),
+        removed: Type.Array(schema),
+        modified: Type.Array(entityFieldDiff(schema)),
+    })
+
 export const ArgumentDiffSchema = Type.Object({
-    claims: Type.Object({
-        added: Type.Array(ClaimSchema),
-        removed: Type.Array(ClaimSchema),
-        updated: Type.Array(ClaimSchema),
+    claims: entitySetDiff(ClaimSchema),
+    variables: entitySetDiff(PropositionalVariableSchema),
+    premises: Type.Object({
+        added: Type.Array(PropositionalPremiseSchema),
+        removed: Type.Array(PropositionalPremiseSchema),
+        modified: Type.Array(
+            Type.Intersect([
+                entityFieldDiff(PropositionalPremiseSchema),
+                Type.Object({
+                    expressions: entitySetDiff(PropositionalExpressionSchema),
+                }),
+            ])
+        ),
     }),
-    propositionalLogic: Type.Object({
-        variables: Type.Object({
-            added: Type.Array(PropositionalVariableSchema),
-            removed: Type.Array(PropositionalVariableSchema),
-            updated: Type.Array(PropositionalVariableSchema, {
-                description:
-                    "Variables can have the symbol changed which is the only type of update allowed",
-            }),
+    citations: entitySetDiff(ClaimCitationSchema),
+    roles: Type.Object({
+        conclusion: Type.Object({
+            before: Nullable(UUID),
+            after: Nullable(UUID),
         }),
-        expressions: Type.Object({
-            added: Type.Array(PropositionalExpressionSchema),
-            removed: Type.Array(PropositionalExpressionSchema),
-        }),
-        premises: Type.Object({
-            added: Type.Array(PropositionalPremiseSchema),
-            removed: Type.Array(PropositionalPremiseSchema),
-        }),
-    }),
-    citations: Type.Object({
-        added: Type.Array(ClaimCitationSchema),
-        removed: Type.Array(ClaimCitationSchema),
     }),
 })
 export type TArgumentDiff = Static<typeof ArgumentDiffSchema>
