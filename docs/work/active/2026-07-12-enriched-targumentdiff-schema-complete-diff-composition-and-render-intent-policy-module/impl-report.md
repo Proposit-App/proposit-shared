@@ -28,5 +28,14 @@
 
 - Runtime-agnostic: no `react`/`next`/`expo`/DB/DOM/`console` in `src/`; inputs are plain arrays/maps the caller supplies.
 - Public engine type names carry the repo's ESLint-enforced `T` prefix: `TComposeArgumentDiffInput`, `TDiffCue`, `TDiffRenderMaps` (the plan/spec wrote `ComposeArgumentDiffInput`/`DiffCue`/`DiffRenderMaps`; the lint rule governs). Function names `composeArgumentDiff`/`buildDiffRenderMaps` and the `DiffState`/`entitySetDiff` schema exports match the plan.
-- Task 6 (docs-sync + version cut) intentionally NOT done — no changelog/release-notes/version edits, no publish (handled separately).
 - No planning-language in shipped code/comments/test titles.
+
+## Finalize round (post-review)
+
+Commit `95109c8` (items 1–2) + the docs commit below. `pnpm run check` exits 0 (696 tests).
+
+1. **Premise fallback hardened.** The silent `?? m.before`/`?? m.after` (and added/removed) fallbacks that emitted an identity-only, schema-invalid premise on a missing id are replaced by `requirePremise`, which throws naming the missing id and the array it should be in (`premisesBefore`/`premisesAfter`). Derivation premises are filtered before the lookup, so they never trigger it. Test: `throws when a core-referenced premise is missing from the supplied arrays` (asserts `toThrow(/pX/)`).
+
+2. **Variable passthrough — NO FIX NEEDED (confirmed).** Root cause of the premise bug is core's `PremiseEngine.toPremiseData()` narrowing to the core premise type (`role` is not a core field). Variables do not have this problem: `PremiseEngine.getVariables()` returns `sortedCopyById(this.variables.toArray())` — copies of the stored variable objects, app-level fields intact — and the existing server passes `coreDiff.variables` straight to the wire in production. Added one confirming test: `passes core variables through as schema-valid app-level variables` (feeds an app-level `PropositionalVariable` through `coreDiff.variables.modified` and asserts the composed `.after` passes `Value.Check(PropositionalVariableSchema, …)`). The composition does not touch variable objects, so validity is the caller's responsibility, same as expressions.
+
+3. **Documentation sync done.** `docs/changelogs/upcoming.md` — developer entry for the enriched `TArgumentDiff`, `composeArgumentDiff`, `buildDiffRenderMaps`, and the core `^2.5.0` bump, with commit range `8adea7d..95109c8`. `docs/release-notes/upcoming.md` — user-facing note (in-place edits, conclusion reassignment, and citation version changes now render; two shared engine modules). No public-API reference doc exists in this repo (README "What's in it" is a coarse sub-entry list, already stale, and does not enumerate functions/schemas), and `package.json` `exports` already covers `./engine/*` via wildcard — so nothing else to update. No version bump / publish.
