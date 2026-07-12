@@ -179,9 +179,56 @@ export function composeArgumentDiff(
     }
 }
 
-// Placeholder citation diff — replaced by the endpoint-pair implementation.
+// A citation is a directional support edge; its identity is the endpoint pair
+// (claimId, supportingClaimId). The row id is minted fresh when an edge is
+// carried across versions/forks, and the checksum is the edge's content — so
+// neither can serve as identity. A matched edge whose supporting-referent pin
+// or checksum moved reflects that a referenced claim advanced: modified-within,
+// never modified-own (changing an endpoint is a different edge).
+const citationKey = (c: TClaimCitation) => `${c.claimId}:${c.supportingClaimId}`
+
 function composeCitations(
-    _input: ComposeArgumentDiffInput
+    input: ComposeArgumentDiffInput
 ): TArgumentDiff["citations"] {
-    return { added: [], removed: [], modified: [] }
+    const beforeByKey = new Map(
+        input.citationsBefore.map((c) => [citationKey(c), c])
+    )
+    const matched = new Set<string>()
+    const added: TClaimCitation[] = []
+    const modified: TArgumentDiff["citations"]["modified"] = []
+
+    for (const after of input.citationsAfter) {
+        const key = citationKey(after)
+        const before = beforeByKey.get(key)
+        if (!before) {
+            added.push(after)
+            continue
+        }
+        matched.add(key)
+        const changes = citationReferentChanges(before, after)
+        if (changes.length > 0) {
+            modified.push({ before, after, changes, state: "modified-within" })
+        }
+    }
+    const removed = input.citationsBefore.filter(
+        (c) => !matched.has(citationKey(c))
+    )
+    return { added, removed, modified }
+}
+
+// Only the supporting referent's own signals count. The citing side's
+// `claimVersion` is the citing claim's head version — a bump there is that
+// claim's own edit, not a change to what it references, and must not flip the
+// edge to `modified-within`.
+function citationReferentChanges(
+    before: TClaimCitation,
+    after: TClaimCitation
+) {
+    const changes: { field: string; before: unknown; after: unknown }[] = []
+    for (const field of ["supportingClaimVersion", "checksum"] as const) {
+        if (before[field] !== after[field]) {
+            changes.push({ field, before: before[field], after: after[field] })
+        }
+    }
+    return changes
 }

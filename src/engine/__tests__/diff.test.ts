@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest"
 import { Value } from "typebox/value"
 import { composeArgumentDiff } from "../diff.js"
 import { PropositionalPremiseSchema } from "../../schemas/logic.js"
+import type { TClaimCitation } from "../../schemas/model/citations.js"
 
 // minimal TCoreArgumentDiff-shaped fixture (unchanged structural diff)
 const emptyCore = {
@@ -131,5 +132,111 @@ describe("composeArgumentDiff", () => {
                 out.premises.modified[0].before
             )
         ).toBe(true)
+    })
+})
+
+const cite = (
+    claimId: string,
+    supportingClaimId: string,
+    supportingClaimVersion: number,
+    checksum = "k",
+    claimVersion = 0
+): TClaimCitation =>
+    ({
+        id: `row-${Math.random()}`, // deliberately unstable — must NOT be identity
+        claimId,
+        claimVersion,
+        supportingClaimId,
+        supportingClaimVersion,
+        checksum,
+        argumentId: "a1",
+        createdOn: new Date().toISOString(),
+    }) as unknown as TClaimCitation
+
+const citationBase = {
+    coreDiff: {
+        argument: {
+            before: {},
+            after: {},
+            changes: [],
+            state: "modified-within",
+        },
+        variables: { added: [], removed: [], modified: [] },
+        premises: { added: [], removed: [], modified: [] },
+        roles: { conclusion: { before: null, after: null } },
+    } as never,
+    claimsBefore: [],
+    claimsAfter: [],
+    derivationPremiseIds: new Set<string>(),
+    premisesBefore: [],
+    premisesAfter: [],
+}
+
+describe("composeArgumentDiff — citations", () => {
+    it("new endpoint pair is added; dropped pair is removed", () => {
+        const out = composeArgumentDiff({
+            ...citationBase,
+            citationsBefore: [cite("c1", "s1", 0)],
+            citationsAfter: [cite("c1", "s2", 0)],
+        })
+        expect(out.citations.added.map((c) => c.supportingClaimId)).toEqual([
+            "s2",
+        ])
+        expect(out.citations.removed.map((c) => c.supportingClaimId)).toEqual([
+            "s1",
+        ])
+        expect(out.citations.modified).toEqual([])
+    })
+
+    it("same endpoint pair with a bumped supporting version is modified-within", () => {
+        const out = composeArgumentDiff({
+            ...citationBase,
+            citationsBefore: [cite("c1", "s1", 0)],
+            citationsAfter: [cite("c1", "s1", 1)],
+        })
+        expect(out.citations.added).toEqual([])
+        expect(out.citations.removed).toEqual([])
+        expect(out.citations.modified).toHaveLength(1)
+        expect(out.citations.modified[0].state).toBe("modified-within")
+        expect(out.citations.modified[0].after.supportingClaimVersion).toBe(1)
+    })
+
+    it("a citing-side claimVersion bump alone is NOT a citation change", () => {
+        // Only the referent's own change (supportingClaimVersion / checksum)
+        // propagates. The citing claim's own head-bump must not flip its edges.
+        const out = composeArgumentDiff({
+            ...citationBase,
+            citationsBefore: [cite("c1", "s1", 0, "same", 0)],
+            citationsAfter: [cite("c1", "s1", 0, "same", 5)],
+        })
+        expect(out.citations).toEqual({ added: [], removed: [], modified: [] })
+    })
+
+    it("identical citation sets produce no citation diff (stability)", () => {
+        const out = composeArgumentDiff({
+            ...citationBase,
+            citationsBefore: [cite("c1", "s1", 0, "same")],
+            citationsAfter: [cite("c1", "s1", 0, "same")],
+        })
+        expect(out.citations).toEqual({ added: [], removed: [], modified: [] })
+    })
+
+    it("a claim citing an edited claim is modified-within", () => {
+        const c1Before = claim("c1", "d")
+        const c1After = claim("c1", "d") // c1's own content is unchanged
+        const s1Before = claim("s1", "OLD")
+        const s1After = claim("s1", "NEW") // the cited claim was edited
+        const out = composeArgumentDiff({
+            ...citationBase,
+            claimsBefore: [c1Before, s1Before],
+            claimsAfter: [c1After, s1After],
+            // c1 cites s1; the pin advances as s1 edits
+            citationsBefore: [cite("c1", "s1", 0)],
+            citationsAfter: [cite("c1", "s1", 1)],
+        })
+        const s1 = out.claims.modified.find((m) => m.after.id === "s1")
+        const c1 = out.claims.modified.find((m) => m.after.id === "c1")
+        expect(s1?.state).toBe("modified-own")
+        expect(c1?.state).toBe("modified-within")
     })
 })
