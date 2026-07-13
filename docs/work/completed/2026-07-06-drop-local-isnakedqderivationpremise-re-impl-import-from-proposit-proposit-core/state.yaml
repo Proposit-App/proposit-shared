@@ -2,4 +2,10 @@ slug: 2026-07-06-drop-local-isnakedqderivationpremise-re-impl-import-from-propos
 title: Drop local isNakedQDerivationPremise re-impl; import from @proposit/proposit-core
 phase: ''
 created: '2026-07-06'
-resolution: null
+resolution: done
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
