@@ -2,8 +2,14 @@ slug: 2026-07-08-lift-ai-quota-exhausted-breaker-code-into-proposit-shared
 title: Lift AI_QUOTA_EXHAUSTED breaker code into @proposit/shared
 phase: ''
 created: '2026-07-08'
-resolution: null
+resolution: done
 priority: 4
 effort: low
 complexity: low
 initiative: 2026-07-10-lift-ai-quota-exhausted-breaker-code-into-proposit-shared-and-adopt-in-consumers
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
