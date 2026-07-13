@@ -1,5 +1,6 @@
 import {
     canonicalizeOperatorAssignments,
+    isNakedQDerivationPremise,
     type TArgumentEvaluationContext,
     type TCoreArgumentEvaluationResult,
     type TCoreExpressionAssignment,
@@ -10,36 +11,6 @@ import {
 } from "@proposit/proposit-core"
 import type { ProjectEngine } from "../mutations/types.js"
 import type { TReviewDraft } from "../../schemas/review.js"
-
-/**
- * Returns true iff `pe` is a derivation-typed premise whose expression tree
- * is in naked-Q form (root is a single variable expression).
- *
- * Mirrors `@proposit/proposit-core`'s internal `isNakedQDerivationPremise`
- * (in `src/lib/grammar/naked-q.ts`) — which the core uses to filter naked-Q
- * scaffold premises out of `ArgumentEngine.asEvaluationContext()`'s premise
- * listings. Core does not re-export the predicate from its public surface,
- * so we re-implement it here against the public PremiseEngine API
- * (`toPremiseData`, `getExpressions`, `getRootExpression`).
- *
- * Used by `toEvaluationContext` so the review path's premise listings mirror
- * the engine's evaluation context. The shared review evaluation path
- * (`evaluateArgumentForReview`, `checkValidityForReview`) routes through
- * `argEngine.evaluate(...)` / `argEngine.checkValidity(...)` directly so the
- * engine's internal axiom-forcing pre-pass + naked-Q filter both fire; this
- * predicate is only used by `canonicalizeOperatorAssignments`'s
- * premise-scope fan-out via `toEvaluationContext`.
- */
-function isNakedQDerivationPremise(
-    pe: NonNullable<ReturnType<ProjectEngine["getPremise"]>>
-): boolean {
-    if (pe.toPremiseData().type !== "derivation") return false
-    const exprs = pe.getExpressions()
-    if (exprs.length !== 1) return false
-    const root = pe.getRootExpression()
-    if (root === undefined) return false
-    return root.type === "variable"
-}
 
 /**
  * Build a read-only TArgumentEvaluationContext from a ProjectEngine.
