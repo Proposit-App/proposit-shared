@@ -2,7 +2,13 @@ slug: 2026-07-13-add-status-filter-param-to-getallarguments-getallargumentsparam
 title: Add status filter param to getAllArguments (GetAllArgumentsParams + query threading)
 phase: ''
 created: '2026-07-13'
-resolution: null
+resolution: done
 effort: low
 complexity: low
 initiative: 2026-07-12-server-side-status-attribute-filtering-for-the-argument-catalog-getallarguments
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
