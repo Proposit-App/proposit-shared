@@ -1,0 +1,11 @@
+slug: 2026-07-13-loosen-wire-claim-reasoncode-read-schema-to-tolerate-out-of-union-codes
+title: Loosen wire claim reasonCode read schema to tolerate out-of-union codes
+phase: ''
+created: '2026-07-13'
+resolution: done
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
