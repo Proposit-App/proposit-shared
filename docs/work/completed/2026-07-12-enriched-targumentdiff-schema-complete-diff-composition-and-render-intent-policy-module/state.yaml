@@ -3,7 +3,13 @@ title: Enriched TArgumentDiff schema, complete-diff composition, and render-inte
   policy module
 phase: ''
 created: '2026-07-12'
-resolution: null
+resolution: done
 effort: high
 complexity: high
 initiative: 2026-07-12-argument-diff-unified-modification-semantics-cross-repo
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
