@@ -26,3 +26,11 @@ has fallen out of the closed reason-code union: instead of failing the response
 (or dropping the field), such a value is carried through as a raw string. Writes
 are unchanged — creating a reaction still requires a known reason code. For
 consumers, the read `reasonCode` type widens to `string`.
+
+## Search response can signal the literal-match fallback
+
+`EntitySearchResponseSchema` gains an optional `searchMode`
+(`"embedding" | "string"`) so the server can signal when results came from the
+SQL literal-match fallback rather than the embedding path. Additive and
+back-compatible — omitting it is unchanged, and an older field-less server (or a
+client reading one) still validates.

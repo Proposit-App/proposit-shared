@@ -11,6 +11,13 @@
 - `getAllArguments` catalog list params gained an optional `status` filter
   (`"unpublished" | "published" | "archived"`), serialized into the request
   query string. Fully back-compatible: omitting it preserves current behavior.
+- `EntitySearchResponseSchema` gains an optional `searchMode`
+  (`Type.Union([Type.Literal("embedding"), Type.Literal("string")])`) so the
+  server can signal when results came from the SQL literal-match fallback
+  (`"string"`) versus the embedding path (`"embedding"`). Additive/back-compat:
+  omitting it is unchanged, and an older field-less server (or a client reading
+  one) still validates. `ClaimSearchResponseSchema` /
+  `CitationSearchResponseSchema` are untouched.
 
 ## Changed
 
