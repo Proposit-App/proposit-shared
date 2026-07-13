@@ -94,6 +94,12 @@ import {
 import { retryTaskImpl, retryStageImpl } from "./tasks/task-retry.js"
 import { cancelTaskImpl } from "./tasks/task-cancel.js"
 import { listTasksImpl } from "./tasks/task-list.js"
+import {
+    reportContentImpl,
+    blockUserImpl,
+    unblockUserImpl,
+    getMyBlocksImpl,
+} from "./moderation/index.js"
 
 /**
  * Registry of all *Impl functions, keyed by the public method name.
@@ -175,6 +181,10 @@ const impls = {
     retryStage: retryStageImpl,
     cancelTask: cancelTaskImpl,
     listTasks: listTasksImpl,
+    reportContent: reportContentImpl,
+    blockUser: blockUserImpl,
+    unblockUser: unblockUserImpl,
+    getMyBlocks: getMyBlocksImpl,
 } as const
 
 /**

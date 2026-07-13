@@ -68,6 +68,11 @@
             "import": "./dist/schemas/api/grammar-violations.js",
             "default": "./dist/schemas/api/grammar-violations.js"
         },
+        "./schemas/api/moderation": {
+            "types": "./dist/schemas/api/moderation/index.d.ts",
+            "import": "./dist/schemas/api/moderation/index.js",
+            "default": "./dist/schemas/api/moderation/index.js"
+        },
         "./schemas/api/pipeline-status": {
             "types": "./dist/schemas/api/pipeline-status/index.d.ts",
             "import": "./dist/schemas/api/pipeline-status/index.js",
