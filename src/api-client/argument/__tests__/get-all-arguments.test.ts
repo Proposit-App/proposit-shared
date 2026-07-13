@@ -40,6 +40,42 @@ describe("apiClient.getAllArguments", () => {
         )
     })
 
+    test("serializes the optional status filter into the query string", async () => {
+        const calls: string[] = []
+        const fetchImpl: typeof fetch = (input) => {
+            calls.push(urlToString(input))
+            return Promise.resolve(makeJsonResponse(200, []))
+        }
+        const apiClient = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl,
+        })
+
+        await apiClient.getAllArguments({ status: "published", limit: 20 })
+
+        expect(calls).toHaveLength(1)
+        const query = new URL(calls[0]).searchParams
+        expect(query.get("status")).toBe("published")
+        expect(query.get("limit")).toBe("20")
+    })
+
+    test("omits the status param from the URL when not provided", async () => {
+        const calls: string[] = []
+        const fetchImpl: typeof fetch = (input) => {
+            calls.push(urlToString(input))
+            return Promise.resolve(makeJsonResponse(200, []))
+        }
+        const apiClient = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl,
+        })
+
+        await apiClient.getAllArguments({ limit: 20 })
+
+        expect(calls).toHaveLength(1)
+        expect(new URL(calls[0]).searchParams.has("status")).toBe(false)
+    })
+
     test("passes an absolute URL even when no params are provided", async () => {
         const calls: string[] = []
         const fetchImpl: typeof fetch = (input) => {

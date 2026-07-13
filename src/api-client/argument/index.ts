@@ -164,12 +164,17 @@ export async function claimUnownedArgumentImpl(
     )
 }
 
+/** Publish-state buckets a caller can filter the argument catalog by. */
+export type ArgumentStatusFilter = "unpublished" | "published" | "archived"
+
 export type GetAllArgumentsParams = {
     owned?: boolean
     limit?: number
     offset?: number
     titlePattern?: string
     orderByPopularity?: boolean
+    /** Restrict results to one publish-state bucket. Omit for all statuses. */
+    status?: ArgumentStatusFilter
 }
 
 export async function getAllArgumentsImpl(
