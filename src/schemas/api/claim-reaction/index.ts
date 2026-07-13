@@ -12,9 +12,13 @@ export const ClaimReactionCreateRequest = Type.Object({
 })
 
 // The caller's own current selection on a claim (identity-free).
+// Read-path only: `reasonCode` tolerates an unknown raw string so a stored code
+// that has fallen out of the closed union (after a code removal) is carried for
+// display rather than failing strict response validation. Writes stay strict via
+// `ClaimReactionCreateRequest`.
 export const ClaimReactionSelectionSchema = Type.Object({
     value: TrivalentValueSchema,
-    reasonCode: ClaimReasonCodeSchema,
+    reasonCode: Type.Union([ClaimReasonCodeSchema, Type.String()]),
 })
 
 // Public aggregate: one count per stance (value true / false / null).

@@ -5,6 +5,7 @@ import {
     ClaimReactionCreateResponse,
     ClaimReactionGetResponse,
     ClaimReactionDeleteResponse,
+    ClaimReactionMapResponse,
 } from "../api/claim-reaction/index.js"
 
 const ARGUMENT_ID = "11111111-1111-1111-1111-111111111111"
@@ -56,6 +57,15 @@ describe("ClaimReactionCreateRequest", () => {
             "reasonCode",
         ])
     })
+
+    it("rejects a reasonCode outside the closed union (writes stay strict)", () => {
+        expect(
+            Value.Check(ClaimReactionCreateRequest, {
+                value: true,
+                reasonCode: "a-code-that-was-removed-from-the-union",
+            })
+        ).toBe(false)
+    })
 })
 
 describe("ClaimReactionCreateResponse", () => {
@@ -94,6 +104,43 @@ describe("ClaimReactionGetResponse", () => {
                 own: null,
             })
         ).toBe(false)
+    })
+
+    it("tolerates an own reasonCode that has fallen out of the closed union", () => {
+        expect(
+            Value.Check(ClaimReactionGetResponse, {
+                counts: { affirm: 1, disagree: 0, neutral: 0 },
+                own: {
+                    value: true,
+                    reasonCode: "a-code-that-was-removed-from-the-union",
+                },
+            })
+        ).toBe(true)
+    })
+
+    it("still requires reasonCode to be a string (loosening is not open-ended)", () => {
+        expect(
+            Value.Check(ClaimReactionGetResponse, {
+                counts: { affirm: 1, disagree: 0, neutral: 0 },
+                own: { value: true, reasonCode: 123 },
+            })
+        ).toBe(false)
+    })
+})
+
+describe("ClaimReactionMapResponse", () => {
+    it("tolerates an out-of-union own reasonCode on a keyed map value", () => {
+        expect(
+            Value.Check(ClaimReactionMapResponse, {
+                [CLAIM_ID]: {
+                    counts: { affirm: 1, disagree: 0, neutral: 0 },
+                    own: {
+                        value: false,
+                        reasonCode: "a-code-that-was-removed-from-the-union",
+                    },
+                },
+            })
+        ).toBe(true)
     })
 })
 
