@@ -1,0 +1,12 @@
+slug: 2026-07-13-add-searchmode-field-to-entitysearchresponseschema
+title: Add searchMode field to EntitySearchResponseSchema
+phase: ''
+created: '2026-07-13'
+resolution: done
+initiative: 2026-06-22-search-searchmode-response-signaling-shared-schema-server-consumption
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered

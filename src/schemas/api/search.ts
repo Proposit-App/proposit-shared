@@ -82,5 +82,11 @@ export const EntitySearchResponseSchema = Type.Object({
     claims: Type.Array(ClaimSearchResultSchema),
     premises: Type.Array(PremiseSearchResultSchema),
     citations: Type.Array(CitationSearchResultSchema),
+    // Signals which retrieval path produced the results: "embedding" (vector
+    // path) or "string" (SQL literal-match fallback). Optional so an older
+    // field-less server, and a client reading an older server, both validate.
+    searchMode: Type.Optional(
+        Type.Union([Type.Literal("embedding"), Type.Literal("string")])
+    ),
 })
 export type TEntitySearchResponse = Static<typeof EntitySearchResponseSchema>
