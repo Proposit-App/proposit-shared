@@ -75,6 +75,43 @@ describe("MobileSessionRequest", () => {
         const input = { provider: "testing-and-qa" }
         expect(Value.Check(MobileSessionRequest, input)).toBe(false)
     })
+
+    it("rejects an email request with an empty email", () => {
+        const input = { provider: "email", email: "", code: "123456" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects an email request with an over-254-char email", () => {
+        const input = {
+            provider: "email",
+            email: `${"a".repeat(250)}@x.com`,
+            code: "123456",
+        }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects an email request with a non-6-digit code", () => {
+        const input = {
+            provider: "email",
+            email: "reviewer@example.com",
+            code: "12345",
+        }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects an email request with a non-numeric code", () => {
+        const input = {
+            provider: "email",
+            email: "reviewer@example.com",
+            code: "12345a",
+        }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects a testing-and-qa request with an empty identity", () => {
+        const input = { provider: "testing-and-qa", identity: "" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
 })
 
 describe("EmailCodeRequest", () => {
@@ -86,6 +123,18 @@ describe("EmailCodeRequest", () => {
 
     it("rejects a missing email", () => {
         expect(Value.Check(EmailCodeRequest, {})).toBe(false)
+    })
+
+    it("rejects an empty email", () => {
+        expect(Value.Check(EmailCodeRequest, { email: "" })).toBe(false)
+    })
+
+    it("rejects an over-254-char email", () => {
+        expect(
+            Value.Check(EmailCodeRequest, {
+                email: `${"a".repeat(250)}@x.com`,
+            })
+        ).toBe(false)
     })
 
     it("rejects extra properties (no account-existence leakage vectors)", () => {

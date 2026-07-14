@@ -3,6 +3,17 @@ import { UUID } from "../../common.js"
 
 // Schemas for POST /api/v1/auth/mobile-session and POST /api/v1/auth/mobile-refresh.
 
+// Email as a wire value. minLength (rejects "") and maxLength (RFC 5321's 254)
+// are always enforced by Value.Check; the pattern rejects values with no `@` /
+// empty local or domain before they reach the DB. `format: "email"` is
+// deliberately NOT used — TypeBox treats unregistered formats as a no-op, and
+// consumers don't register one.
+const EmailString = Type.String({
+    minLength: 3,
+    maxLength: 254,
+    pattern: "^[^@\\s]+@[^@\\s]+$",
+})
+
 // Discriminated on `provider`. Google/Apple sign-in yields an OIDC ID token;
 // X (Twitter) uses OAuth 2.0 (PKCE), which yields an access token, not an ID
 // token — so the X member carries `accessToken` and has no `idToken`. The
@@ -21,12 +32,14 @@ export const MobileSessionRequest = Type.Union([
     }),
     Type.Object({
         provider: Type.Literal("email"),
-        email: Type.String(),
-        code: Type.String(),
+        email: EmailString,
+        // Six-digit one-time code. minLength/maxLength/pattern are all enforced
+        // by Value.Check; pattern also pins it to digits.
+        code: Type.String({ minLength: 6, maxLength: 6, pattern: "^[0-9]{6}$" }),
     }),
     Type.Object({
         provider: Type.Literal("testing-and-qa"),
-        identity: Type.String(),
+        identity: Type.String({ minLength: 1, maxLength: 254 }),
     }),
 ])
 export type TMobileSessionRequest = Static<typeof MobileSessionRequest>
@@ -36,7 +49,7 @@ export type TMobileSessionRequest = Static<typeof MobileSessionRequest>
 // the response is a constant `{ status: "sent" }` so it never reveals whether
 // the email maps to an existing account.
 export const EmailCodeRequest = Type.Object(
-    { email: Type.String() },
+    { email: EmailString },
     { additionalProperties: false }
 )
 export type TEmailCodeRequest = Static<typeof EmailCodeRequest>
