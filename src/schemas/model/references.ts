@@ -36,6 +36,18 @@ export type TReferenceAnalyzeRequest = Static<
     typeof ReferenceAnalyzeRequestSchema
 >
 
+// Response of POST /api/v1/citation/import — mirrors the server's SourceAnalysis.
+// The route returns `null` when extraction fails; the api-client method models
+// that with a nullable union (see api-client/argument/claims.ts).
+export const CitationImportResponseSchema = Type.Object({
+    websiteTitle: Type.String(),
+    pageTitle: Type.String(),
+    byline: Type.String(),
+})
+export type TCitationImportResponse = Static<
+    typeof CitationImportResponseSchema
+>
+
 // ── Citation templates ──
 
 export const BOOK_TEMPLATE = `${"{author}"}. ${"{title}"}. ${"{city}"}, ${"{state}"}, ${"{country}"}: ${"{publisher}"}, ${"{year}"} .`
