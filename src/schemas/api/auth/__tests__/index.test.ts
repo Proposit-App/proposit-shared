@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest"
 import { Value } from "typebox/value"
 import {
+    EmailCodeRequest,
+    EmailCodeResponse,
     MobileRefreshRequest,
     MobileRefreshResponse,
     MobileSessionRequest,
@@ -43,6 +45,68 @@ describe("MobileSessionRequest", () => {
     it("rejects a missing idToken", () => {
         const input = { provider: "google" }
         expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("accepts a valid email one-time-code verify request", () => {
+        const input = {
+            provider: "email",
+            email: "reviewer@example.com",
+            code: "123456",
+        }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(true)
+    })
+
+    it("rejects an email request missing code", () => {
+        const input = { provider: "email", email: "reviewer@example.com" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects an email request missing email", () => {
+        const input = { provider: "email", code: "123456" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("accepts a valid testing-and-qa request", () => {
+        const input = { provider: "testing-and-qa", identity: "app-reviewer" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(true)
+    })
+
+    it("rejects a testing-and-qa request missing identity", () => {
+        const input = { provider: "testing-and-qa" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+})
+
+describe("EmailCodeRequest", () => {
+    it("accepts a request with just email", () => {
+        expect(
+            Value.Check(EmailCodeRequest, { email: "reviewer@example.com" })
+        ).toBe(true)
+    })
+
+    it("rejects a missing email", () => {
+        expect(Value.Check(EmailCodeRequest, {})).toBe(false)
+    })
+
+    it("rejects extra properties (no account-existence leakage vectors)", () => {
+        expect(
+            Value.Check(EmailCodeRequest, {
+                email: "reviewer@example.com",
+                code: "123456",
+            })
+        ).toBe(false)
+    })
+})
+
+describe("EmailCodeResponse", () => {
+    it("accepts the constant sent status", () => {
+        expect(Value.Check(EmailCodeResponse, { status: "sent" })).toBe(true)
+    })
+
+    it("rejects any other status", () => {
+        expect(Value.Check(EmailCodeResponse, { status: "delivered" })).toBe(
+            false
+        )
     })
 })
 

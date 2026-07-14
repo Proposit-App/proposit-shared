@@ -5,7 +5,10 @@ import { UUID } from "../../common.js"
 
 // Discriminated on `provider`. Google/Apple sign-in yields an OIDC ID token;
 // X (Twitter) uses OAuth 2.0 (PKCE), which yields an access token, not an ID
-// token — so the X member carries `accessToken` and has no `idToken`.
+// token — so the X member carries `accessToken` and has no `idToken`. The
+// `email` member is the one-time-code verify step (paired with EmailCodeRequest
+// below); `testing-and-qa` is a credential-less reviewer login that carries only
+// an opaque identity. Both mint the same bearer-token pair as the OAuth paths.
 export const MobileSessionRequest = Type.Union([
     Type.Object({
         provider: Type.Union([Type.Literal("google"), Type.Literal("apple")]),
@@ -16,8 +19,30 @@ export const MobileSessionRequest = Type.Union([
         provider: Type.Literal("x"),
         accessToken: Type.String(),
     }),
+    Type.Object({
+        provider: Type.Literal("email"),
+        email: Type.String(),
+        code: Type.String(),
+    }),
+    Type.Object({
+        provider: Type.Literal("testing-and-qa"),
+        identity: Type.String(),
+    }),
 ])
 export type TMobileSessionRequest = Static<typeof MobileSessionRequest>
+
+// Request-code step for the email one-time-code path. It issues no session, so
+// it is NOT a member of MobileSessionRequest. Extra properties are closed off;
+// the response is a constant `{ status: "sent" }` so it never reveals whether
+// the email maps to an existing account.
+export const EmailCodeRequest = Type.Object(
+    { email: Type.String() },
+    { additionalProperties: false }
+)
+export type TEmailCodeRequest = Static<typeof EmailCodeRequest>
+
+export const EmailCodeResponse = Type.Object({ status: Type.Literal("sent") })
+export type TEmailCodeResponse = Static<typeof EmailCodeResponse>
 
 export const MobileSessionResponse = Type.Object({
     accessToken: Type.String(),
