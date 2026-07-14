@@ -1,8 +1,3 @@
----
-from: .
-initiative: 2026-07-13-proposit-mobile-v1-0-0-first-ios-android-publish
----
-
 # Extend MobileSessionRequest for email-OTP and testing-and-qa mobile login
 
 ## Problem
