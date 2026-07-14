@@ -35,7 +35,11 @@ export const MobileSessionRequest = Type.Union([
         email: EmailString,
         // Six-digit one-time code. minLength/maxLength/pattern are all enforced
         // by Value.Check; pattern also pins it to digits.
-        code: Type.String({ minLength: 6, maxLength: 6, pattern: "^[0-9]{6}$" }),
+        code: Type.String({
+            minLength: 6,
+            maxLength: 6,
+            pattern: "^[0-9]{6}$",
+        }),
     }),
     Type.Object({
         provider: Type.Literal("testing-and-qa"),
