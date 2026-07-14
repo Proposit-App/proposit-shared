@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest"
 import { createApiClient } from "../../index.js"
 
 function clientWith(status: number, body: unknown) {
-    const fetchImpl = async () =>
-        new Response(JSON.stringify(body), {
-            status,
-            headers: { "content-type": "application/json" },
-        })
+    const fetchImpl = () =>
+        Promise.resolve(
+            new Response(JSON.stringify(body), {
+                status,
+                headers: { "content-type": "application/json" },
+            })
+        )
     return createApiClient({
         baseUrl: "http://x",
         fetchImpl: fetchImpl as never,
