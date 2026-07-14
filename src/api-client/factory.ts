@@ -32,6 +32,7 @@ import {
     createClaimCitationImpl,
     deleteClaimCitationImpl,
     createClaimAxiomImpl,
+    citationImportImpl,
 } from "./argument/claims.js"
 import {
     getLatestClaimImpl,
@@ -133,6 +134,7 @@ const impls = {
     createClaimCitation: createClaimCitationImpl,
     deleteClaimCitation: deleteClaimCitationImpl,
     createClaimAxiom: createClaimAxiomImpl,
+    citationImport: citationImportImpl,
     getLatestClaim: getLatestClaimImpl,
     getLatestClaimVersion: getLatestClaimVersionImpl,
     advanceClaimReference: advanceClaimReferenceImpl,

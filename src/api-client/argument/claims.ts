@@ -17,6 +17,12 @@ import {
     IEEEReferenceSchemaMap,
     type TIEEEReference,
 } from "../../schemas/model/references.js"
+import { Type } from "typebox"
+import type { TReferenceType } from "@proposit/proposit-core/extensions/citations/ieee"
+import {
+    ReferenceImportRequestSchema,
+    CitationImportResponseSchema,
+} from "../../schemas/model/references.js"
 import { parseResponse, strictFetch } from "../../utils/utils.js"
 import type { TApiClientConfig } from "../config.js"
 import { resolveBaseUrl } from "../internal.js"
@@ -103,6 +109,25 @@ export async function deleteClaimCitationImpl(
             { method: "DELETE" }
         ),
         ClaimCitationDeleteResponseSchema
+    )
+}
+
+export async function citationImportImpl(
+    config: TApiClientConfig,
+    url: string,
+    referenceType: TReferenceType
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await strictFetch(
+        `${baseUrl}/api/v1/citation/import`,
+        { method: "POST" },
+        { url, referenceType },
+        ReferenceImportRequestSchema,
+        // The route emits `Response.json(null)` when extraction fails; a plain
+        // object schema would throw on `null` in parseResponse, so the response
+        // schema must admit null. `value: null` → the caller degrades to manual.
+        Type.Union([CitationImportResponseSchema, Type.Null()]),
+        config.fetchImpl
     )
 }
 
