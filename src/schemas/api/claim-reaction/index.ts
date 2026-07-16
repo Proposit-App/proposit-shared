@@ -28,6 +28,9 @@ export const ClaimReactionStanceCountsSchema = Type.Object({
     neutral: Type.Number(),
 })
 
+// The added reaction always echoes the row just upserted from the strict
+// `ClaimReactionCreateRequest`, so its code is current-valid by construction —
+// this response stays on the strict model.
 export const ClaimReactionCreateResponse = Type.Object({
     addedReaction: ClaimReactionSchema,
 })
@@ -37,8 +40,21 @@ export const ClaimReactionGetResponse = Type.Object({
     own: Nullable(ClaimReactionSelectionSchema),
 })
 
+// The removed reaction echoes a pre-existing persisted row that may reference a
+// `reasonCode` since retired from the closed union. Loosen `reasonCode` to
+// tolerate an unknown raw string so a delete of such a row is carried through
+// for display rather than failing strict response validation — matching the
+// read-path loosening on `ClaimReactionSelectionSchema`. The strict model
+// `ClaimReactionSchema` is left intact elsewhere.
+const RemovedReactionSchema = Type.Intersect([
+    Type.Omit(ClaimReactionSchema, ["reasonCode"]),
+    Type.Object({
+        reasonCode: Type.Union([ClaimReasonCodeSchema, Type.String()]),
+    }),
+])
+
 export const ClaimReactionDeleteResponse = Type.Object({
-    removedReaction: ClaimReactionSchema,
+    removedReaction: RemovedReactionSchema,
 })
 
 // Bulk read for one argument version: every claim's public counts plus the

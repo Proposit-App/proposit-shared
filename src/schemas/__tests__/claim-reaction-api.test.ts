@@ -76,6 +76,17 @@ describe("ClaimReactionCreateResponse", () => {
             })
         ).toBe(true)
     })
+
+    it("stays strict: the added reaction echoes a just-written code, so an out-of-union code cannot reach it", () => {
+        expect(
+            Value.Check(ClaimReactionCreateResponse, {
+                addedReaction: {
+                    ...fullReaction,
+                    reasonCode: "a-code-that-was-removed-from-the-union",
+                },
+            })
+        ).toBe(false)
+    })
 })
 
 describe("ClaimReactionGetResponse", () => {
@@ -151,5 +162,24 @@ describe("ClaimReactionDeleteResponse", () => {
                 removedReaction: fullReaction,
             })
         ).toBe(true)
+    })
+
+    it("tolerates a removed reasonCode that has fallen out of the closed union", () => {
+        expect(
+            Value.Check(ClaimReactionDeleteResponse, {
+                removedReaction: {
+                    ...fullReaction,
+                    reasonCode: "a-code-that-was-removed-from-the-union",
+                },
+            })
+        ).toBe(true)
+    })
+
+    it("still requires reasonCode to be a string (loosening is not open-ended)", () => {
+        expect(
+            Value.Check(ClaimReactionDeleteResponse, {
+                removedReaction: { ...fullReaction, reasonCode: 123 },
+            })
+        ).toBe(false)
     })
 })
