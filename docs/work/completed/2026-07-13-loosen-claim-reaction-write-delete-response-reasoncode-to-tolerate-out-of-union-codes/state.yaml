@@ -3,4 +3,10 @@ title: Loosen claim-reaction write/delete response reasonCode to tolerate out-of
   codes
 phase: ''
 created: '2026-07-13'
-resolution: null
+resolution: done
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
