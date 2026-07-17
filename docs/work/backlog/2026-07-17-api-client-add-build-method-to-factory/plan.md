@@ -66,11 +66,9 @@ After merge: `pnpm version patch` (additive) → mobile repins `@proposit/shared
 → Slice 2 proceeds. Publish is gated on consumer-side validation at the
 orchestrator root (do not `pnpm publish` from here).
 
-## Notes / open question
+## Notes
 
-- **Response validation target.** Plan validates against the full `TaskSchema`
-  union. Tighter alternative: a `Type.Union` of just the three `argument_build_*`
-  task schemas, rejecting a non-build task from this endpoint. Union-of-all is
-  simpler and matches how `importArgument` trusts its route; the endpoint only
-  ever returns a build task. Defaulting to `TaskSchema` unless you want the
-  tighter guard.
+- **Response validation target — decided: full `TaskSchema` union.** Simpler and
+  matches how `importArgument` trusts its route; the endpoint only ever returns a
+  build task, so the wide union is harmless. (The tighter `Type.Union` of just the
+  three `argument_build_*` schemas was considered and set aside.)
