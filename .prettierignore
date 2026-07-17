@@ -4,7 +4,6 @@ pnpm-lock.yaml
 .worktrees
 .claude
 .broker
-docs/inbox
 docs/work
 docs/taxonomy
 
