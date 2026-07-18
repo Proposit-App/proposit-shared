@@ -1,8 +1,3 @@
----
-from: .
-initiative: 2026-07-18-add-claims-with-relationships-on-mobile-lift-operator-inference-to-proposit-shared
----
-
 # Lift operator-inference (skeleton overlay) into @proposit/shared/engine
 
 Slice 1 of the cross-node epic
@@ -30,7 +25,7 @@ Extract these into `@proposit/shared/engine` as pure functions over
 - `rootNegationUnitId`
 - `planSkeletonCommit` (+ the commit-routing plan type it returns)
 
-**Inference rules** (from server `skeleton-overlay.ts` / `skeleton-commit.ts`):
+**Inference rules** (from server `skeleton-overlay.ts`):
 
 - Selected claim is the premise **root** (no non-`not` operator ancestor) → default
   **`implies`** (cyclable implies↔iff; advanced adds and/or).
