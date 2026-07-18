@@ -1105,7 +1105,7 @@ function withoutEntities(
 
 /** Generates a fresh UUID for engine-auto-generated antecedent expressions. */
 function generateId(): string {
-    return crypto.randomUUID()
+    return globalThis.crypto.randomUUID()
 }
 
 /**

@@ -1,1 +1,3 @@
 The multi-stage process that turns raw or imported text into a structured argument. Runs in one of two flavors (scholar, scribe) selected from the import mode.
+
+Naming split (ratified): **import** is the user-facing verb — the capability a person invokes to bring source material in as a new argument (see the Argument Import feature). **ingestion** is the internal pipeline vocabulary — the machinery that runs once an import kicks off. The two terms are a deliberate, consistent division of labor, not synonyms; no code rename is implied.

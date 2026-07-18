@@ -178,6 +178,26 @@
             "import": "./dist/engine/skeleton-inference.js",
             "default": "./dist/engine/skeleton-inference.js"
         },
+        "./engine/derive": {
+            "types": "./dist/engine/derive/index.d.ts",
+            "import": "./dist/engine/derive/index.js",
+            "default": "./dist/engine/derive/index.js"
+        },
+        "./engine/render": {
+            "types": "./dist/engine/render/index.d.ts",
+            "import": "./dist/engine/render/index.js",
+            "default": "./dist/engine/render/index.js"
+        },
+        "./engine/algebra": {
+            "types": "./dist/engine/algebra/index.d.ts",
+            "import": "./dist/engine/algebra/index.js",
+            "default": "./dist/engine/algebra/index.js"
+        },
+        "./engine/overlay": {
+            "types": "./dist/engine/overlay/index.d.ts",
+            "import": "./dist/engine/overlay/index.js",
+            "default": "./dist/engine/overlay/index.js"
+        },
         "./engine/*": {
             "types": "./dist/engine/*.d.ts",
             "import": "./dist/engine/*.js",

@@ -543,7 +543,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
             {
                 checksumConfig: CHECKSUM_CONFIG,
                 positionConfig: snapshot.config?.positionConfig,
-                generateId: () => crypto.randomUUID(),
+                generateId: () => globalThis.crypto.randomUUID(),
             }
         )
 
