@@ -1,7 +1,3 @@
----
-from: .
----
-
 # Refine add-a-claim-to-a-premise master wording for related-claim + inferred-operator support
 
 Optional, non-blocking follow-up from the completed cross-node epic
