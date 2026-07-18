@@ -6,3 +6,5 @@ resolution: null
 effort: medium
 complexity: medium
 initiative: 2026-07-18-add-claims-with-relationships-on-mobile-lift-operator-inference-to-proposit-shared
+worktree: .worktrees/2026-07-18-lift-operator-inference-skeleton-overlay-into-proposit-shared-engine
+branch: work/2026-07-18-lift-operator-inference-skeleton-overlay-into-proposit-shared-engine
