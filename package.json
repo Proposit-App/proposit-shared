@@ -173,6 +173,11 @@
             "import": "./dist/engine/optimistic/index.js",
             "default": "./dist/engine/optimistic/index.js"
         },
+        "./engine/skeleton-inference": {
+            "types": "./dist/engine/skeleton-inference.d.ts",
+            "import": "./dist/engine/skeleton-inference.js",
+            "default": "./dist/engine/skeleton-inference.js"
+        },
         "./engine/*": {
             "types": "./dist/engine/*.d.ts",
             "import": "./dist/engine/*.js",
