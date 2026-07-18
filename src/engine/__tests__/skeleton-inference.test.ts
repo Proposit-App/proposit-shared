@@ -398,4 +398,31 @@ describe("planSkeletonCommit", () => {
             direction: "before",
         })
     })
+
+    // Null-tolerant fall-through: an unresolvable wrap target (missing premise
+    // or expression) yields a wrap-nest plan carrying the given id rather than
+    // throwing or returning null. The consumer's executor surfaces the failure.
+    // Pinned here because the shared copy now owns this tolerance once the
+    // server drops its local copy.
+    test("wrap target with unresolvable premise → wrap-nest carrying the id, no direction", () => {
+        const snap = makeSnapshot({})
+        const target: TSkeletonCommitTarget = {
+            kind: "wrap",
+            premiseId: "GONE",
+            wrappedExpressionId: "eA",
+            root: true,
+        }
+        const plan = planSkeletonCommit({
+            target,
+            operator: "implies",
+            snapshot: snap,
+        })
+        expect(plan).toEqual({
+            route: "wrap-nest",
+            premiseId: "GONE",
+            targetExpressionId: "eA",
+            operator: "implies",
+        })
+        expect(plan).not.toHaveProperty("direction")
+    })
 })
