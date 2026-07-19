@@ -96,3 +96,38 @@ source, locked by golden fixtures SV/MV reuse.
   vocab. No code rename.
 - Normalize two bare `crypto.randomUUID()` → `globalThis.crypto`.
 - Core peerDep → `^3.0.0`; devDep pinned to the 3.0.0 tarball.
+
+## Folded item A — graduate reaction/stance optimistic math into shared
+
+Both clients duplicate the optimistic claim-reaction reducer. Graduate the tested
+canonical (mobile `src/arguments/claim-stance-state.ts`) into
+`@proposit/shared/engine/optimistic`, byte-identical, so both delete their copies.
+
+- New exports: `TStanceBucket`, `TClaimReactionState`, `bucketOf`, `applyStance`,
+  `clearOwn`. **Source: mobile** (has `claim-stance-state.test.ts`).
+- Server divergence (server's `claim-reactions-context.tsx`): its `applyStance`
+  lacks the `Math.max(0, …)` floor on the old-bucket decrement (can emit a
+  negative count in the inconsistent edge case) and the same-bucket short-circuit,
+  and types `reasonCode` as `string`. Shared ships mobile's floored/narrow version;
+  server adopts it on its slice. Recorded in outcome.md.
+- Golden-tested: stance fixtures appended to `derived-view-goldens.ts` + a locked
+  assertion test, so consumers prove byte-identical before deleting their copy.
+
+## Folded item B — coded conflict envelope for publish/archive
+
+Server publish/archive throw raw `Error` → HTTP 409 with only a message; mobile
+can't branch. Add a machine-readable coded envelope, following the
+`grammar-violations` precedent exactly.
+
+- New subpath `@proposit/shared/schemas/api/mutation-conflict`:
+  `MutationConflictResponseSchema` / `TMutationConflictResponse`,
+  `MutationConflictCodeSchema` / `TMutationConflictCode`. Discriminator
+  `error: "MUTATION_CONFLICT"`, `code` + `message`.
+- `code` enum named from the real throw sites: `ALREADY_PUBLISHED`,
+  `PUBLISHED_VERSION_NOT_ARCHIVABLE`, `PUBLISH_VERSION_CONFLICT`. (No
+  "already-archived" — archive is idempotent-by-design; not invented.)
+- Guard `isMutationConflictError` in `@proposit/shared/api-client`, mirroring
+  `isGrammarViolationsError`.
+- Additive only; no existing error schema touched. Server-emit shape +
+  mobile-consume snippet recorded in outcome.md for the adoption slices. No
+  server/mobile code changed here.

@@ -60,3 +60,30 @@ ESM consumer and an RN-style CJS `require`.
 - Commit, `git tag v0.44.0`, `pnpm run build && pnpm pack`. Report tarball path +
   confirm packed peerDep reads `^3.0.0`.
 - HARD STOP: no publish, no push.
+
+## 7. Folded item A — stance optimistic math (golden-first port)
+
+- Append stance goldens to `src/engine/__tests__/derived-view-goldens.ts`
+  (start state, scripted op sequence, floor-case start; structurally typed).
+- Locked test `src/engine/optimistic/__tests__/claim-stance-state.test.ts` → RED.
+- Port `src/engine/optimistic/claim-stance-state.ts` byte-identical from mobile
+  (rewrite only the two import paths to shared-local `.js`); re-export the five
+  symbols from `optimistic/index.ts` → GREEN.
+
+## 8. Folded item B — publish/archive conflict envelope (test-first)
+
+- Schema test `src/schemas/api/__tests__/mutation-conflict.test.ts` + guard test
+  `src/api-client/__tests__/mutation-conflict.test.ts` → RED.
+- Add `src/schemas/api/mutation-conflict.ts` (schema + types) and
+  `src/api-client/mutation-conflict.ts` (`isMutationConflictError`, re-exported
+  from `api-client/index.ts`); add the `./schemas/api/mutation-conflict` exports
+  triple to `package.json` → GREEN.
+- Record server-emit shape + mobile-consume snippet in outcome.md (no
+  server/mobile edits).
+
+## 9. Re-cut UNRELEASED v0.44.0 in place
+
+0.44.0 was never published/pushed. Do NOT bump to 0.45.0. Delete the local tag,
+append both items to `docs/{release-notes,changelogs}/v0.44.0.md`, commit, re-tag
+`v0.44.0` at the new HEAD, rebuild + re-pack (overwriting the prior tarball).
+HARD STOP: no publish, no push, no tag push.
