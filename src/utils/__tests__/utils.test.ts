@@ -4,6 +4,8 @@ import { Type } from "typebox"
 import { parseResponse } from "../utils.js"
 import { GrammarViolationsResponseSchema } from "../../schemas/api/grammar-violations.js"
 import type { TGrammarViolationsResponse } from "../../schemas/api/grammar-violations.js"
+import { isMutationConflictError } from "../../api-client/mutation-conflict.js"
+import type { TMutationConflictResponse } from "../../schemas/api/mutation-conflict.js"
 
 // Test fixtures
 const SuccessSchema = Type.Object({
@@ -75,6 +77,46 @@ describe("parseResponse — default form (2-arg)", () => {
         expect(result.ok).toBe(false)
         if (!result.ok) {
             expect(result.error).toEqual(body)
+        }
+    })
+
+    test("returns TMutationConflictResponse envelope on 409 + MUTATION_CONFLICT body", async () => {
+        const conflictBody: TMutationConflictResponse = {
+            error: "MUTATION_CONFLICT",
+            code: "PUBLISH_VERSION_CONFLICT",
+            message: "Version was superseded by a concurrent write",
+        }
+        const resp = mockResponse(conflictBody, { status: 409 })
+        const result = await parseResponse(resp, SuccessSchema)
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            // The error half is the typed conflict envelope, not TErrorResponse.
+            expect(result.error).toEqual(conflictBody)
+            // The guard narrows the surfaced value and `.code` is preserved.
+            expect(isMutationConflictError(result.error)).toBe(true)
+            if (isMutationConflictError(result.error)) {
+                expect(result.error.code).toBe("PUBLISH_VERSION_CONFLICT")
+            }
+        }
+    })
+
+    test("falls back to TErrorResponse on 409 with non-conflict-envelope body", async () => {
+        // A 409 that did NOT come from the publish/archive conflict path — a
+        // conventional TErrorResponse-shaped 409. The auto-detect must not
+        // mis-parse this as a conflict envelope.
+        const errorBody = {
+            errorID: 12,
+            errorMessage: "Some other conflict",
+            statusCode: 409,
+        }
+        const resp = mockResponse(errorBody, { status: 409 })
+        const result = await parseResponse(resp, SuccessSchema)
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toEqual(errorBody)
+            expect(isMutationConflictError(result.error)).toBe(false)
         }
     })
 

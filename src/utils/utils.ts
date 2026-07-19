@@ -5,6 +5,7 @@ import {
 } from "../schemas/common.js"
 import type { JsonObject, JsonValue } from "../schemas/common.js"
 import { GrammarViolationsResponseSchema } from "../schemas/api/grammar-violations.js"
+import { MutationConflictResponseSchema } from "../schemas/api/mutation-conflict.js"
 import type { Static, TSchema } from "typebox"
 import { Value } from "typebox/value"
 
@@ -57,8 +58,10 @@ export async function parseRequest<T extends TSchema>(
 // "Error: Parse" on the 422 envelope because its shape diverges from
 // `ErrorResponseSchema`. 0.11 detects the 422-with-GRAMMAR_VIOLATIONS body at
 // runtime and returns it as `ParsedError<typeof GrammarViolationsResponseSchema>`.
-// Non-422 failures (or 422 bodies that don't match the envelope) continue to
-// parse as `TErrorResponse`, preserving the existing surface.
+// A 409-with-MUTATION_CONFLICT body is detected the same way and returned as
+// `ParsedError<typeof MutationConflictResponseSchema>` (publish/archive conflicts;
+// see `proposit-shared/src/schemas/api/mutation-conflict.ts`). Non-matching
+// failures continue to parse as `TErrorResponse`, preserving the existing surface.
 export async function parseResponse<T extends TSchema>(
     response: Response,
     schema: T
@@ -66,6 +69,7 @@ export async function parseResponse<T extends TSchema>(
     | ParsedSuccess<T>
     | ParsedError<typeof ErrorResponseSchema>
     | ParsedError<typeof GrammarViolationsResponseSchema>
+    | ParsedError<typeof MutationConflictResponseSchema>
 >
 // Explicit-error-schema (3-arg) form: caller supplies the error schema. This
 // overload is unchanged from 0.10 — callers that opt in to a specific error
@@ -85,6 +89,7 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     | ParsedSuccess<T>
     | ParsedError<E | typeof ErrorResponseSchema>
     | ParsedError<typeof GrammarViolationsResponseSchema>
+    | ParsedError<typeof MutationConflictResponseSchema>
 > {
     const data = (await response.json()) as JsonValue
 
@@ -102,6 +107,21 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
                 data
             )
             return { error: parsedViolations, ok: false }
+        }
+
+        // Auto-detect the MUTATION_CONFLICT 409 envelope (publish/archive
+        // state conflicts). Same default-form-only gate as grammar-violations:
+        // callers with an explicit error schema keep the single-schema behavior.
+        if (
+            errorSchema === undefined &&
+            response.status === 409 &&
+            Value.Check(MutationConflictResponseSchema, data)
+        ) {
+            const parsedConflict = Value.Parse(
+                MutationConflictResponseSchema,
+                data
+            )
+            return { error: parsedConflict, ok: false }
         }
 
         const errSchema = errorSchema ?? ErrorResponseSchema
