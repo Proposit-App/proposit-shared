@@ -11,3 +11,8 @@ export {
     reconcileCreatedExpression,
     reconcileCreatedVariable,
 } from "./reconciliation.js"
+export type {
+    TStanceBucket,
+    TClaimReactionState,
+} from "./claim-stance-state.js"
+export { bucketOf, applyStance, clearOwn } from "./claim-stance-state.js"

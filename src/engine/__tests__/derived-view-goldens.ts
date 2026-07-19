@@ -8,6 +8,7 @@ import type { TProjectReactiveSnapshot } from "../engine.js"
 import type { TClaim } from "../../schemas/model/claims.js"
 import type { TClaimCitation } from "../../schemas/model/citations.js"
 import type { TPropositionalExpressionCombined } from "../../schemas/logic.js"
+import type { TClaimReasonCode } from "../../schemas/review.js"
 
 type TExpr = TPropositionalExpressionCombined
 type TVar = TProjectReactiveSnapshot["variables"][string]
@@ -267,4 +268,45 @@ export function goldenSnapshot(): TProjectReactiveSnapshot {
             },
         ],
     } as unknown as TProjectReactiveSnapshot
+}
+
+// Golden fixtures for the optimistic claim-reaction reducer
+// (engine/optimistic claim-stance-state). Exported so server + mobile can
+// replay the same scripted sequence against their local copy and prove
+// byte-identical output before deleting it. Structurally typed here so the
+// fixtures don't couple to the reducer's own type declarations.
+
+type TGoldenStanceState = {
+    counts: { affirm: number; disagree: number; neutral: number }
+    own: { value: boolean | null; reasonCode: TClaimReasonCode } | null
+}
+
+export type TStanceGoldenOp =
+    | { op: "apply"; value: boolean | null; reasonCode: TClaimReasonCode }
+    | { op: "clear" }
+
+// Empty starting state: no reaction, all buckets zero.
+export const stanceGoldenStart: TGoldenStanceState = {
+    counts: { affirm: 0, disagree: 0, neutral: 0 },
+    own: null,
+}
+
+// Scripted operation sequence exercising every reducer branch in order:
+// none→affirm, same-bucket reason change (counts unchanged), cross-bucket
+// affirm→disagree (count moves), disagree→neutral, clear (decrement), and a
+// redundant clear (no-op when own is already null).
+export const stanceGoldenScript: TStanceGoldenOp[] = [
+    { op: "apply", value: true, reasonCode: "common-knowledge" },
+    { op: "apply", value: true, reasonCode: "expert-consensus" },
+    { op: "apply", value: false, reasonCode: "factually-incorrect" },
+    { op: "apply", value: null, reasonCode: "unknowable" },
+    { op: "clear" },
+    { op: "clear" },
+]
+
+// Floor case: caller holds a reaction while the bucket count is already 0, so
+// a clear must floor the decrement at 0 rather than going negative.
+export const stanceGoldenFloorStart: TGoldenStanceState = {
+    counts: { affirm: 0, disagree: 0, neutral: 0 },
+    own: { value: true, reasonCode: "common-knowledge" },
 }

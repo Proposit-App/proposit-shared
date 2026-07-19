@@ -68,6 +68,11 @@
             "import": "./dist/schemas/api/grammar-violations.js",
             "default": "./dist/schemas/api/grammar-violations.js"
         },
+        "./schemas/api/mutation-conflict": {
+            "types": "./dist/schemas/api/mutation-conflict.d.ts",
+            "import": "./dist/schemas/api/mutation-conflict.js",
+            "default": "./dist/schemas/api/mutation-conflict.js"
+        },
         "./schemas/api/moderation": {
             "types": "./dist/schemas/api/moderation/index.d.ts",
             "import": "./dist/schemas/api/moderation/index.js",
