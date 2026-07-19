@@ -158,6 +158,69 @@ if (isMutationConflictError(err)) {
   negatives (TErrorResponse shape, grammar-violations envelope, wrong `error`
   string, missing `error`, null/undefined/primitives/arrays). (13 tests, green.)
 
+### Item B integration fix — surface the envelope through the api-client
+
+The schema + `isMutationConflictError` guard shipped, but the guard was
+**unreachable**: `parseResponse` (`src/utils/utils.ts`) had a GRAMMAR_VIOLATIONS
+auto-detect branch but no MUTATION_CONFLICT branch, so a 409 conflict body fell
+through to `Value.Parse(ErrorResponseSchema, data)`, which **throws** on the
+conflict envelope (it lacks `errorID`/`errorMessage`/`statusCode`). A real
+publish conflict therefore rejected `apiClient.publishArgument` in a way no
+client could narrow.
+
+Fix (mirrors the grammar-violations path exactly — the api-client convention is
+a **result shape** `{ error, ok: false }`, not a thrown error): added a
+default-form (2-arg) auto-detect branch in `parseResponse` —
+
+```ts
+if (
+    errorSchema === undefined &&
+    response.status === 409 &&
+    Value.Check(MutationConflictResponseSchema, data)
+) {
+    return { error: Value.Parse(MutationConflictResponseSchema, data), ok: false }
+}
+```
+
+and widened the 2-arg overload + impl return unions with
+`ParsedError<typeof MutationConflictResponseSchema>`. The 3-arg
+explicit-error-schema form is untouched (callers with their own error schema keep
+single-schema behavior), matching grammar-violations. A conflict now surfaces as
+`result.error` (with `result.ok === false`), which `isMutationConflictError`
+narrows.
+
+**EXACT consumer snippet (mobile `confirmPublish` + server web UI).** Because the
+factory surfaces via a result shape (not a throw), narrow `result.error` after
+checking `!result.ok`:
+
+```ts
+import { isMutationConflictError } from "@proposit/shared/api-client"
+
+const result = await apiClient.publishArgument(/* … */)
+if (!result.ok && isMutationConflictError(result.error)) {
+    switch (result.error.code) {
+        case "ALREADY_PUBLISHED":             // already published — refresh state
+            break
+        case "PUBLISHED_VERSION_NOT_ARCHIVABLE": // can't archive a published version
+            break
+        case "PUBLISH_VERSION_CONFLICT":      // superseded by concurrent write — reload + retry
+            break
+    }
+    // result.error.message is safe to show directly.
+}
+```
+
+(If a callsite instead catches a thrown/re-thrown error and holds an `unknown`,
+`isMutationConflictError(err)` narrows that value the same way — the guard is
+surface-agnostic.)
+
+Integration fix tests — `src/utils/__tests__/utils.test.ts`:
+
+- 409 + MUTATION_CONFLICT body → `parseResponse` returns `{ ok: false, error }`
+  where `isMutationConflictError(error)` is true and `error.code` is preserved.
+- 409 with a conventional TErrorResponse-shaped body → still falls back to
+  `TErrorResponse` (no regression; guard returns false).
+
 ## Human decisions needed
 
 None. Both items shipped as additive contracts; server + mobile wire them on
