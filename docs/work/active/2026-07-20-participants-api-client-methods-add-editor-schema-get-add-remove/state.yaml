@@ -4,3 +4,5 @@ phase: ''
 created: '2026-07-20'
 resolution: null
 initiative: 2026-07-11-close-mobile-capability-gaps-vs-proposit-shared-master
+worktree: .worktrees/2026-07-20-participants-api-client-methods-add-editor-schema-get-add-remove
+branch: work/2026-07-20-participants-api-client-methods-add-editor-schema-get-add-remove
