@@ -1,4 +1,4 @@
 name: reaction
 relatesTo:
   - user
-  - core/argument
+  - proposit-core/argument

@@ -1,4 +1,4 @@
 name: participant
 relatesTo:
   - user
-  - core/argument
+  - proposit-core/argument

@@ -1,4 +1,4 @@
 name: ingestion-pipeline
 relatesTo:
   - task
-  - core/argument
+  - proposit-core/argument
