@@ -46,6 +46,11 @@ import {
     deleteReactionImpl,
 } from "./argument/reactions.js"
 import {
+    getArgumentParticipantsImpl,
+    addArgumentEditorImpl,
+    removeArgumentParticipantImpl,
+} from "./argument/participants.js"
+import {
     createClaimReactionImpl,
     deleteClaimReactionImpl,
     getClaimReactionImpl,
@@ -119,6 +124,9 @@ const impls = {
     getArgumentDiff: getArgumentDiffImpl,
     getArgumentForks: getArgumentForksImpl,
     claimUnownedArgument: claimUnownedArgumentImpl,
+    getArgumentParticipants: getArgumentParticipantsImpl,
+    addArgumentEditor: addArgumentEditorImpl,
+    removeArgumentParticipant: removeArgumentParticipantImpl,
     getAllArguments: getAllArgumentsImpl,
     createArgument: createArgumentImpl,
     importArgument: importArgumentImpl,
