@@ -61,6 +61,13 @@ export const UpdateArgumentRequestSchema = Type.Object({
 })
 export type TUpdateArgumentRequest = Static<typeof UpdateArgumentRequestSchema>
 
+// Body for adding an editor to an argument version: the user to grant the
+// editor role. The owner is inferred server-side; only the target userId travels.
+export const AddParticipantRequestSchema = Type.Object({
+    userId: UUID,
+})
+export type TAddParticipantRequest = Static<typeof AddParticipantRequestSchema>
+
 const ArgumentWithForkIdSchema = Type.Intersect([
     ArgumentSchema,
     Type.Object({
