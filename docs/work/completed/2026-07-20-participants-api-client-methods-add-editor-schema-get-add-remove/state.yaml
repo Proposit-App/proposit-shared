@@ -2,7 +2,13 @@ slug: 2026-07-20-participants-api-client-methods-add-editor-schema-get-add-remov
 title: Participants api-client methods + add-editor schema (get/add/remove)
 phase: ''
 created: '2026-07-20'
-resolution: null
+resolution: done
 initiative: 2026-07-11-close-mobile-capability-gaps-vs-proposit-shared-master
 worktree: .worktrees/2026-07-20-participants-api-client-methods-add-editor-schema-get-add-remove
 branch: work/2026-07-20-participants-api-client-methods-add-editor-schema-get-add-remove
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
