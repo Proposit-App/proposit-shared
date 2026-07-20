@@ -5,3 +5,5 @@ phase: ''
 created: '2026-07-20'
 resolution: null
 initiative: 2026-07-11-close-mobile-capability-gaps-vs-proposit-shared-master
+worktree: .worktrees/2026-07-20-expose-registration-invitation-promo-activation-issue-invitation-in-the-api-client-factory
+branch: work/2026-07-20-expose-registration-invitation-promo-activation-issue-invitation-in-the-api-client-factory
