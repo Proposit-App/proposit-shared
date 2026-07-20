@@ -89,6 +89,8 @@ import { deleteUserImpl } from "./user/delete-user.js"
 import { getCurrentUserImpl } from "./user/get-current-user.js"
 import { getUserCitationsImpl } from "./user/citations.js"
 import { modifyCurrentUserImpl } from "./user/modify-current-user.js"
+import { activateRegistrationInviteImpl } from "./user/activate-registration-invite.js"
+import { issueInvitationImpl } from "./user/issue-invitation.js"
 import {
     getTaskPipelineImpl,
     getTaskPipelineStagePayloadsImpl,
@@ -178,6 +180,8 @@ const impls = {
     getUserCitations: getUserCitationsImpl,
     getCurrentUser: getCurrentUserImpl,
     modifyCurrentUser: modifyCurrentUserImpl,
+    activateRegistrationInvite: activateRegistrationInviteImpl,
+    issueInvitation: issueInvitationImpl,
     deleteUser: deleteUserImpl,
     getTaskPipeline: getTaskPipelineImpl,
     getTaskPipelineStagePayloads: getTaskPipelineStagePayloadsImpl,
