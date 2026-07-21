@@ -1,1 +1,1 @@
-A user's upvote or downvote on a specific argument version.
+User feedback with respect to a Proposit argumentation object. Reactions can pertain to arguments as a whole, claims, or potentially other objects. One such example is an upvote or downvote on a specific argument-version.

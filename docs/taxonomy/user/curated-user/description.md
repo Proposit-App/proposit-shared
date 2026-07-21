@@ -1,0 +1,1 @@
+Curated Users are a special type of users that are created statically by the Proposit team as a way to publish historical curated arguments under synthetic users created on behalf of historical figures. Curated arguments are described in more detail in `src/fixtures/curation.md`.
