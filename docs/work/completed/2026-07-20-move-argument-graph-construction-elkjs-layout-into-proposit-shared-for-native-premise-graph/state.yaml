@@ -3,5 +3,11 @@ title: Move argument graph construction + elkjs layout into @proposit/shared (fo
   native premise-graph)
 phase: ''
 created: '2026-07-20'
-resolution: null
+resolution: wontfix
 initiative: 2026-07-11-close-mobile-capability-gaps-vs-proposit-shared-master
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
