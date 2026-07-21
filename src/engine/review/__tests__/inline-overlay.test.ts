@@ -124,6 +124,22 @@ describe("buildInlineReviewOverlay", () => {
         expect(VALID_GRADES.has(overlay.grade!)).toBe(true)
     })
 
+    it("propagates unknown → true through an accepted inference while the chip value stays unknown", () => {
+        const engine = buildEngineWithTwoPremises()
+        // React agree to cA (A = true) only; leave cB with no reaction/override.
+        const overlay = buildInlineReviewOverlay({
+            argEngine: engine,
+            reactions: { cA: true },
+            overrides: {},
+        })
+        // cB's chip shows the usage-based default — unknown.
+        expect(overlay.claimValues.cB).toBe("unknown")
+        // But through the accepted implies(A, B) with A true, cB propagates to
+        // true. The two MUST genuinely differ — a broken variableId → claimId
+        // translation would drop back to the "unknown" effective value here.
+        expect(overlay.claimPropagatedValues!.cB).toBe(true)
+    })
+
     it("strips axiom-bound keys before evaluating (no AXIOM_VARIABLE_ASSIGNMENT_FORBIDDEN throw)", () => {
         const engine = buildEngineWithAxiomaticConclusion()
         // Axiom claim defaults to true; feeding its key to evaluate() would throw.

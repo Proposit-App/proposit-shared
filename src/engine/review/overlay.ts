@@ -139,6 +139,10 @@ export function buildReviewOverlay(params: {
  * writes an override. Keep the two stores independent; this function only reads
  * them. `reactions` uses key-presence to mean "reacted" — a present `null` is an
  * "unsure" reaction, not the absence of one.
+ *
+ * The overlay is keyed strictly by the engine's claims (`getClaims()`); any
+ * `reactions`/`overrides` entry for a `claimId` the engine doesn't hold is
+ * silently ignored.
  */
 export function buildInlineReviewOverlay(params: {
     argEngine: PropositArgumentEngine
@@ -163,11 +167,8 @@ export function buildInlineReviewOverlay(params: {
 
     const claimValues: Record<string, TAssignmentPill> = {}
     const claimProvenance: Record<string, TAssignmentProvenance> = {}
-    const axiomClaimIds = new Set<string>()
 
-    for (const [claimId, claim] of Object.entries(claims)) {
-        if (claim.type === "axiomatic") axiomClaimIds.add(claimId)
-
+    for (const claimId of Object.keys(claims)) {
         const hasOverride = claimId in overrides
         const hasReaction = claimId in reactions
         if (hasOverride) {
@@ -186,12 +187,19 @@ export function buildInlineReviewOverlay(params: {
 
     // Effective variable assignment for evaluation. Mirror
     // `buildExpressionAssignment`: set every claim-bound non-axiom variable from
-    // its claim's effective pill, leave premise-bound variables unknown, and
-    // omit axiom-bound keys (evaluate() throws on any axiom key).
+    // its claim's effective pill and leave premise-bound variables unknown.
+    // Strip axiom-bound keys using the engine's version-pinned claim library
+    // (`getClaim(claimId, claimVersion)`) — the exact source `evaluate()`
+    // enforces `AXIOM_VARIABLE_ASSIGNMENT_FORBIDDEN` from. `getClaims()` is
+    // claimId-only, so on claim-version skew it could miss an axiom and let the
+    // key through, making `evaluate()` throw on every render.
     const variables: Record<string, TCoreTrivalentValue> = {}
     for (const v of argEngine.getVariables()) {
         const claimId = "claimId" in v ? v.claimId : undefined
-        if (claimId != null && axiomClaimIds.has(claimId)) continue
+        if (claimId != null && "claimVersion" in v) {
+            const boundClaim = argEngine.getClaim(claimId, v.claimVersion)
+            if (boundClaim?.type === "axiomatic") continue
+        }
         variables[v.id] =
             claimId != null
                 ? trivalentForPill(claimValues[claimId] ?? "unknown")
@@ -223,6 +231,9 @@ export function buildInlineReviewOverlay(params: {
         computePropagatedVariableValues(result)
     const claimPropagatedValues: Record<string, TCoreTrivalentValue> = {}
     for (const claimId of Object.keys(claims)) {
+        // A claim bound to multiple variables renders its first-bound
+        // variable's propagated value (first-wins, matching core's
+        // `getVariableIdForClaim`).
         const variableId = variableIdByClaimId.get(claimId)
         claimPropagatedValues[claimId] =
             variableId != null && variableId in propagatedValues
