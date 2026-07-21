@@ -4,5 +4,5 @@ Status: Supported
 Planning doc: 2026-07-21-review-overlay-resolve-override-reaction-default-provenance-inline-review-capabilities
 Feature: argument-review
 Subject:
-- review/claim-assignment
-- reaction
+    - review/claim-assignment
+    - reaction
