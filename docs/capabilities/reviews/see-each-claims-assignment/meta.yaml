@@ -1,8 +1,8 @@
 id: cap-ac74f5
 name: See each claim's true/false/unknown assignment
-Status: Missing
+Status: Supported
 Planning doc: 2026-07-21-review-overlay-resolve-override-reaction-default-provenance-inline-review-capabilities
 Feature: argument-review
 Subject:
-    - review/claim-assignment
-    - review
+- review/claim-assignment
+- review
