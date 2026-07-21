@@ -242,7 +242,7 @@
         "prepublishOnly": "pnpm run check"
     },
     "peerDependencies": {
-        "@proposit/proposit-core": "^3.0.0"
+        "@proposit/proposit-core": "^3.1.0"
     },
     "dependencies": {
         "typebox": "^1.1.14",
@@ -250,7 +250,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",
-        "@proposit/proposit-core": "^3.0.0",
+        "@proposit/proposit-core": "file:/Users/brian/Projects/Proposit-App/proposit-core/.worktrees/2026-07-21-usage-based-default-variable-assignments-and-inline-t-f-u-review-in-the-argument-text-view/proposit-proposit-core-3.1.0.tgz",
         "@types/node": "^25.5.2",
         "eslint": "^9.39.4",
         "eslint-plugin-check-file": "^3.3.1",

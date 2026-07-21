@@ -19,8 +19,8 @@ importers:
         specifier: ^9.39.4
         version: 9.39.4
       '@proposit/proposit-core':
-        specifier: ^3.0.0
-        version: 3.0.0
+        specifier: file:/Users/brian/Projects/Proposit-App/proposit-core/.worktrees/2026-07-21-usage-based-default-variable-assignments-and-inline-t-f-u-review-in-the-argument-text-view/proposit-proposit-core-3.1.0.tgz
+        version: file:../../../proposit-core/.worktrees/2026-07-21-usage-based-default-variable-assignments-and-inline-t-f-u-review-in-the-argument-text-view/proposit-proposit-core-3.1.0.tgz
       '@types/node':
         specifier: ^25.5.2
         version: 25.6.0
@@ -356,8 +356,9 @@ packages:
   '@oxc-project/types@0.126.0':
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
-  '@proposit/proposit-core@3.0.0':
-    resolution: {integrity: sha512-f4UyAJK3kHdTZkH02461nIr/IbdIxc9Z03RZkvHjwPjxrORDzGQEoxgDm6+I5M0zeK9V6CyUduna+yz6li7UrQ==}
+  '@proposit/proposit-core@file:../../../proposit-core/.worktrees/2026-07-21-usage-based-default-variable-assignments-and-inline-t-f-u-review-in-the-argument-text-view/proposit-proposit-core-3.1.0.tgz':
+    resolution: {integrity: sha512-ri0Tk3oQecQzySs05UptLnlR+CGrFHg3iLB0jHI/z7By9pid3TivrWHDBCzuFRtK0UFkn7U6sOjinKnUYCmiwg==, tarball: file:../../../proposit-core/.worktrees/2026-07-21-usage-based-default-variable-assignments-and-inline-t-f-u-review-in-the-argument-text-view/proposit-proposit-core-3.1.0.tgz}
+    version: 3.1.0
     engines: {node: '>=22.3.0'}
     hasBin: true
     peerDependencies:
@@ -1534,7 +1535,7 @@ snapshots:
 
   '@oxc-project/types@0.126.0': {}
 
-  '@proposit/proposit-core@3.0.0':
+  '@proposit/proposit-core@file:../../../proposit-core/.worktrees/2026-07-21-usage-based-default-variable-assignments-and-inline-t-f-u-review-in-the-argument-text-view/proposit-proposit-core-3.1.0.tgz':
     dependencies:
       commander: 14.0.3
       typebox: 1.1.28
