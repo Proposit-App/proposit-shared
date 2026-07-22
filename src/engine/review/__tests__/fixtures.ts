@@ -407,6 +407,90 @@ export function buildEngineWithClaimSharedAcrossPremises(): PropositArgumentEngi
     return engine
 }
 
+/**
+ * Builds an engine whose conclusion premise is `(A ∧ B) → Q` — the shape real
+ * arguments take when several claims jointly support a conclusion.
+ *
+ * The conjunction is the point: an evaluator that treats an accepted `and` as
+ * an assertion about its conjuncts will manufacture `true` for A, B and then Q
+ * out of an assignment where all three are unknown.
+ */
+export function buildEngineWithConjunctiveAntecedent(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "Claim cA"),
+        makeClaim("cB", "Claim cB"),
+        makeClaim("cQ", "Claim cQ"),
+    ]
+    const claimLookup = createClaimLookup(claims)
+
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+
+    const conclusionId = "pConjunctiveConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — (A and B) implies Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    const common = (id: string, parentId: string | null, position: number) => ({
+        id,
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId,
+        premiseId: conclusionId,
+        position,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    const operatorExpr = (
+        id: string,
+        parentId: string | null,
+        position: number,
+        operator: "and" | "implies"
+    ): void => {
+        pConclusion.addExpression({
+            ...common(id, parentId, position),
+            type: "operator",
+            variableId: null,
+            operator,
+        })
+    }
+    const variableExpr = (
+        id: string,
+        parentId: string,
+        position: number,
+        variableId: string
+    ): void => {
+        pConclusion.addExpression({
+            ...common(id, parentId, position),
+            type: "variable",
+            variableId,
+            operator: null,
+        })
+    }
+    operatorExpr("eImplies", null, 0, "implies")
+    operatorExpr("eAnd", "eImplies", 0, "and")
+    variableExpr("eA", "eAnd", 0, "vA")
+    variableExpr("eB", "eAnd", 1, "vB")
+    variableExpr("eQ", "eImplies", 1, "vQ")
+
+    engine.setConclusionPremise(conclusionId)
+    for (const c of claims) engine.setClaim(c)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
 function makeAxiomaticClaim(id: string, title: string): TAxiomaticClaim {
     return {
         id,

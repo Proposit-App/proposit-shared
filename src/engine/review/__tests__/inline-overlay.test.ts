@@ -3,6 +3,7 @@ import { buildInlineReviewOverlay } from "../../review/overlay.js"
 import {
     buildEngineWithTwoPremises,
     buildEngineWithAxiomaticConclusion,
+    buildEngineWithConjunctiveAntecedent,
 } from "./fixtures.js"
 import type { TAssignmentPill } from "../../review/types.js"
 import type { TTrivalentValue } from "../../../schemas/review.js"
@@ -138,6 +139,35 @@ describe("buildInlineReviewOverlay", () => {
         // true. The two MUST genuinely differ — a broken variableId → claimId
         // translation would drop back to the "unknown" effective value here.
         expect(overlay.claimPropagatedValues!.cB).toBe(true)
+    })
+
+    it("does not manufacture truth for the conjuncts of an unreviewed conjunction", () => {
+        const engine = buildEngineWithConjunctiveAntecedent()
+        const overlay = buildInlineReviewOverlay({
+            argEngine: engine,
+            reactions: {},
+            overrides: {},
+        })
+        // Nobody has said anything about A, B or Q, so nothing may be true.
+        expect(overlay.claimValues.cA).toBe("unknown")
+        expect(overlay.claimValues.cB).toBe("unknown")
+        expect(overlay.claimPropagatedValues!.cA).toBe(null)
+        expect(overlay.claimPropagatedValues!.cB).toBe(null)
+        expect(overlay.claimPropagatedValues!.cQ).toBe(null)
+        expect(overlay.grade).toBe("indeterminate")
+    })
+
+    it("still propagates through a conjunction once its conjuncts are known", () => {
+        const engine = buildEngineWithConjunctiveAntecedent()
+        const overlay = buildInlineReviewOverlay({
+            argEngine: engine,
+            reactions: { cA: true, cB: true },
+            overrides: {},
+        })
+        // (A ∧ B) resolves true under Kleene logic without the `and` being
+        // accepted, so the accepted implication carries it to Q.
+        expect(overlay.claimValues.cQ).toBe("unknown")
+        expect(overlay.claimPropagatedValues!.cQ).toBe(true)
     })
 
     it("strips axiom-bound keys before evaluating (no AXIOM_VARIABLE_ASSIGNMENT_FORBIDDEN throw)", () => {

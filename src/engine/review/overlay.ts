@@ -1,5 +1,4 @@
 import {
-    canonicalizeOperatorAssignments,
     gradeEvaluation,
     type TCoreOperatorAssignment,
     type TCoreTrivalentValue,
@@ -17,10 +16,7 @@ import type {
     TReviewResult,
     TTrivalentValue,
 } from "../../schemas/review.js"
-import {
-    computePropagatedVariableValues,
-    toEvaluationContext,
-} from "./evaluation.js"
+import { computePropagatedVariableValues } from "./evaluation.js"
 import { materialFingerprint } from "./fingerprint.js"
 
 function pillForAssignment(
@@ -209,16 +205,25 @@ export function buildInlineReviewOverlay(params: {
                 : null
     }
 
-    // Every operator accepted, so inferences are treated as holding and
-    // transitive grounding lights up.
-    const premiseScope: Record<string, TCoreOperatorAssignment> = {}
+    // Every *inference* accepted, so transitive grounding lights up: a claim
+    // grounded by citations propagates truth to what it supports.
+    //
+    // Deliberately NOT every operator. Core reads an accepted `and` as an
+    // assertion that the conjunction holds and force-sets each unknown conjunct
+    // to true, so blanket acceptance on `(A ∧ B) → Q` manufactures true for A,
+    // B and then Q out of an assignment nobody has touched — an argument whose
+    // claims are all unknown would grade sound on its own scaffolding. Only
+    // `implies`/`iff` express an inference the overlay is entitled to assume;
+    // `and`/`or` still resolve normally under Kleene logic, so a conjunction of
+    // genuinely-grounded conjuncts still drives the accepted implication.
+    const operatorAssignments: Record<string, TCoreOperatorAssignment> = {}
     for (const premise of argEngine.listPremises()) {
-        premiseScope[premise.getId()] = "accepted"
+        for (const expr of premise.getDecidableOperatorExpressions()) {
+            if (expr.operator === "implies" || expr.operator === "iff") {
+                operatorAssignments[expr.id] = "accepted"
+            }
+        }
     }
-    const operatorAssignments = canonicalizeOperatorAssignments(
-        toEvaluationContext(argEngine),
-        { premiseScope, expressionOverrides: {} }
-    )
 
     const result = argEngine.evaluate(
         { variables, operatorAssignments },
