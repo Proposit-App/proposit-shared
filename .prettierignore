@@ -12,3 +12,6 @@ docs/taxonomy
 # reflowed by the formatter.
 src/fixtures/historical-figures/*/*.md
 src/fixtures/historical-figures/content.generated.ts
+
+# Rewritten by the tcw CLI on every run, in its own YAML indentation.
+tcw-config.yaml
