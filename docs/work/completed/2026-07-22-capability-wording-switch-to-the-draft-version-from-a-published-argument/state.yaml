@@ -2,8 +2,14 @@ slug: 2026-07-22-capability-wording-switch-to-the-draft-version-from-a-published
 title: 'Capability wording: switch to the draft version from a published argument'
 phase: ''
 created: '2026-07-22'
-resolution: null
+resolution: done
 tags:
 - product
 worktree: .worktrees/2026-07-22-capability-wording-switch-to-the-draft-version-from-a-published-argument
 branch: work/2026-07-22-capability-wording-switch-to-the-draft-version-from-a-published-argument
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
