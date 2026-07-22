@@ -2,7 +2,13 @@ slug: 2026-07-22-accepted-conjunctions-must-not-force-unknown-claims-true
 title: Accepted conjunctions must not force unknown claims true
 phase: ''
 created: '2026-07-22'
-resolution: null
+resolution: done
 priority: 90
 tags:
 - bug
+dod:
+- tests pass
+- docs synced
+- capabilities reconciled
+- reviewed
+- version offered
