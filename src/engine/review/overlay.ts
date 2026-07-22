@@ -124,9 +124,11 @@ export function buildReviewOverlay(params: {
  * yields `"skipped"`), and `override` is an in-review pill (which may be
  * `"skipped"`).
  *
- * The merged assignment is fed to `evaluate()` with every operator accepted so
- * transitive grounding (`unknown → true`) propagates; the overlay carries the
- * claim-keyed propagated values and the argument grade the chip renders.
+ * The merged assignment is fed to `evaluate()` with every *inference* operator
+ * (`implies`/`iff`) accepted so transitive grounding (`unknown → true`)
+ * propagates; the overlay carries the claim-keyed propagated values and the
+ * argument grade the chip renders. `and`/`or` are deliberately left undecided —
+ * see the note at the assignment-building code below.
  *
  * Axiom-bound keys are stripped from the assignment (`evaluate()` throws
  * `AXIOM_VARIABLE_ASSIGNMENT_FORBIDDEN` on any axiom key — the engine forces
