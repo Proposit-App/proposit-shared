@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { Value } from "typebox/value"
 import {
     CreateArgumentSchema,
+    GetAllArgumentsRequestSchema,
     UpdateArgumentRequestSchema,
     type TUpdateArgumentRequest,
 } from "../index.js"
@@ -163,6 +164,78 @@ describe("UpdateArgumentRequestSchema description", () => {
     it("rejects newData missing title", () => {
         expect(
             Value.Check(UpdateArgumentRequestSchema, body({ description: "D" }))
+        ).toBe(false)
+    })
+})
+
+// `orderBy` / `orderDirection` are the explicit ordering pair on the argument
+// list request. `orderByPopularity` stays accepted and keeps its meaning, so
+// server and client can adopt the new pair independently; when both arrive,
+// `orderBy` is the one that decides the ordering.
+describe("GetAllArgumentsRequestSchema ordering", () => {
+    it("accepts a request carrying neither ordering field", () => {
+        const request = { owned: true, limit: 20, offset: 0 }
+        expect(Value.Check(GetAllArgumentsRequestSchema, request)).toBe(true)
+    })
+
+    it("leaves a request without ordering fields untouched", () => {
+        const request = { owned: true, limit: 20, offset: 0 }
+        expect(
+            Value.Clean(GetAllArgumentsRequestSchema, { ...request })
+        ).toEqual(request)
+    })
+
+    it("still accepts orderByPopularity on its own", () => {
+        expect(
+            Value.Check(GetAllArgumentsRequestSchema, {
+                orderByPopularity: true,
+            })
+        ).toBe(true)
+    })
+
+    it("accepts orderByPopularity alongside orderBy", () => {
+        expect(
+            Value.Check(GetAllArgumentsRequestSchema, {
+                orderByPopularity: true,
+                orderBy: "title",
+                orderDirection: "asc",
+            })
+        ).toBe(true)
+    })
+
+    it.each(["popularity", "createdOn", "title"] as const)(
+        "accepts orderBy %s",
+        (orderBy) => {
+            expect(Value.Check(GetAllArgumentsRequestSchema, { orderBy })).toBe(
+                true
+            )
+        }
+    )
+
+    it.each(["asc", "desc"] as const)(
+        "accepts orderDirection %s",
+        (orderDirection) => {
+            expect(
+                Value.Check(GetAllArgumentsRequestSchema, {
+                    orderBy: "createdOn",
+                    orderDirection,
+                })
+            ).toBe(true)
+        }
+    )
+
+    it("rejects an unknown orderBy value", () => {
+        expect(
+            Value.Check(GetAllArgumentsRequestSchema, { orderBy: "author" })
+        ).toBe(false)
+    })
+
+    it("rejects an unknown orderDirection value", () => {
+        expect(
+            Value.Check(GetAllArgumentsRequestSchema, {
+                orderBy: "title",
+                orderDirection: "ascending",
+            })
         ).toBe(false)
     })
 })

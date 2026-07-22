@@ -79,6 +79,47 @@ describe("apiClient.getAllArguments", () => {
         expect(new URL(calls[0]).searchParams.has("status")).toBe(false)
     })
 
+    test("serializes the ordering pair into the query string", async () => {
+        const calls: string[] = []
+        const fetchImpl: typeof fetch = (input) => {
+            calls.push(urlToString(input))
+            return Promise.resolve(makeJsonResponse(200, []))
+        }
+        const apiClient = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl,
+        })
+
+        await apiClient.getAllArguments({
+            owned: true,
+            orderBy: "createdOn",
+            orderDirection: "desc",
+            limit: 20,
+        })
+
+        const query = new URL(calls[0]).searchParams
+        expect(query.get("orderBy")).toBe("createdOn")
+        expect(query.get("orderDirection")).toBe("desc")
+    })
+
+    test("omits the ordering params when not provided", async () => {
+        const calls: string[] = []
+        const fetchImpl: typeof fetch = (input) => {
+            calls.push(urlToString(input))
+            return Promise.resolve(makeJsonResponse(200, []))
+        }
+        const apiClient = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl,
+        })
+
+        await apiClient.getAllArguments({ orderByPopularity: true, limit: 20 })
+
+        expect(calls[0]).toBe(
+            "https://example.test/api/v1/argument?orderByPopularity=true&limit=20"
+        )
+    })
+
     test("passes an absolute URL even when no params are provided", async () => {
         const calls: string[] = []
         const fetchImpl: typeof fetch = (input) => {

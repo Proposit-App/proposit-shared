@@ -40,6 +40,21 @@ export type TFullArgumentDataOnly = Omit<
     propositionalLogic: TArgumentEngineSnapshot | null
 }
 
+/** Sort key for the argument list. */
+export const ArgumentOrderBy = Type.Union([
+    Type.Literal("popularity"),
+    Type.Literal("createdOn"),
+    Type.Literal("title"),
+])
+export type TArgumentOrderBy = Static<typeof ArgumentOrderBy>
+
+/** Sort direction for the argument list. */
+export const ArgumentOrderDirection = Type.Union([
+    Type.Literal("asc"),
+    Type.Literal("desc"),
+])
+export type TArgumentOrderDirection = Static<typeof ArgumentOrderDirection>
+
 export const GetAllArgumentsRequestSchema = Type.Object({
     userId: Type.Optional(UUID),
     username: Type.Optional(Type.String()),
@@ -47,7 +62,19 @@ export const GetAllArgumentsRequestSchema = Type.Object({
     limit: Type.Optional(Type.Number({ default: 50 })),
     offset: Type.Optional(Type.Number()),
     showUnpublished: Type.Optional(Type.Boolean()),
+    /**
+     * Legacy popularity switch. Still honored on its own; superseded by
+     * `orderBy` when both are present.
+     */
     orderByPopularity: Type.Optional(Type.Boolean()),
+    /**
+     * Explicit sort key. Takes precedence over `orderByPopularity` when both
+     * arrive. Omitting it leaves ordering exactly as `orderByPopularity`
+     * (or its absence) has always determined it.
+     */
+    orderBy: Type.Optional(ArgumentOrderBy),
+    /** Sort direction for `orderBy`; ignored when `orderBy` is absent. */
+    orderDirection: Type.Optional(ArgumentOrderDirection),
     getUserIdFromSession: Type.Optional(Type.Boolean()),
     titlePattern: Type.Optional(Type.String()),
 })
