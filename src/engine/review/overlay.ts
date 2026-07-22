@@ -53,12 +53,15 @@ export function verdictOf(
     if (!result) return undefined
     const e = result.evaluation
     if (e.isCounterexample === true) return "Logically Invalid"
+    if (e.conclusionTrue === false) return "Failing"
+    // Soundness requires the supporting premises to be true. Unknown or absent
+    // is not true, so neither verdict below can be awarded on it.
+    if (e.allSupportingPremisesTrue !== true) return "Indeterminate"
     const vacuous =
         e.conclusion?.inferenceDiagnostic?.kind === "implies" &&
         e.conclusion.inferenceDiagnostic.isVacuouslyTrue === true
     if (vacuous && e.conclusionTrue === true) return "Vacuous"
     if (e.conclusionTrue === true) return "Valid and Sound"
-    if (e.conclusionTrue === false) return "Failing"
     return "Indeterminate"
 }
 
