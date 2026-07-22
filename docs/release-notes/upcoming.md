@@ -3,14 +3,3 @@ date: TBD
 ---
 
 # Release notes — upcoming
-
-## Fixed
-
-- An argument whose claims were all still unknown could be graded **Sound**. The
-  inline review overlay was treating every connective in an argument as accepted
-  — including "and" — and an accepted "and" tells the engine that each of its
-  parts is true. On a conclusion like _(A and B) therefore Q_, that invented a
-  truth value for A, B and Q that no reader had given. The overlay now assumes
-  only the inference steps ("implies", "if and only if"), so a claim still
-  reaches its supporters once it is genuinely grounded, and an argument nobody
-  has reviewed reads **Indeterminate** instead of Sound.
