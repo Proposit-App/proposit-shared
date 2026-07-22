@@ -17,6 +17,8 @@ import {
     PublishResponseSchema,
     SetArgumentHiddenResponseSchema,
     PurgeArgumentResponseSchema,
+    type TArgumentOrderBy,
+    type TArgumentOrderDirection,
 } from "../../schemas/api/argument/index.js"
 import { ArgumentCreateTask, TaskSchema } from "../../schemas/tasks.js"
 import {
@@ -176,7 +178,12 @@ export type GetAllArgumentsParams = {
     limit?: number
     offset?: number
     titlePattern?: string
+    /** Legacy popularity switch; superseded by `orderBy` when both are sent. */
     orderByPopularity?: boolean
+    /** Explicit sort key. Wins over `orderByPopularity`. */
+    orderBy?: TArgumentOrderBy
+    /** Sort direction for `orderBy`; ignored when `orderBy` is absent. */
+    orderDirection?: TArgumentOrderDirection
     /** Restrict results to one publish-state bucket. Omit for all statuses. */
     status?: ArgumentStatusFilter
 }
