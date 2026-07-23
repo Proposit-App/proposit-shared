@@ -18,8 +18,8 @@ const EmailString = Type.String({
 // X (Twitter) uses OAuth 2.0 (PKCE), which yields an access token, not an ID
 // token — so the X member carries `accessToken` and has no `idToken`. The
 // `email` member is the one-time-code verify step (paired with EmailCodeRequest
-// below); `testing-and-qa` is a credential-less reviewer login that carries only
-// an opaque identity. Both mint the same bearer-token pair as the OAuth paths.
+// below); `testing-and-qa` is a reviewer login that carries an opaque identity
+// plus a password. Both mint the same bearer-token pair as the OAuth paths.
 export const MobileSessionRequest = Type.Union([
     Type.Object({
         provider: Type.Union([Type.Literal("google"), Type.Literal("apple")]),
@@ -44,6 +44,7 @@ export const MobileSessionRequest = Type.Union([
     Type.Object({
         provider: Type.Literal("testing-and-qa"),
         identity: Type.String({ minLength: 1, maxLength: 254 }),
+        password: Type.String({ minLength: 1, maxLength: 254 }),
     }),
 ])
 export type TMobileSessionRequest = Static<typeof MobileSessionRequest>

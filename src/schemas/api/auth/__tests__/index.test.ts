@@ -67,12 +67,21 @@ describe("MobileSessionRequest", () => {
     })
 
     it("accepts a valid testing-and-qa request", () => {
-        const input = { provider: "testing-and-qa", identity: "app-reviewer" }
+        const input = {
+            provider: "testing-and-qa",
+            identity: "app-reviewer",
+            password: "s3cret-pw",
+        }
         expect(Value.Check(MobileSessionRequest, input)).toBe(true)
     })
 
     it("rejects a testing-and-qa request missing identity", () => {
-        const input = { provider: "testing-and-qa" }
+        const input = { provider: "testing-and-qa", password: "s3cret-pw" }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects a testing-and-qa request missing password", () => {
+        const input = { provider: "testing-and-qa", identity: "app-reviewer" }
         expect(Value.Check(MobileSessionRequest, input)).toBe(false)
     })
 
@@ -109,7 +118,20 @@ describe("MobileSessionRequest", () => {
     })
 
     it("rejects a testing-and-qa request with an empty identity", () => {
-        const input = { provider: "testing-and-qa", identity: "" }
+        const input = {
+            provider: "testing-and-qa",
+            identity: "",
+            password: "s3cret-pw",
+        }
+        expect(Value.Check(MobileSessionRequest, input)).toBe(false)
+    })
+
+    it("rejects a testing-and-qa request with an empty password", () => {
+        const input = {
+            provider: "testing-and-qa",
+            identity: "app-reviewer",
+            password: "",
+        }
         expect(Value.Check(MobileSessionRequest, input)).toBe(false)
     })
 })
