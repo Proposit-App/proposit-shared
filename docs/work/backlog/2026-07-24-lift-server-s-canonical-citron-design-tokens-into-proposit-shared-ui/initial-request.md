@@ -1,8 +1,3 @@
----
-from: proposit-app
-initiative: 2026-07-24-synchronize-mobile-and-server-look-and-feel-via-a-shared-design-system
----
-
 # Lift server's canonical citron design tokens into @proposit/shared/ui
 
 Epic: [Synchronize mobile and server look-and-feel via a shared design system](tcw://W/proposit-app/2026-07-24-synchronize-mobile-and-server-look-and-feel-via-a-shared-design-system)
