@@ -3,3 +3,12 @@ date: TBD
 ---
 
 # Release notes — upcoming
+
+## Added
+
+- `buildArgumentVersionHistory` (from `@proposit/shared/schemas/api/argument`):
+  a runtime-agnostic projection that turns an argument response
+  (`argument`, `argumentHistory`, `originalArgument`) into a display-ready,
+  newest-first list of version rows — each flagged for the active version and
+  for the immediate fork source — so web and mobile can render version history
+  and version comparison from one shared contract.
