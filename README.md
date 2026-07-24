@@ -10,7 +10,11 @@ Runtime-agnostic TypeScript shared between `proposit-server` and `proposit-mobil
 - `@proposit/shared/checksum` — checksum config shared by both consumers
 - `@proposit/shared/utils` — runtime-agnostic utilities (`strictFetch`, `parseResponse`, embedding text builders, task helpers)
 
-Future sub-entries: `@proposit/shared/api-client` (PR 3), `@proposit/shared/engine` (PR 4).
+- `@proposit/shared/api-client` — the `createApiClient` factory and its types
+- `@proposit/shared/engine/*` — mutations, optimistic updates, derivation, rendering
+- `@proposit/shared/ui` — design tokens and brand assets
+
+`package.json`'s `exports` map is the authoritative list.
 
 ## What's NOT in it
 
@@ -29,4 +33,14 @@ pnpm run check       # all of the above in sequence
 
 ## Consuming this package
 
-Currently consumed via `file:../proposit-shared` path-dep from the `proposit-server` feature branch. When Phase 0 completes, consumers switch to a versioned dep from npm (public registry, `@proposit` scope).
+Published to the public npm registry under the `@proposit` scope. `proposit-server` and `proposit-mobile` both depend on a caret-pinned version (`"@proposit/shared": "^0.x.y"`). `@proposit/proposit-core` is a peer dependency — consumers install it themselves.
+
+Sub-path imports only (`@proposit/shared/schemas`, `@proposit/shared/engine/mutations`, …); there is no flat root entry.
+
+To iterate against unpublished changes, point the consumer at `file:../proposit-shared` and keep `pnpm exec tsc -p tsconfig.build.json -w` running so `dist/` stays current.
+
+## First-time setup
+
+```bash
+./scripts/first-time-setup.sh   # checks prerequisites and builds dist/
+```
