@@ -63,7 +63,9 @@ export function buildArgumentVersionHistory(
     }
 
     // Current lineage first, fork source(s) after; newest version first within
-    // each group. Row tuples are unique, so the ordering is total.
+    // each group. At most one fork source (`originalArgument`) exists and each
+    // lineage tuple is unique, so the comparator never ties on real data;
+    // Array.prototype.sort is stable regardless, keeping the result deterministic.
     return rows.sort((a, b) => {
         const aFork = a.isForkSource ? 1 : 0
         const bFork = b.isForkSource ? 1 : 0

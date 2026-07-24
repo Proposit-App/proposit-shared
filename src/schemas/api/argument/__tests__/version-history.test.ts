@@ -85,6 +85,31 @@ describe("buildArgumentVersionHistory", () => {
         expect(rows.some((r) => r.isForkSource)).toBe(false)
     })
 
+    it("returns a single active row for a lone version with no history or fork", () => {
+        const rows = buildArgumentVersionHistory({
+            argument: arg("a", 1),
+            argumentHistory: [],
+            originalArgument: null,
+        })
+        expect(rows.map(tuple)).toEqual(["a@1"])
+        expect(rows[0]?.isActive).toBe(true)
+        expect(rows[0]?.isForkSource).toBe(false)
+    })
+
+    it("de-duplicates an originalArgument that collides with the viewed tuple", () => {
+        // A fork always gets a new argument id, so this shape does not occur
+        // with valid data; the test pins deterministic behavior anyway: the
+        // viewed row wins and no separate fork-source row is produced.
+        const rows = buildArgumentVersionHistory({
+            argument: arg("a", 2),
+            argumentHistory: [arg("a", 1)],
+            originalArgument: arg("a", 2),
+        })
+        expect(rows.map(tuple)).toEqual(["a@2", "a@1"])
+        expect(rows.some((r) => r.isForkSource)).toBe(false)
+        expect(rows.filter((r) => r.isActive).map(tuple)).toEqual(["a@2"])
+    })
+
     it("marks exactly the viewed version active", () => {
         const rows = buildArgumentVersionHistory({
             argument: arg("a", 2),
