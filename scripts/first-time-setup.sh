@@ -3,9 +3,8 @@
 # First-time setup for proposit-shared. Idempotent — safe to re-run.
 #
 # This repo is thin: no env file, no services, no database, no git hooks. The
-# only post-install step is a built `dist/`, so the body is the standard check
-# pipeline — it proves the toolchain works end to end and leaves `dist/` in
-# place. Nothing here is macOS- or Linux-specific.
+# only post-install step is a built `dist/` (fixtures codegen + tsc), so that is
+# the whole body. Nothing here is macOS- or Linux-specific.
 
 set -euo pipefail
 
