@@ -1,5 +1,21 @@
+// Pure-data colour tokens for the Proposit design system — a quiet warm-neutral
+// canvas with a single loud citron action per screen (sage/clay/amber/slate
+// status hues). Framework-free (no MUI/React/DOM/Node) so both consumers can
+// read it directly.
+//
+// FILLS VS TEXT: the accent/status tokens (`primary`, `warning`, …) are fill
+// colours — they are meant to sit *behind* their `*Foreground` ink, not to be
+// painted onto the page background. On the pale light-mode ground they are far
+// too bright to read as text (citron measures ~1.48:1, amber ~2.92:1, against a
+// 4.5:1 AA floor). The `*AsText` tokens are the same hue pushed dark enough to
+// clear AA on every light background; in dark mode the fills already clear AA
+// as text, so there the `*AsText` token is the fill itself. Read `primaryAsText`
+// as "primary, rendered as text" — the inverse of `primaryForeground`, which is
+// the ink that sits on top of primary.
+
 export interface TColorPalette {
     background: string
+    backgroundElevated: string
     foreground: string
     muted: string
     mutedForeground: string
@@ -12,6 +28,8 @@ export interface TColorPalette {
 
     primary: string
     primaryForeground: string
+    /** `primary` rendered as text on the page background (AA-safe). */
+    primaryAsText: string
     secondary: string
     secondaryForeground: string
     accent: string
@@ -23,6 +41,8 @@ export interface TColorPalette {
     successForeground: string
     warning: string
     warningForeground: string
+    /** `warning` rendered as text on the page background (AA-safe). */
+    warningAsText: string
     info: string
     infoForeground: string
 
@@ -44,90 +64,96 @@ export interface TColorPalette {
 
 export const colors: { light: TColorPalette; dark: TColorPalette } = {
     light: {
-        background: "#ffffff",
-        foreground: "#0f172a",
-        muted: "#f1f5f9",
-        mutedForeground: "#64748b",
-        border: "#e2e8f0",
-        input: "#e2e8f0",
-        ring: "#2563eb",
+        background: "#f5f4ee",
+        backgroundElevated: "#ffffff",
+        foreground: "#25251e",
+        muted: "#f0eee6",
+        mutedForeground: "#6b6a60",
+        border: "#e5e3d8",
+        input: "#e5e3d8",
+        ring: "#aeda2e",
 
-        disabled: "#e2e8f0",
-        disabledForeground: "#94a3b8",
+        disabled: "#e5e3d8",
+        disabledForeground: "#a9a79a",
 
-        primary: "#2563eb",
-        primaryForeground: "#ffffff",
-        secondary: "#f1f5f9",
-        secondaryForeground: "#0f172a",
-        accent: "#f1f5f9",
-        accentForeground: "#0f172a",
+        primary: "#aeda2e",
+        primaryForeground: "#1b2306",
+        primaryAsText: "#5a7118",
+        secondary: "#f0eee6",
+        secondaryForeground: "#25251e",
+        accent: "#f0eee6",
+        accentForeground: "#25251e",
 
-        destructive: "#dc2626",
+        destructive: "#b25545",
         destructiveForeground: "#ffffff",
-        success: "#16a34a",
+        success: "#5e7f38",
         successForeground: "#ffffff",
-        warning: "#d97706",
-        warningForeground: "#1e293b",
-        info: "#2563eb",
+        warning: "#b08a2c",
+        warningForeground: "#ffffff",
+        warningAsText: "#826621",
+        info: "#4e68a8",
         infoForeground: "#ffffff",
 
-        argumentPublished: "#16a34a",
-        argumentUnpublished: "#d97706",
-        argumentArchived: "#64748b",
+        argumentPublished: "#5e7f38",
+        argumentUnpublished: "#b08a2c",
+        argumentArchived: "#7b7a6f",
 
-        reactionUpvote: "#0d9488",
-        reactionDownvote: "#dc2626",
+        reactionUpvote: "#5e7f38",
+        reactionDownvote: "#b25545",
 
-        verdictAgree: "#16a34a",
-        verdictDisagree: "#dc2626",
-        verdictInconclusive: "#64748b",
+        verdictAgree: "#5e7f38",
+        verdictDisagree: "#b25545",
+        verdictInconclusive: "#7b7a6f",
 
-        nodeHealthy: "#16a34a",
-        nodeUnhealthy: "#dc2626",
-        nodeWarning: "#d97706",
+        nodeHealthy: "#5e7f38",
+        nodeUnhealthy: "#b25545",
+        nodeWarning: "#b08a2c",
     },
     dark: {
-        background: "#020617",
-        foreground: "#f8fafc",
-        muted: "#1e293b",
-        mutedForeground: "#94a3b8",
-        border: "#334155",
-        input: "#334155",
-        ring: "#60a5fa",
+        background: "#0d0e0b",
+        backgroundElevated: "#191a15",
+        foreground: "#edebe1",
+        muted: "#20211a",
+        mutedForeground: "#8f8e80",
+        border: "#2a2b24",
+        input: "#2a2b24",
+        ring: "#c9f24a",
 
-        disabled: "#1e293b",
-        disabledForeground: "#64748b",
+        disabled: "#20211a",
+        disabledForeground: "#5d5d53",
 
-        primary: "#60a5fa",
-        primaryForeground: "#0f172a",
-        secondary: "#1e293b",
-        secondaryForeground: "#f8fafc",
-        accent: "#1e293b",
-        accentForeground: "#f8fafc",
+        primary: "#c9f24a",
+        primaryForeground: "#0d0e0b",
+        primaryAsText: "#c9f24a",
+        secondary: "#191a15",
+        secondaryForeground: "#edebe1",
+        accent: "#20211a",
+        accentForeground: "#edebe1",
 
-        destructive: "#f87171",
-        destructiveForeground: "#0f172a",
-        success: "#4ade80",
-        successForeground: "#0f172a",
-        warning: "#fbbf24",
-        warningForeground: "#0f172a",
-        info: "#60a5fa",
-        infoForeground: "#0f172a",
+        destructive: "#c56a5b",
+        destructiveForeground: "#0d0e0b",
+        success: "#82a857",
+        successForeground: "#0d0e0b",
+        warning: "#d9b84c",
+        warningForeground: "#0d0e0b",
+        warningAsText: "#d9b84c",
+        info: "#6e86c4",
+        infoForeground: "#0d0e0b",
 
-        argumentPublished: "#4ade80",
-        argumentUnpublished: "#fbbf24",
-        argumentArchived: "#94a3b8",
+        argumentPublished: "#82a857",
+        argumentUnpublished: "#d9b84c",
+        argumentArchived: "#8f8e80",
 
-        reactionUpvote: "#2dd4bf",
-        reactionDownvote: "#f87171",
+        reactionUpvote: "#82a857",
+        reactionDownvote: "#c56a5b",
 
-        verdictAgree: "#4ade80",
-        verdictDisagree: "#f87171",
-        verdictInconclusive: "#94a3b8",
+        verdictAgree: "#82a857",
+        verdictDisagree: "#c56a5b",
+        verdictInconclusive: "#8f8e80",
 
-        nodeHealthy: "#4ade80",
-        nodeUnhealthy: "#f87171",
-        nodeWarning: "#fbbf24",
+        nodeHealthy: "#82a857",
+        nodeUnhealthy: "#c56a5b",
+        nodeWarning: "#d9b84c",
     },
 }
 
