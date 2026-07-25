@@ -1,8 +1,9 @@
 id: proposit-shared
 connected-projects:
-    parent:
-        proposit-app: ..
+  parent:
+    proposit-app: ..
 work:
-    tags:
-        - bug
-        - product
+  tags:
+  - bug
+  - product
+  - tech-debt
