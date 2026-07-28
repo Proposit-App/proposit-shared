@@ -2,7 +2,7 @@ slug: 2026-07-25-add-isplatformdisabled-tier-predicate-for-platform-disabled-use
 title: Add isPlatformDisabled(tier) predicate for platform-disabled user tiers
 phase: ''
 created: '2026-07-25'
-resolution: null
+resolution: done
 tags:
 - tech-debt
 initiative: 2026-07-28-platform-disabled-account-enforcement-across-shared-server-and-mobile
