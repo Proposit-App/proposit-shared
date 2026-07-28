@@ -66,9 +66,19 @@ scratchpad copy and re-verified green; `git status` clean afterwards.
   (`(tier: number): boolean`) — slice 2's adoption is an import swap.
 - `git show --stat fd8cedd` — exactly the four files spec criterion 6 allows.
 
-**Acceptance criteria** — all eight of `spec.md` met. Version is unchanged at
-`0.50.1`, `git tag --points-at HEAD` is empty, nothing was published, and
-`upcoming.md` was **not** rotated: release is root-coordinated and out of scope.
+**Acceptance criteria** — all eight of `spec.md` met at the implementation commit
+`fd8cedd`: the version was `0.50.1`, no tag pointed at `HEAD`, nothing was
+published, and neither `upcoming.md` had been rotated.
+
+> **Corrected 2026-07-28 (verify stage).** Criterion 8 describes this slice's
+> commit, not the repo's present state. The three commits after `c61b076` — where
+> this document was first written — cut and shipped the release: `c1508f6`
+> (`0.51.0`, tag `v0.51.0`) and `388b658` (rotating both `upcoming.md` files into
+> `docs/changelogs/v0.51.0.md` and `docs/release-notes/v0.51.0.md`). **`0.51.0` is
+> published on npm as `latest`.** The cut is epic-level work, not this slice's —
+> but epic acceptance criterion 1 requires the two symbols to be importable *from a
+> published version*, so the release is a precondition of the epic closing and not
+> something that was skipped. See `refined-outcome.md`.
 
 ## Documentation Sync
 
@@ -111,10 +121,12 @@ deliberate widening rather than a default.
 
 ## Notes
 
-- **Out of scope by instruction and not done:** `pnpm version`, `git tag`,
-  `pnpm publish`. Slice 2 (`proposit-server`) is blocked on this slice
-  *publishing*, not on this commit — that gate is the root-coordinated
-  consumer-side validation in `ORCHESTRATOR-AGENTS.md`.
+- **Out of scope for this slice:** `pnpm version`, `git tag`, `pnpm publish` — none
+  of them were done *by this slice*. They were done afterwards, as epic-level work
+  riding along with the release: `0.51.0` is cut, tagged `v0.51.0`, and published to
+  npm. Slice 2 (`proposit-server`) was blocked on this slice *publishing*, not on
+  this commit — that gate is the root-coordinated consumer-side validation in
+  `ORCHESTRATOR-AGENTS.md`, and it has now cleared.
 - **No consumer in this repo.** `isPlatformDisabled` is exported and unreferenced
   here by design; adoption is slice 2's.
 - All work is on `main`. No branch, no worktree — the change is one file plus one
