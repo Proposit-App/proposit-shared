@@ -1,3 +1,25 @@
+# Text-safe success token and a paired ink for stringToColor
+
+## Product changes
+
+TBD
+
+## Technical changes
+
+TBD
+
+## Meta changes
+
+TBD
+
+## Inbox contents
+
+### Inbox manifest
+
+- `2026-07-27-text-safe-success-token-and-a-paired-ink-for-stringtocolor.md`
+
+### Inbox body
+
 ---
 from: proposit-app
 ---
