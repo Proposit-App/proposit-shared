@@ -230,6 +230,16 @@ describe("stringToColor", () => {
 
     const AA_BODY_TEXT = 4.5
 
+    test("the contrast helper matches known WCAG values", () => {
+        // The sweep below is only as trustworthy as this helper, which is a
+        // second copy of the formula the source uses. Pinning it to published
+        // values is what stops a shared typo passing both.
+        expect(contrastRatio("#ffffff", "#000000")).toBeCloseTo(21, 5)
+        expect(contrastRatio("#ffffff", "#ffffff")).toBeCloseTo(1, 5)
+        expect(contrastRatio("#777777", "#ffffff")).toBeCloseTo(4.478, 2)
+        expect(relativeLuminance("#ff0000")).toBeCloseTo(0.2126, 4)
+    })
+
     test("pairs every hashed fill with an ink that clears AA on it", () => {
         // The guarantee is "every hash", not "these samples" — the fill is an
         // arbitrary 24-bit value, so a couple of spot checks would prove
@@ -241,6 +251,12 @@ describe("stringToColor", () => {
             "a",
             "Brian",
             "",
+            // Display names are user-supplied, so the hash has to survive
+            // non-ASCII, surrogate pairs, and unbounded length.
+            "Ünïcödé",
+            "日本語のなまえ",
+            "🙂🙂",
+            "x".repeat(10_000),
             ...Array.from({ length: 4000 }, (_, i) => `user${i}`),
         ]
 
