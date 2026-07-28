@@ -1,1 +1,1 @@
-As a moderator, remove a user who violates the zero-tolerance policy for objectionable content, taking down their contributions.
+As a moderator, remove a user who violates the zero-tolerance policy for objectionable content, taking down their contributions and locking the account out of Proposit so the removed user cannot sign back in.
