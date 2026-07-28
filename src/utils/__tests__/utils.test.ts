@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from "vitest"
 import { Type } from "typebox"
 
-import { parseResponse } from "../utils.js"
+import { parseResponse, stringToColor } from "../utils.js"
 import { GrammarViolationsResponseSchema } from "../../schemas/api/grammar-violations.js"
 import type { TGrammarViolationsResponse } from "../../schemas/api/grammar-violations.js"
 import { isMutationConflictError } from "../../api-client/mutation-conflict.js"
@@ -205,5 +205,78 @@ describe("parseResponse — explicit-error-schema form (3-arg, backwards-compat)
         if (result.ok) {
             expect(result.value).toEqual({ id: "abc", value: 42 })
         }
+    })
+})
+
+describe("stringToColor", () => {
+    /** WCAG 2.x relative luminance of an `#rrggbb` colour. */
+    function relativeLuminance(hex: string): number {
+        const [r, g, b] = [0, 2, 4]
+            .map((i) => parseInt(hex.slice(1 + i, 3 + i), 16) / 255)
+            .map((c) =>
+                c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+            )
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
+    /** WCAG 2.x contrast ratio between two `#rrggbb` colours (1:1 … 21:1). */
+    function contrastRatio(a: string, b: string): number {
+        const [lighter, darker] = [
+            relativeLuminance(a),
+            relativeLuminance(b),
+        ].sort((x, y) => y - x)
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    const AA_BODY_TEXT = 4.5
+
+    test("the contrast helper matches known WCAG values", () => {
+        // The sweep below is only as trustworthy as this helper, which is a
+        // second copy of the formula the source uses. Pinning it to published
+        // values is what stops a shared typo passing both.
+        expect(contrastRatio("#ffffff", "#000000")).toBeCloseTo(21, 5)
+        expect(contrastRatio("#ffffff", "#ffffff")).toBeCloseTo(1, 5)
+        expect(contrastRatio("#777777", "#ffffff")).toBeCloseTo(4.478, 2)
+        expect(relativeLuminance("#ff0000")).toBeCloseTo(0.2126, 4)
+    })
+
+    test("pairs every hashed fill with an ink that clears AA on it", () => {
+        // The guarantee is "every hash", not "these samples" — the fill is an
+        // arbitrary 24-bit value, so a couple of spot checks would prove
+        // nothing. `qa_manual` and `f` are the two names a manual QA session
+        // caught rendering illegibly before the ink was paired.
+        const names = [
+            "qa_manual",
+            "f",
+            "a",
+            "Brian",
+            "",
+            // Display names are user-supplied, so the hash has to survive
+            // non-ASCII, surrogate pairs, and unbounded length.
+            "Ünïcödé",
+            "日本語のなまえ",
+            "🙂🙂",
+            "x".repeat(10_000),
+            ...Array.from({ length: 4000 }, (_, i) => `user${i}`),
+        ]
+
+        for (const name of names) {
+            const { fill, ink } = stringToColor(name)
+            expect(fill, name).toMatch(/^#[0-9a-f]{6}$/)
+            expect(
+                contrastRatio(fill, ink),
+                `${name}: ink ${ink} on fill ${fill}`
+            ).toBeGreaterThanOrEqual(AA_BODY_TEXT)
+        }
+    })
+
+    test("is stable for a given input", () => {
+        expect(stringToColor("qa_manual")).toEqual(stringToColor("qa_manual"))
+        expect(stringToColor("a").fill).not.toBe(stringToColor("b").fill)
+    })
+
+    test("keeps the neutral placeholder for '?'", () => {
+        expect(stringToColor("?").fill).toBe("#bdbdbd")
+        expect(stringToColor("?").ink).toBe("#000000")
     })
 })

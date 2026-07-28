@@ -39,6 +39,8 @@ export interface TColorPalette {
     destructiveForeground: string
     success: string
     successForeground: string
+    /** `success` rendered as text on the page background (AA-safe). */
+    successAsText: string
     warning: string
     warningForeground: string
     /** `warning` rendered as text on the page background (AA-safe). */
@@ -88,6 +90,7 @@ export const colors: { light: TColorPalette; dark: TColorPalette } = {
         destructiveForeground: "#ffffff",
         success: "#5e7f38",
         successForeground: "#ffffff",
+        successAsText: "#557232",
         warning: "#b08a2c",
         warningForeground: "#ffffff",
         warningAsText: "#826621",
@@ -134,6 +137,7 @@ export const colors: { light: TColorPalette; dark: TColorPalette } = {
         destructiveForeground: "#0d0e0b",
         success: "#82a857",
         successForeground: "#0d0e0b",
+        successAsText: "#82a857",
         warning: "#d9b84c",
         warningForeground: "#0d0e0b",
         warningAsText: "#d9b84c",

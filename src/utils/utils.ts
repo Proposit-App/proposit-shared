@@ -15,9 +15,45 @@ export async function awaitableSleep(timeout: number): Promise<void> {
     })
 }
 
-export function stringToColor(str: string) {
+/** WCAG 2.x relative luminance of an `#rrggbb` colour. */
+function relativeLuminance(hex: string): number {
+    const [r, g, b] = [0, 2, 4]
+        .map((i) => parseInt(hex.slice(1 + i, 3 + i), 16) / 255)
+        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/**
+ * The ink that keeps an arbitrary fill legible.
+ *
+ * Two properties here look arbitrary and are not:
+ *
+ * - The inks are **absolute**, never palette tokens. The fill is derived from a
+ *   string, not from the colour scheme, so the ink must not vary with the
+ *   scheme either — a scheme-dependent ink is exactly the defect this replaces,
+ *   just pointing the other way.
+ * - The **full** black/white range is load-bearing. The darkest palette ink
+ *   (`#0d0e0b`) bottoms out at 4.40:1 against mid-luminance fills, under the
+ *   4.5:1 AA floor; pure black/white holds 4.58:1 across the whole colour cube.
+ */
+function inkFor(fill: string): "#000000" | "#ffffff" {
+    // Crossover luminance at which black and white contrast equally against the
+    // fill: (L + 0.05)² = 1.05 × 0.05.
+    return relativeLuminance(fill) > 0.1791 ? "#000000" : "#ffffff"
+}
+
+/**
+ * Hash a string into a fill colour, paired with an ink that stays readable on
+ * it.
+ *
+ * The pair is returned together because the fill alone is not usable: it is an
+ * arbitrary hash, so a caller that sets only the background leaves the
+ * foreground inheriting whatever the surrounding scheme provides, and roughly
+ * half of all inputs come out illegible in each scheme.
+ */
+export function stringToColor(str: string): { fill: string; ink: string } {
     if (str === "?") {
-        return "#bdbdbd"
+        return { fill: "#bdbdbd", ink: inkFor("#bdbdbd") }
     }
 
     let hash = 0
@@ -27,15 +63,15 @@ export function stringToColor(str: string) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash)
     }
 
-    let color = "#"
+    let fill = "#"
 
     for (i = 0; i < 3; i += 1) {
         // Multiply by 2 to make brighter
         const value = ((hash >> (i * 8)) * 2) & 0xff
-        color += `00${value.toString(16)}`.slice(-2)
+        fill += `00${value.toString(16)}`.slice(-2)
     }
 
-    return color
+    return { fill, ink: inkFor(fill) }
 }
 
 export async function parseRequest<T extends TSchema>(
