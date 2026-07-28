@@ -12,6 +12,13 @@ behavior: it adds a constant and a pure predicate and changes no existing
 export. The capabilities planning gate does not fire, and no capability file is
 created or modified (epic acceptance criterion 11).
 
+> **Note (verify stage).** This still describes this slice accurately, but a
+> capability file in this repo *was* edited during the same window: `72f5642`
+> extends the body of `moderation/remove-an-abusive-user`. That edit is
+> **epic-owned** — the epic's plan assigns it to the epic itself rather than to any
+> slice — and it is not this item's work. No status was flipped and no capability
+> was minted. See `refined-outcome.md`.
+
 ## Problem
 
 Platform disablement is a `users.tier` enum value —
