@@ -1,0 +1,3 @@
+new:
+    # Seeded Missing here. The consumers flip it when their surfaces ship.
+    - auth/deactivate-account
