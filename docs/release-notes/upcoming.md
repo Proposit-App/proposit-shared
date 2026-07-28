@@ -1,1 +1,25 @@
 # Release notes — upcoming
+
+## Fill colours now come with a readable ink
+
+Two contrast defects with one shape: a colour that is only safe as a _fill_ was
+handed out with no paired foreground, so each consumer had to invent one — or
+forgot to, and shipped unreadable text.
+
+**`successAsText` joins the palette** (`#557232` light, `#82a857` dark), beside
+the existing `primaryAsText` / `warningAsText`. The `success` fill painted as
+text on the light ground measures 4.17:1 on `background` and 3.96:1 on `muted`,
+under the 4.5:1 AA floor. Dark mode was already fine — which is exactly why the
+defect survives a dark-mode-first workflow. Additive; the `success` fill itself
+is unchanged.
+
+**`stringToColor` now returns `{ fill, ink }`.** The fill is a hash of the
+input, so setting only a background left the foreground inheriting whatever the
+surrounding scheme provided: roughly half of all inputs were illegible in each
+colour scheme, and which half flipped with the theme. The ink is derived from
+the fill's own luminance and clears AA against any fill.
+
+> **Breaking.** `stringToColor(name)` → `stringToColor(name).fill`. One line per
+> call site, and it is a compile error rather than a silent change. A fill-only
+> overload was deliberately not kept: the bare-fill call is the one that caused
+> the defect.

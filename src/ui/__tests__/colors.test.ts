@@ -51,21 +51,47 @@ describe("colors", () => {
         expect(colors.dark.reactionUpvote).not.toBe(colors.dark.primary)
     })
 
-    test("primaryAsText and warningAsText clear AA against every background they land on", () => {
-        // The bright citron/amber fills are unreadable as text on the pale
+    test("every *AsText token clears AA against every background it lands on", () => {
+        // The bright citron/amber/sage fills are unreadable as text on the pale
         // ground; the *AsText variants are the same hue pushed dark enough to
         // clear the 4.5:1 body-text floor against every background they can be
         // painted on, in both schemes (in dark mode the fill already clears AA,
         // so the *AsText token is the fill itself).
         for (const scheme of [colors.light, colors.dark]) {
-            for (const asText of [scheme.primaryAsText, scheme.warningAsText]) {
+            const asTextTokens = (
+                Object.keys(scheme) as (keyof TColorPalette)[]
+            )
+                .filter((key) => key.endsWith("AsText"))
+                .map((key) => [key, scheme[key]] as const)
+            expect(asTextTokens.length).toBeGreaterThan(0)
+            for (const [key, asText] of asTextTokens) {
                 for (const background of backgroundsOf(scheme)) {
                     expect(
                         contrastRatio(asText, background),
-                        `${asText} on ${background}`
+                        `${key} ${asText} on ${background}`
                     ).toBeGreaterThanOrEqual(AA_BODY_TEXT)
                 }
             }
+        }
+    })
+
+    test("the light fills the *AsText tokens stand in for are not themselves AA-safe as text", () => {
+        // Guards the distinction the *AsText tokens exist for. Without it, a
+        // future "fix" that darkens a fill until it reads as text would pass
+        // the suite while wrecking every surface that fill is painted behind.
+        for (const fill of [
+            colors.light.primary,
+            colors.light.warning,
+            colors.light.success,
+        ]) {
+            expect(
+                contrastRatio(fill, colors.light.background),
+                `${fill} on ${colors.light.background}`
+            ).toBeLessThan(AA_BODY_TEXT)
+            expect(
+                contrastRatio(fill, colors.light.muted),
+                `${fill} on ${colors.light.muted}`
+            ).toBeLessThan(AA_BODY_TEXT)
         }
     })
 })

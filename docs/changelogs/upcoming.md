@@ -1,5 +1,26 @@
 # Changelog — upcoming
 
+- **Add `colors.<scheme>.successAsText`** (`#557232` light, `#82a857` dark) —
+  the text-safe sibling of the `success` fill, beside the existing
+  `primaryAsText` / `warningAsText`. Painted as text on the light ground the
+  fill measures 4.17:1 on `background` and 3.96:1 on `muted`, under the 4.5:1
+  AA floor; the new token measures 4.96 / 5.47 / 4.71. Dark needed no change
+  (7.09 / 6.41 / 5.94), which is why the defect was invisible to anyone
+  developing in dark mode. Purely additive — the `success` fill is unchanged,
+  and a new test asserts it still fails as text so that darkening the fill is
+  never mistaken for the fix. The `*AsText` contrast sweep now discovers tokens
+  by suffix rather than listing them.
+- **`stringToColor` returns `{ fill, ink }`** (**breaking**; was a bare fill
+  string). The fill is a hash of the input, so a caller that sets only a
+  background leaves the foreground inheriting the surrounding scheme — roughly
+  half of all inputs came out illegible in each colour scheme, and which half
+  flipped with the theme. The ink is picked from the fill's WCAG relative
+  luminance at the crossover point where black and white contrast equally,
+  which holds ≥4.58:1 across the entire colour cube. Migration:
+  `stringToColor(name)` → `stringToColor(name).fill`. `"?"` still yields the
+  `#bdbdbd` placeholder, now paired like any other fill. A fill-only overload
+  was considered and dropped: the bare-fill call is exactly the one that caused
+  the defect.
 - **Add `scripts/first-time-setup.sh`** — the per-repo tier of the workspace
   onboarding scripts, invoked by the orchestration repo's `scripts/setup.sh`.
   Checks Node (against `engines.node`) and pnpm, installs dependencies if
