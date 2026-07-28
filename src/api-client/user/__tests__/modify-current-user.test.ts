@@ -11,6 +11,7 @@ const UPDATED_USER_JSON = {
     username: "alice2",
     curationId: null,
     tier: 1,
+    accountState: "active",
     tokensUsed: 0,
     lifetimeTokensUsed: 0,
     tokenResetOn: "2026-01-01T00:00:00.000Z",

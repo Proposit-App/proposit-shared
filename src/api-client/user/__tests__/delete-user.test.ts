@@ -13,6 +13,7 @@ const SAMPLE_USER_JSON = {
     username: "deleted",
     curationId: null,
     tier: 1,
+    accountState: "deleted",
     tokensUsed: 0,
     lifetimeTokensUsed: 0,
     tokenResetOn: "2026-01-01T00:00:00.000Z",
