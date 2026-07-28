@@ -114,12 +114,16 @@ signing back in.
 Status deliberately **not** flipped — the consumers own that when their surfaces
 ship.
 
-Recorded in `capabilities.yaml` under `new:` with a bare path, per the epic's
-warning that a `shared/…` prefix makes `tcw work complete` fail closed. Note that
-`new:` + `Status: Missing` is exactly what the completion gate blocks on, so
-whoever closes this item will need `--force` or a status the consumers have since
-flipped. Flagging rather than pre-solving, because flipping it here would be a
-lie about what ships.
+**No `capabilities.yaml` sidecar on this item, deliberately.** `Missing` is the
+correct terminal status here: `proposit-shared` is the platform-agnostic master,
+and a runtime-agnostic library asserts no support of its own — every capability
+in this ledger is seeded `Missing` and stays that way. `proposit-server` and
+`proposit-mobile` each override it to `Supported` when their surfaces ship. So
+the `new:` key belongs on *those* items, not this one: a `new:` entry is a claim
+to have realized a capability, and this item only declares and seeds it.
+
+(If a future item here does carry a sidecar, use a bare `auth/…` path — a
+`shared/…` prefix makes `tcw work complete` fail closed.)
 
 ## Docs
 
@@ -144,3 +148,31 @@ criterion 14 ("no symbol named `isPlatformDisabled` survives in any repo") is
 satisfied either way. Deletion is what shipped, per the plan, which the brief
 names as the pinned contract. The spec heading is worth correcting so a later
 reader does not go looking for a renamed symbol.
+
+## Fix round 1
+
+Removed the `capabilities.yaml` sidecar. It listed `auth/deactivate-account`
+under `new:`, which claims this item realizes the capability — it does not, it
+declares and seeds it. `Missing` is the correct terminal status on this node, so
+the entry belongs on the consumer slices that flip it to `Supported`, not here.
+Removing the only entry emptied the file, so the sidecar is gone rather than left
+as an empty mapping.
+
+The capability folder is untouched: `auth/deactivate-account` (`cap-a7bdf5`),
+`Status: Missing`, `Planning doc` = this slug, `Feature: account-management`,
+body unchanged. The *Capability* section above now states the master-declares /
+consumer-flips rule instead of flagging a completion-gate collision.
+
+```
+$ git rm docs/work/active/<this-slug>/capabilities.yaml
+$ pnpm run check
+   Test Files  105 passed (105)
+        Tests  1014 passed (1014)
+   exit 0
+$ tcw capabilities check
+capabilities OK
+   exit 0
+```
+
+Epic `spec.md`'s "Rename, do not redefine" heading was corrected at the root to
+"Delete, do not redefine"; the open question recorded above is resolved.
