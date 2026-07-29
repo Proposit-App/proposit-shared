@@ -15,7 +15,6 @@ const DEACTIVATED_USER_JSON = {
     tokensUsed: 0,
     lifetimeTokensUsed: 0,
     tokenResetOn: "2026-01-01T00:00:00.000Z",
-    deleted: false,
     registrationDate: "2026-01-01T00:00:00.000Z",
     preferences: { advancedMode: false },
 }

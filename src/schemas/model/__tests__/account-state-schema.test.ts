@@ -15,7 +15,6 @@ const activeUser = {
     tokensUsed: 0,
     lifetimeTokensUsed: 0,
     tokenResetOn: new Date(),
-    deleted: false,
     registrationDate: new Date(),
     preferences: { advancedMode: false },
 }
