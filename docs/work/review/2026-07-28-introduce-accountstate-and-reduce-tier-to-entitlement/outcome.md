@@ -1,7 +1,8 @@
 # Outcome — Introduce accountState and reduce tier to entitlement
 
-Branch `account-state-lifecycle`. Not published, not versioned, not tagged —
-publication is root-coordinated behind the consumer gate.
+Branch `account-state-lifecycle`, since merged to `main`. Unpublished while this
+was written — publication is root-coordinated behind the consumer gate — and
+released as **v0.53.0** (`c564d41`) once every shared slice had landed.
 
 ## What landed
 
