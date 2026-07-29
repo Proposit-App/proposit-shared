@@ -86,7 +86,6 @@ export const UserSchema = Type.Object({
     tokensUsed: Type.Integer(),
     lifetimeTokensUsed: Type.Integer(),
     tokenResetOn: EncodableDate,
-    deleted: Type.Boolean(),
     registrationDate: EncodableDate,
     // Per-user persistent settings (jsonb-backed; see UserPreferencesSchema).
     // The DB-side `NOT NULL DEFAULT '{"advancedMode": false}'` is owned by server.
