@@ -1,6 +1,8 @@
 # Outcome — Drop the retired deleted flag from UserSchema
 
-Branch `account-state-api-client`. Not published, not versioned, not tagged.
+Branch `account-state-api-client`, since merged to `main`. Unpublished while this
+was written; shipped in **v0.53.0** (`c564d41`) — the breaking change that
+version carries.
 
 ## What landed
 
