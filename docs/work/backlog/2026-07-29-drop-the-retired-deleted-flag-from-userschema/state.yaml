@@ -1,0 +1,10 @@
+slug: 2026-07-29-drop-the-retired-deleted-flag-from-userschema
+title: Drop the retired deleted flag from UserSchema
+created: '2026-07-29'
+resolution: null
+priority: 39
+effort: low
+complexity: low
+tags:
+- tech-debt
+initiative: 2026-07-28-account-state-lifecycle-deactivate-ban-and-delete
