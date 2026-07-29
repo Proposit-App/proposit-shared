@@ -239,6 +239,7 @@
         "prettify:check": "pnpm exec prettier --cache --check .",
         "test": "pnpm exec vitest run",
         "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
+        "pack:branch": "bash scripts/pack-branch.sh",
         "prepublishOnly": "pnpm run check"
     },
     "peerDependencies": {
