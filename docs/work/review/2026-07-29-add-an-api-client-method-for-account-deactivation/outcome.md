@@ -1,7 +1,8 @@
 # Outcome — Add an api-client method for account deactivation
 
-Branch `account-state-api-client`, one commit (`c478608`). Not published, not
-versioned, not tagged — the epic is holding its release until every slice lands.
+Branch `account-state-api-client`, one commit (`c478608`), since merged to
+`main`. Unpublished while this was written — the epic held its release until
+every slice landed — and shipped in **v0.53.0** (`c564d41`).
 
 ## What landed
 
