@@ -1,7 +1,7 @@
 slug: 2026-07-29-drop-the-retired-deleted-flag-from-userschema
 title: Drop the retired deleted flag from UserSchema
 created: '2026-07-29'
-resolution: null
+resolution: done
 priority: 39
 effort: low
 complexity: low
