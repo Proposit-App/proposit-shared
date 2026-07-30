@@ -33,6 +33,14 @@ the new token up rather than assuming it.
 
 ## Meta changes
 
+The server side is not just a repin — its theme keeps an explicit allowlist. Per
+`proposit-server`'s guidance: "To make another accent text-safe, add its
+`*AsText` token and extend `ACCENTS_USABLE_AS_TEXT` in `mui-theme.ts` rather
+than darkening the fill." So the server change is: extend that allowlist, then
+drop the local overrides at the call sites below. The server has its own guard at
+`src/ui/__tests__/tokens.test.ts` asserting every `*AsText` token clears AA
+against every background it can land on.
+
 Consumers blocked on this, to repin and finish after publish:
 
 - `proposit-server` — 6 outlined/text `color="error"` buttons left untouched:
