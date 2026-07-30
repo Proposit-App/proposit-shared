@@ -7,11 +7,13 @@
 // colours — they are meant to sit *behind* their `*Foreground` ink, not to be
 // painted onto the page background. On the pale light-mode ground they are far
 // too bright to read as text (citron measures ~1.48:1, amber ~2.92:1, against a
-// 4.5:1 AA floor). The `*AsText` tokens are the same hue pushed dark enough to
-// clear AA on every light background; in dark mode the fills already clear AA
-// as text, so there the `*AsText` token is the fill itself. Read `primaryAsText`
-// as "primary, rendered as text" — the inverse of `primaryForeground`, which is
-// the ink that sits on top of primary.
+// 4.5:1 AA floor). The `*AsText` tokens are the same hue pushed far enough from
+// the ground to clear AA on every background they can land on. In dark mode the
+// bright fills usually already clear it, so there the `*AsText` token is
+// generally the fill itself — `destructive` is the exception, its clay fill
+// measuring 4.32:1 on the muted ground. Read `primaryAsText` as "primary,
+// rendered as text" — the inverse of `primaryForeground`, which is the ink that
+// sits on top of primary.
 
 export interface TColorPalette {
     background: string
@@ -37,6 +39,8 @@ export interface TColorPalette {
 
     destructive: string
     destructiveForeground: string
+    /** `destructive` rendered as text on the page background (AA-safe). */
+    destructiveAsText: string
     success: string
     successForeground: string
     /** `success` rendered as text on the page background (AA-safe). */
@@ -88,6 +92,7 @@ export const colors: { light: TColorPalette; dark: TColorPalette } = {
 
         destructive: "#b25545",
         destructiveForeground: "#ffffff",
+        destructiveAsText: "#a75041",
         success: "#5e7f38",
         successForeground: "#ffffff",
         successAsText: "#557232",
@@ -135,6 +140,11 @@ export const colors: { light: TColorPalette; dark: TColorPalette } = {
 
         destructive: "#c56a5b",
         destructiveForeground: "#0d0e0b",
+        // Unlike the other *AsText tokens, this one differs from its fill in
+        // dark mode too: the clay fill measures 4.32:1 on the muted ground,
+        // just under the body-text floor, so it is nudged lighter rather than
+        // reused as-is.
+        destructiveAsText: "#c87263",
         success: "#82a857",
         successForeground: "#0d0e0b",
         successAsText: "#82a857",
