@@ -79,11 +79,21 @@ export async function parseRequest<T extends TSchema>(
     schema: T
 ): Promise<Static<T>> {
     const json = (await request.json()) as JsonValue
-    // Decode, not Parse: EncodableDate rehydrates wire strings into Date
-    // instances in the decode pass, which Parse does not run. The decoded and
-    // encoded static types coincide for every schema here — EncodableDate is
-    // the only decoding type and it decodes to the `Date` it already infers as
-    // — but TypeScript cannot prove that for an unresolved `T`.
+    // Assert before decoding, and do not use Parse.
+    //
+    // Decode is required because EncodableDate rehydrates wire strings into
+    // `Date` instances in the decode pass, which Parse does not run. But
+    // Decode's own pipeline applies each schema's `default` before validating,
+    // so on its own it accepts a body with a required key omitted and silently
+    // fills the default in — turning a malformed request into a successful one.
+    // Asserting first rejects the omitted key, which is what a request body
+    // needs: a caller that leaves a field out is making a mistake, not opting
+    // into a default.
+    //
+    // The decoded and encoded static types coincide for every schema here —
+    // EncodableDate is the only decoding type and it decodes to the `Date` it
+    // already infers as — but TypeScript cannot prove that for an unresolved `T`.
+    Value.Assert(schema, json)
     return Value.Decode(schema, json) as Static<T>
 }
 
@@ -170,9 +180,12 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     }
 
     try {
-        // Decode, not Parse: EncodableDate rehydrates wire strings into Date
-        // instances in the decode pass, which Parse does not run. See
-        // parseRequest for why the decoded value is asserted back to Static<T>.
+        // Assert before decoding, for the reason spelled out on parseRequest:
+        // Decode applies each schema's `default` before validating, so alone it
+        // would accept a response with a required field missing and invent the
+        // value. A response that does not match its schema is a server bug, and
+        // quietly defaulting it hides that bug from the client.
+        Value.Assert(schema, data)
         const parsed = Value.Decode(schema, data) as Static<T>
         return { value: parsed, ok: true }
     } catch (e) {
