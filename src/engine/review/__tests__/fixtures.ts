@@ -6,6 +6,10 @@
 import { PropositArgumentEngine } from "../../engine.js"
 import { CHECKSUM_CONFIG } from "../../../checksum.js"
 import { createClaimLookup } from "../../library-adapters.js"
+import {
+    mutateCreateDerivationPremise,
+    populateDerivationFromCitations,
+} from "../../mutations/premises.js"
 import type { TClaim, TAxiomaticClaim } from "../../../schemas/model/claims.js"
 import type { TArgument } from "../../../schemas/model/arguments.js"
 import type { TClaimBoundVariable } from "../../../schemas/logic.js"
@@ -644,6 +648,132 @@ export function buildEngineWithNakedQSupportingPremise(): PropositArgumentEngine
 
     engine.setConclusionPremise(conclusionPremiseId)
     for (const c of claims) engine.setClaim(c)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * Builds an engine that mixes all three premise shapes a real argument has:
+ *
+ *   - `pSupport` — a freeform supporting inference `implies(A, B)`. Reviewable:
+ *     it is user-authored and carries a decidable operator.
+ *   - `pConclusion` — the conclusion premise as a bare variable bound to `cQ`.
+ *     This is the shape curated arguments actually take: the conclusion premise
+ *     asserts the conclusion claim and the supporting premises do the inferring.
+ *     It has no operator expression, so there is nothing to decide on it.
+ *   - `pDerivation` — the hidden derivation premise for `cA`, populated from a
+ *     citation so its tree is `implies(citation_var, A)`. Engine-managed
+ *     wiring, never user-authored.
+ */
+export function buildEngineWithCitationBackedDerivationPremise(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "Claim cA"),
+        makeClaim("cB", "Claim cB"),
+        makeClaim("cQ", "Conclusion claim cQ"),
+        makeClaim("cSource", "Citing source claim"),
+    ]
+    const claimLookup = createClaimLookup(claims)
+
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+
+    // Freeform supporting inference: implies(A, B).
+    const supportId = "pSupport"
+    const { result: pSupport } = engine.createPremiseWithId(supportId, {
+        type: "freeform",
+        extras: {
+            title: "Supporting — A implies B",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    pSupport.addExpression({
+        id: "eSupportRoot",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: null,
+        premiseId: supportId,
+        position: 0,
+        type: "operator",
+        variableId: null,
+        operator: "implies",
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    pSupport.addExpression({
+        id: "eSupportLeft",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: "eSupportRoot",
+        premiseId: supportId,
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    pSupport.addExpression({
+        id: "eSupportRight",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: "eSupportRoot",
+        premiseId: supportId,
+        position: 1,
+        type: "variable",
+        variableId: "vB",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+
+    // Conclusion premise: bare variable bound to cQ — no operator expression.
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    pConclusion.addExpression({
+        id: "eConclusionRoot",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: null,
+        premiseId: conclusionId,
+        position: 0,
+        type: "variable",
+        variableId: "vQ",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    // Hidden derivation premise for cA, backed by one citation →
+    // implies(cSource_var, A_derivation_var).
+    mutateCreateDerivationPremise(engine, "pDerivation", {
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        creatorId: CREATOR_ID,
+        createdOn: NOW,
+        derivedClaimId: "cA",
+        consequentVariableId: "vADerivation",
+        consequentExpressionId: "eDerivationConsequent",
+    })
+    populateDerivationFromCitations(engine, "pDerivation", ["cSource"])
 
     engine.setBehavior("assistive")
     return engine
