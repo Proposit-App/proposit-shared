@@ -57,11 +57,10 @@ describe("ClaimReactionSchema", () => {
         ).toBe(false)
     })
 
-    it("round-trips createdOn through Encode → stringify → Convert → Parse", () => {
+    it("round-trips createdOn through Encode → stringify → Decode", () => {
         const encoded = Value.Encode(ClaimReactionSchema, baseReaction)
         const parsed: unknown = JSON.parse(JSON.stringify(encoded))
-        const converted = Value.Convert(ClaimReactionSchema, parsed)
-        const back = Value.Parse(ClaimReactionSchema, converted)
+        const back = Value.Decode(ClaimReactionSchema, parsed)
         expect(back.createdOn instanceof Date).toBe(true)
         expect(back.claimVersion).toBe(2)
     })

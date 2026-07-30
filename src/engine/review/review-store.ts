@@ -129,10 +129,9 @@ export class LocalStorageReviewStore implements TReviewStore {
             const parsed: unknown = JSON.parse(raw)
             const { state: migrated, migrated: didMigrate } =
                 migrateReviewState(parsed)
-            // Convert before Parse: EncodableDate's Convert rehydrates ISO strings
-            // into Date instances (precedent: src/utils/shared/utils.ts::parseResponse).
-            const converted = Value.Convert(ReviewStateSchema, migrated)
-            const state = Value.Parse(ReviewStateSchema, converted)
+            // Decode, not Parse: EncodableDate rehydrates ISO strings into Date
+            // instances in the decode pass, which Parse does not run.
+            const state = Value.Decode(ReviewStateSchema, migrated)
             if (didMigrate) await this.save(key, state)
             return state
         } catch (err) {

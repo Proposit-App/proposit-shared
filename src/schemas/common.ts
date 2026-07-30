@@ -11,34 +11,49 @@ export { Nullable } from "@proposit/proposit-core"
 import { UUID as _UUID } from "@proposit/proposit-core"
 export const UUID = _UUID
 
-// Custom TypeBox types (TDateType extends Type.Base) must be defined locally
-// because TypeBox's Value.Check/Parse uses instanceof checks that fail across
-// separate pnpm copies of the same package.
-export class TDateType extends Type.Base<Date> {
-    public readonly type = Date
+// Custom TypeBox types must be defined locally because TypeBox resolves a
+// type's identity structurally against the copy of the library that built it,
+// so a type imported across separate pnpm copies fails Value.Check/Parse.
 
-    public override Check(value: unknown) {
-        return value instanceof Date
-    }
-    public override Errors(value: unknown): object[] {
-        if (this.Check(value)) return []
-        return [{ message: "Invalid date", value }]
-    }
-    public override Convert(value: unknown) {
-        if (this.Check(value)) return value
-        if (typeof value === "string" || typeof value === "number") {
-            const date = new Date(value)
-            if (this.Check(date)) return date
-        }
-        throw new Error("Cannot convert value to Date")
-    }
-    public override Clone(): Type.Base<Date> {
-        return new TDateType()
-    }
+/**
+ * Normalizes a `Date` or its serialized form to a `Date`.
+ *
+ * Only date strings are treated as a serialized date — the form
+ * `JSON.stringify` produces. Numbers are rejected so that a numeric field
+ * mistakenly supplied where a date belongs still fails validation.
+ */
+function toDate(value: unknown): Date | undefined {
+    if (value instanceof Date) return value
+    if (typeof value !== "string") return undefined
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? undefined : date
 }
-export function DateType(): TDateType {
-    return new TDateType()
+
+/**
+ * Creates a new {@link TDateType} schema instance.
+ *
+ * The schema admits a `Date` or its serialized date string. `Value.Decode`
+ * normalizes either into a `Date`; `Value.Encode` leaves `Date` instances in
+ * place so `JSON.stringify` renders them as ISO strings.
+ */
+export function DateType() {
+    return Type.Codec(
+        Type.Refine(
+            Type.Unsafe<Date>({}),
+            (value: unknown) => toDate(value) !== undefined,
+            () => "Invalid date"
+        )
+    )
+        .Decode((value: unknown): Date => {
+            const date = toDate(value)
+            if (date === undefined)
+                throw new Error("Cannot convert value to Date")
+            return date
+        })
+        .Encode((value: Date) => value)
 }
+/** TypeBox type that validates and decodes `Date` values. */
+export type TDateType = ReturnType<typeof DateType>
 export const EncodableDate = DateType()
 
 // These schemas embed EncodableDate so must also be defined locally
