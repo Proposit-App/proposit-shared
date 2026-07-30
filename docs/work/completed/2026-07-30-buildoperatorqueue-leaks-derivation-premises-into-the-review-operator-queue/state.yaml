@@ -1,7 +1,7 @@
 slug: 2026-07-30-buildoperatorqueue-leaks-derivation-premises-into-the-review-operator-queue
 title: buildOperatorQueue leaks derivation premises into the review operator queue
 created: '2026-07-30'
-resolution: null
+resolution: done
 priority: 60
 effort: low
 complexity: low

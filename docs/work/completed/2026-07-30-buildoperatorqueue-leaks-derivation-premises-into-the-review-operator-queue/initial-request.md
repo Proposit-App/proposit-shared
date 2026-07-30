@@ -100,3 +100,44 @@ covers this.
 is still unadopted and also filed from `proposit-server` (the review wizard
 dead-ending at "Step 1 of 0"). Different bug, adjacent code. Landing both in one
 shared publish saves the consumers a second repin cycle.
+
+## Resolution 2026-07-30 — over-count fixed here; under-count is the consumer's
+
+The reported disagreement is TWO independent mechanisms. The arithmetic:
+
+    review = header - 1 + (count of citation-populated derivation premises)
+
+0 citations -> under by 1 (the 51 measured cases); exactly 1 -> equal (46);
+2 or more -> over (200). That closes all three measured buckets exactly.
+
+**Fixed here (the over-count).** `src/engine/review/step-queue.ts:53` now skips
+`type === "derivation"`. A citation-populated derivation premise is
+`IMPLIES(citation_var, Q)` — an inference, so `listSupportingPremises()` returned
+it, with a decidable operator, so the second gate passed — and it rendered to the
+user as "Premise N (Supporting)".
+
+**NOT fixed here, and deliberately so (the constant -1).**
+`getDecidableOperatorExpressions()` is empty for a bare-variable premise, and the
+standard authored conclusion IS a bare variable (confirmed in the shipped curated
+fixtures, e.g. `historical-figures-mill/mill-01.argument.yaml:190-194`, which has
+`role: conclusion` with `tree: {type: variable}`). A bare-variable conclusion has
+no operator to accept or reject, so manufacturing a queue step for it would
+produce a review prompt with nothing to decide.
+
+The remaining defect is a labelling bug in `proposit-server`:
+`TReviewProgress.totalPremises` is the LENGTH OF THIS QUEUE, not a premise count,
+and the Review panel renders it as "N premises". `step-queue.ts:19-42` now carries
+a doc comment stating that contract explicitly so the next reader does not repeat
+the mistake. Tracked on the consumer side at
+`proposit-server/2026-07-29-premise-counts-disagree-between-the-argument-header-and-the-review-panel`,
+which is annotated not to close on the repin alone.
+
+Failing test first: `src/engine/review/__tests__/step-queue.test.ts:57` with
+fixture `buildEngineWithCitationBackedDerivationPremise`
+(`__tests__/fixtures.ts:656`). Pre-fix:
+`expected [ 'pDerivation', 'pSupport' ] to deeply equal [ 'pSupport' ]`.
+A second test at :72 pins the under-count mechanism — it passes before AND after,
+which is the point: it documents the bare-variable exclusion as intended.
+
+Latent gap found and filed rather than speculatively fixed:
+`2026-07-30-listsupportingpremises-filters-on-isinference-so-authored-constraint-premises-never-enter-the-operator-queue`.
