@@ -5,6 +5,10 @@ import {
     ArgumentPlatformData,
     CuratedArgumentPlatformData,
 } from "../integrations/index.js"
+import {
+    ARGUMENT_DESCRIPTION_MAX_LEN,
+    ARGUMENT_TITLE_MAX_LEN,
+} from "../../consts/argument.js"
 import { EncodableDate, Nullable, UUID } from "../common.js"
 import { UserPublicFieldsSchema } from "./users.js"
 import { ClaimSchema } from "./claims.js"
@@ -16,9 +20,23 @@ import {
 } from "../logic.js"
 export { ArgumentForkSchema, type TArgumentFork } from "./forks.js"
 
+// Write shape for the two user-authored free-text argument fields. Both land
+// in unbounded Postgres `text` columns, so the length cap declared here is the
+// only thing standing between a request body and arbitrarily large stored
+// data.
+//
+// The caps deliberately reuse the limits the consumers already apply, so
+// nothing previously accepted becomes rejected.
+//
+// `ArgumentSchema` below keeps its bare `Type.String()` for the same two
+// fields on purpose: it is the read model, validated on every response, and a
+// cap there would reject an already-stored over-length row on the way *out*.
+// A storage cap belongs on the way in.
 export const MutableArgumentFieldsSchema = Type.Object({
-    title: Type.String(),
-    description: Type.Optional(Type.String()),
+    title: Type.String({ maxLength: ARGUMENT_TITLE_MAX_LEN }),
+    description: Type.Optional(
+        Type.String({ maxLength: ARGUMENT_DESCRIPTION_MAX_LEN })
+    ),
 })
 export type TMutableArgumentFields = Static<typeof MutableArgumentFieldsSchema>
 

@@ -1,4 +1,8 @@
 import Type, { type Static } from "typebox"
+import {
+    CLAIM_BODY_MAX_LEN,
+    CLAIM_TITLE_MAX_LEN,
+} from "../../consts/argument.js"
 import { EncodableDate, Nullable, UUID } from "../common.js"
 import { IEEEReferenceSchema, UnparsedCitationSchema } from "./references.js"
 import {
@@ -61,10 +65,29 @@ export const MutableClaimFieldsSchema = Type.Object({
 })
 export type TMutableClaimFields = Static<typeof MutableClaimFieldsSchema>
 
+// The same fields as a request body, with the stored-length caps applied.
+// `title` and `body` land in unbounded Postgres `text` columns, so without a
+// cap here one request can persist an arbitrarily large value. The limits are
+// the ones consumers already apply, so nothing previously accepted becomes
+// rejected.
+//
+// Kept separate from `MutableClaimFieldsSchema` rather than capping that one
+// in place: it is also composed into `NormalClaimSchema`, the read model
+// validated on every response, and a cap there would reject an already-stored
+// over-length row on the way *out*. A storage cap belongs on the way in.
+export const MutableClaimWriteFieldsSchema = Type.Object({
+    title: Type.String({ maxLength: CLAIM_TITLE_MAX_LEN }),
+    body: Type.String({ maxLength: CLAIM_BODY_MAX_LEN }),
+    titleContentHash: Type.String(),
+})
+export type TMutableClaimWriteFields = Static<
+    typeof MutableClaimWriteFieldsSchema
+>
+
 // Update request: Normal mutable fields + digest. Update is Normal-only in
 // this bump (creation/update for Citation/Axiomatic comes later).
 export const ClaimUpdateRequestSchema = Type.Interface(
-    [MutableClaimFieldsSchema, ClaimMetadataFieldsSchema],
+    [MutableClaimWriteFieldsSchema, ClaimMetadataFieldsSchema],
     {}
 )
 export type TClaimUpdateFields = Static<typeof ClaimUpdateRequestSchema>

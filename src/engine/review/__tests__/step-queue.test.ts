@@ -8,6 +8,7 @@ import {
 import {
     buildEngineWithTwoPremises,
     buildEngineWithClaimSharedAcrossPremises,
+    buildEngineWithCitationBackedDerivationPremise,
 } from "./fixtures.js"
 
 describe("step-queue", () => {
@@ -51,6 +52,35 @@ describe("step-queue", () => {
             "pSupport",
         ])
         expect(queue.every((e) => e.scope === "premise")).toBe(true)
+    })
+
+    it("buildOperatorQueue excludes a citation-backed derivation premise", () => {
+        // A claim with ≥1 citation gets a derivation premise shaped
+        // implies(citation_var, Q). It is an inference with a decidable
+        // operator, so both gates pass — but it is engine-managed wiring, not
+        // a user-authored inference step, and must never be offered for review.
+        const engine = buildEngineWithCitationBackedDerivationPremise()
+        expect(
+            engine.getPremise("pDerivation")?.getDecidableOperatorExpressions()
+                .length
+        ).toBeGreaterThan(0)
+        expect(buildOperatorQueue(engine).map((e) => e.premiseId)).toEqual([
+            "pSupport",
+        ])
+    })
+
+    it("buildOperatorQueue omits a conclusion premise that is a bare variable", () => {
+        // The queue counts premises that need an operator verdict, not
+        // premises. A conclusion premise asserting a single claim has no
+        // operator to decide, so it is absent by design — the operator-queue
+        // length is not a premise count and consumers must not label it as one.
+        const engine = buildEngineWithCitationBackedDerivationPremise()
+        expect(
+            engine.getConclusionPremise()?.getDecidableOperatorExpressions()
+        ).toEqual([])
+        expect(
+            buildOperatorQueue(engine).map((e) => e.premiseId)
+        ).not.toContain("pConclusion")
     })
 
     it("advanceQueue moves forward when not at end", () => {
