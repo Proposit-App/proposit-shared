@@ -7,7 +7,7 @@ import {
 } from "../review.js"
 
 describe("review schemas", () => {
-    it("round-trips a draft through Encode → stringify → parse → Convert → Parse", () => {
+    it("round-trips a draft through Encode → stringify → parse → Decode", () => {
         const draft = {
             schemaVersion: 1 as const,
             reviewId: "00000000-0000-0000-0000-000000000001",
@@ -23,8 +23,7 @@ describe("review schemas", () => {
         }
         const encoded = Value.Encode(ReviewDraftSchema, draft)
         const parsed: unknown = JSON.parse(JSON.stringify(encoded))
-        const converted = Value.Convert(ReviewDraftSchema, parsed)
-        const back = Value.Parse(ReviewDraftSchema, converted)
+        const back = Value.Decode(ReviewDraftSchema, parsed)
         expect(back.createdAt instanceof Date).toBe(true)
         expect(back.argumentVersion).toBe(3)
     })

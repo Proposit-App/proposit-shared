@@ -62,15 +62,14 @@ describe("RetryTaskResponse", () => {
         expect(Value.Check(RetryTaskResponse, withResponseId)).toBe(true)
     })
 
-    it("round-trips a wire payload (string dates → Date via Convert+Parse)", () => {
+    it("round-trips a wire payload (string dates → Date via Decode)", () => {
         const wire = {
             ...sampleRetryTask,
             createdOn: "2026-05-27T12:00:00.000Z",
             startedAt: null,
             settledAt: null,
         }
-        const converted = Value.Convert(RetryTaskResponse, wire)
-        const parsed = Value.Parse(RetryTaskResponse, converted)
+        const parsed = Value.Decode(RetryTaskResponse, wire)
         expect(parsed.createdOn).toBeInstanceOf(Date)
         expect(parsed.id).toBe(sampleTaskUuid)
         expect(parsed.previousId).toBe(samplePreviousUuid)

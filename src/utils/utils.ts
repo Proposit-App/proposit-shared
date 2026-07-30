@@ -79,8 +79,12 @@ export async function parseRequest<T extends TSchema>(
     schema: T
 ): Promise<Static<T>> {
     const json = (await request.json()) as JsonValue
-    const converted = Value.Convert(schema, json)
-    return Value.Parse(schema, converted)
+    // Decode, not Parse: EncodableDate rehydrates wire strings into Date
+    // instances in the decode pass, which Parse does not run. The decoded and
+    // encoded static types coincide for every schema here — EncodableDate is
+    // the only decoding type and it decodes to the `Date` it already infers as
+    // — but TypeScript cannot prove that for an unresolved `T`.
+    return Value.Decode(schema, json) as Static<T>
 }
 
 // Default (2-arg) form: the error half widens to include the
@@ -166,10 +170,10 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     }
 
     try {
-        // Convert first to handle custom Type.Base types (e.g. EncodableDate)
-        // whose Convert method is not called by Value.Parse directly
-        const converted = Value.Convert(schema, data)
-        const parsed = Value.Parse(schema, converted) satisfies Static<T>
+        // Decode, not Parse: EncodableDate rehydrates wire strings into Date
+        // instances in the decode pass, which Parse does not run. See
+        // parseRequest for why the decoded value is asserted back to Static<T>.
+        const parsed = Value.Decode(schema, data) as Static<T>
         return { value: parsed, ok: true }
     } catch (e) {
         console.error("Error parsing response", e, data)
