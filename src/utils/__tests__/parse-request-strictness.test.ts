@@ -38,6 +38,19 @@ describe("parseRequest strictness", () => {
         ).resolves.toEqual({ tier: 1, role: "Normal" })
     })
 
+    test("still coerces stringly-typed wire values", async () => {
+        // The conversion pass callers depend on. It has to run before the
+        // assert, or a coercible value would be rejected outright.
+        const Coercible = Type.Object({
+            flag: Type.Boolean(),
+            count: Type.Number(),
+        })
+
+        await expect(
+            parseRequest(requestOf({ flag: "true", count: "42" }), Coercible)
+        ).resolves.toEqual({ flag: true, count: 42 })
+    })
+
     test("still rehydrates a wire date string into a Date", async () => {
         // The reason parseRequest decodes at all. Asserting first must not cost
         // us this.

@@ -79,22 +79,35 @@ export async function parseRequest<T extends TSchema>(
     schema: T
 ): Promise<Static<T>> {
     const json = (await request.json()) as JsonValue
-    // Assert before decoding, and do not use Parse.
-    //
-    // Decode is required because EncodableDate rehydrates wire strings into
-    // `Date` instances in the decode pass, which Parse does not run. But
-    // Decode's own pipeline applies each schema's `default` before validating,
-    // so on its own it accepts a body with a required key omitted and silently
-    // fills the default in — turning a malformed request into a successful one.
-    // Asserting first rejects the omitted key, which is what a request body
-    // needs: a caller that leaves a field out is making a mistake, not opting
-    // into a default.
-    //
-    // The decoded and encoded static types coincide for every schema here —
-    // EncodableDate is the only decoding type and it decodes to the `Date` it
-    // already infers as — but TypeScript cannot prove that for an unresolved `T`.
-    Value.Assert(schema, json)
-    return Value.Decode(schema, json) as Static<T>
+    return convertAssertDecode(schema, json)
+}
+
+/**
+ * Convert, then assert, then decode — the three steps a request/response body
+ * needs, composed explicitly rather than via `Value.Parse`.
+ *
+ * - **Convert** coerces the wire's stringly-typed values (`"true"`, `"42"`)
+ *   into the booleans and numbers the schema declares. Callers rely on this.
+ * - **Assert** rejects anything the schema does not admit. It has to run
+ *   *after* Convert (or a coercible value would be refused) and it has to be a
+ *   bare assert rather than part of `Value.Parse`'s pipeline, because that
+ *   pipeline applies each schema's `default` first — which would accept a body
+ *   with a required key omitted and silently invent the value.
+ * - **Decode** is what rehydrates `EncodableDate` into real `Date` instances.
+ *   `Value.Parse` does not run the decode pass, which is why this is not simply
+ *   a `Value.Parse` call.
+ *
+ * The decoded and encoded static types coincide for every schema here —
+ * `EncodableDate` is the only decoding type and it decodes to the `Date` it
+ * already infers as — but TypeScript cannot prove that for an unresolved `T`.
+ */
+function convertAssertDecode<T extends TSchema>(
+    schema: T,
+    value: unknown
+): Static<T> {
+    const converted = Value.Convert(schema, value)
+    Value.Assert(schema, converted)
+    return Value.Decode(schema, converted) as Static<T>
 }
 
 // Default (2-arg) form: the error half widens to include the
@@ -180,13 +193,10 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     }
 
     try {
-        // Assert before decoding, for the reason spelled out on parseRequest:
-        // Decode applies each schema's `default` before validating, so alone it
-        // would accept a response with a required field missing and invent the
-        // value. A response that does not match its schema is a server bug, and
-        // quietly defaulting it hides that bug from the client.
-        Value.Assert(schema, data)
-        const parsed = Value.Decode(schema, data) as Static<T>
+        // Same three steps as the request path — see convertAssertDecode. A
+        // response that does not match its schema is a server bug, and letting
+        // a default paper over it hides that bug from the client.
+        const parsed = convertAssertDecode(schema, data)
         return { value: parsed, ok: true }
     } catch (e) {
         console.error("Error parsing response", e, data)
