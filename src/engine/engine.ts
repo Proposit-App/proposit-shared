@@ -21,6 +21,11 @@ import type {
 } from "../schemas/logic.js"
 import type { TClaim } from "../schemas/model/claims.js"
 import type { TClaimCitation } from "../schemas/model/citations.js"
+import type {
+    TOriginAnchor,
+    TOriginDocument,
+    TOriginLink,
+} from "../schemas/model/origin.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
 import { createClaimLookup } from "./library-adapters.js"
 
@@ -56,8 +61,29 @@ export type TProjectSnapshot = TArgumentEngineSnapshot<
 >
 
 /**
+ * The argument version's origin data: the source text it was built from, the
+ * link carrying the stance, and the document spans individual parts derive
+ * from.
+ *
+ * `document` and `link` are scalars rather than collections because the
+ * product allows at most one source text per argument version, even though
+ * core's origin library admits several. Encoding the rule here keeps every
+ * reading surface — web, mobile, markdown export — free of it.
+ *
+ * `anchors` is keyed by the anchor's `targetId`: an expression id, a premise
+ * id, or the argument id. That is the index a reading surface asks for —
+ * "does this item have provenance, and from which passage".
+ */
+export type TProjectOriginData = {
+    document: TOriginDocument | undefined
+    link: TOriginLink | undefined
+    anchors: Record<string, TOriginAnchor[]>
+}
+
+/**
  * Extended reactive snapshot. Adds project-level claim and citation edge
- * data and computed validation issues to core's reactive snapshot.
+ * data, origin data, and computed validation issues to core's reactive
+ * snapshot.
  */
 export type TProjectReactiveSnapshot = TReactiveSnapshot<
     TArgument,
@@ -67,6 +93,7 @@ export type TProjectReactiveSnapshot = TReactiveSnapshot<
 > & {
     claims: Record<string, TClaim>
     citations: Record<string, TClaimCitation[]>
+    origin: TProjectOriginData
     validationIssues: TCoreValidationIssue[]
 }
 
@@ -89,6 +116,9 @@ export class PropositArgumentEngine extends ArgumentEngine<
     // so that setClaim() makes new claims visible to addVariable() validation.
     private claimsMap: Map<string, TClaim>
     private citationsMap = new Map<string, TClaimCitation[]>()
+    private originDocument: TOriginDocument | undefined
+    private originLink: TOriginLink | undefined
+    private originAnchorsMap = new Map<string, TOriginAnchor[]>()
 
     // Shared context object that is captured by the mutableLookup closure
     // and also accessible after construction so the rollback() override can
@@ -210,10 +240,16 @@ export class PropositArgumentEngine extends ArgumentEngine<
     // Dirty tracking for structural sharing
     private claimsDirty = true
     private citationsDirty = true
+    private originDirty = true
 
     // Cached records for reactive snapshot
     private cachedClaims: Record<string, TClaim> = {}
     private cachedCitations: Record<string, TClaimCitation[]> = {}
+    private cachedOrigin: TProjectOriginData = {
+        document: undefined,
+        link: undefined,
+        anchors: {},
+    }
 
     // Full combined snapshot cache (for useSyncExternalStore referential stability)
     private cachedProjectSnapshot: TProjectReactiveSnapshot | undefined
@@ -242,6 +278,18 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.citationsDirty = false
         }
         return this.cachedCitations
+    }
+
+    private getOriginData(): TProjectOriginData {
+        if (this.originDirty) {
+            this.cachedOrigin = {
+                document: this.originDocument,
+                link: this.originLink,
+                anchors: Object.fromEntries(this.originAnchorsMap),
+            }
+            this.originDirty = false
+        }
+        return this.cachedOrigin
     }
 
     // ──── Typed snapshot accessor ────
@@ -318,6 +366,68 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.citationsDirty = true
             this.notifySubscribers()
         }
+    }
+
+    // ──── Origin accessors ────
+
+    getOrigin(): TProjectOriginData {
+        return this.getOriginData()
+    }
+
+    /** Sets (or replaces) the argument version's source text. */
+    setOriginDocument(document: TOriginDocument | undefined): void {
+        this.originDocument = document
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    /** Sets (or replaces) the document↔argument-version link and its stance. */
+    setOriginLink(link: TOriginLink | undefined): void {
+        this.originLink = link
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    getOriginAnchorsForTarget(targetId: string): TOriginAnchor[] {
+        return this.originAnchorsMap.get(targetId) ?? []
+    }
+
+    addOriginAnchor(anchor: TOriginAnchor): void {
+        const existing = this.originAnchorsMap.get(anchor.targetId) ?? []
+        this.originAnchorsMap.set(anchor.targetId, [...existing, anchor])
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    removeOriginAnchor(anchorId: string): void {
+        let removed = false
+        for (const [targetId, anchors] of this.originAnchorsMap.entries()) {
+            const filtered = anchors.filter((a) => a.id !== anchorId)
+            if (filtered.length === anchors.length) continue
+            if (filtered.length > 0) {
+                this.originAnchorsMap.set(targetId, filtered)
+            } else {
+                this.originAnchorsMap.delete(targetId)
+            }
+            removed = true
+        }
+        if (removed) {
+            this.originDirty = true
+            this.notifySubscribers()
+        }
+    }
+
+    /**
+     * Drops the document, the link, and every anchor together. Anchors are
+     * code-point offsets into one exact text, so a document that goes away
+     * takes its anchors with it.
+     */
+    clearOrigin(): void {
+        this.originDocument = undefined
+        this.originLink = undefined
+        this.originAnchorsMap.clear()
+        this.originDirty = true
+        this.notifySubscribers()
     }
 
     // ──── canFork override ────
@@ -463,6 +573,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         const base = super.buildReactiveSnapshot()
         const claims = this.getClaimsRecord()
         const citations = this.getCitationsRecord()
+        const origin = this.getOriginData()
 
         // Recompute validation when base engine snapshot changes
         let validationIssues: TCoreValidationIssue[]
@@ -506,7 +617,8 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.cachedProjectSnapshot &&
             base === this.lastBaseSnapshot &&
             claims === this.cachedProjectSnapshot.claims &&
-            citations === this.cachedProjectSnapshot.citations
+            citations === this.cachedProjectSnapshot.citations &&
+            origin === this.cachedProjectSnapshot.origin
         ) {
             return this.cachedProjectSnapshot
         }
@@ -515,6 +627,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
             ...base,
             claims,
             citations,
+            origin,
             validationIssues,
         }
         this.cachedProjectSnapshot = snapshot
@@ -527,14 +640,22 @@ export class PropositArgumentEngine extends ArgumentEngine<
     /**
      * Creates a PropositArgumentEngine from server-provided data: an engine
      * snapshot (for logic state) plus arrays of claims and citation
-     * edges.
+     * edges, and optionally the argument version's origin data.
+     *
+     * `origin` is optional so an argument with no source text — and every
+     * caller written before origin data existed — loads unchanged.
      *
      * Does NOT trigger reactive notifications during initial data loading.
      */
     static fromServerData(
         snapshot: TProjectSnapshot,
         claims: TClaim[],
-        citations: TClaimCitation[]
+        citations: TClaimCitation[],
+        origin?: {
+            document?: TOriginDocument
+            link?: TOriginLink
+            anchors?: TOriginAnchor[]
+        }
     ): PropositArgumentEngine {
         const claimLookup = createClaimLookup(claims)
         const engine = new PropositArgumentEngine(
@@ -595,6 +716,13 @@ export class PropositArgumentEngine extends ArgumentEngine<
             const existing = engine.citationsMap.get(cc.claimId) ?? []
             existing.push(cc)
             engine.citationsMap.set(cc.claimId, existing)
+        }
+        engine.originDocument = origin?.document
+        engine.originLink = origin?.link
+        for (const anchor of origin?.anchors ?? []) {
+            const existing = engine.originAnchorsMap.get(anchor.targetId) ?? []
+            existing.push(anchor)
+            engine.originAnchorsMap.set(anchor.targetId, existing)
         }
 
         return engine

@@ -13,11 +13,7 @@ import { IEEEReferenceSchema, UnparsedCitationSchema } from "./references.js"
 // The stance, target-type, and segment schemas are re-exported unchanged so a
 // consumer has one import path for the whole origin wire format, the same way
 // `schemas/grammar` re-exports core's grammar wire format.
-export {
-    OriginAnchorTargetTypeSchema,
-    OriginSegmentSchema,
-    OriginStanceSchema,
-}
+export { OriginAnchorTargetTypeSchema, OriginSegmentSchema, OriginStanceSchema }
 export type TOriginStance = Static<typeof OriginStanceSchema>
 export type TOriginAnchorTargetType = Static<
     typeof OriginAnchorTargetTypeSchema

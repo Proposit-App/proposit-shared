@@ -23,6 +23,7 @@ function makeSnapshot(
         roles: { conclusionPremiseId: undefined },
         claims: {},
         citations: {},
+        origin: { document: undefined, link: undefined, anchors: {} },
         validationIssues: [],
         ...overrides,
     }
