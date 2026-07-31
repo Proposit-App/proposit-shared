@@ -54,6 +54,16 @@
 - `PropositArgumentEngine.fromServerData` takes an **optional** fourth
   parameter carrying `{ document, link, anchors }`. Every existing
   three-argument call site is unaffected.
+- `serializeArgumentToMarkdown` (`src/engine/render/markdown.ts`) renders origin
+  anchors off `snapshot.origin`. An expression anchor becomes a nested bullet
+  under its claim, a premise anchor a paragraph under the premise heading, and an
+  argument anchor a line in the header blockquote — each reading
+  `Based on origin text "…"`, with the source document's reference appended to
+  the header line via `getInlineSourceLabel`. A document with a reference but no
+  argument-level anchor still renders `> Based on origin text — …`. Anchor
+  offsets are never rendered, and passages spanning lines are collapsed to one
+  line. A snapshot with no origin data serializes byte-identically to before,
+  including one rehydrated from wire data that predates the `origin` slice.
 
 ## Notes
 

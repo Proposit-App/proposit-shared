@@ -1,6 +1,8 @@
 import type { TProjectReactiveSnapshot } from "../engine.js"
 import { buildTextTree, type TTextTreeItem } from "../text-tree.js"
 import type { TClaim } from "../../schemas/model/claims.js"
+import type { TOriginAnchor } from "../../schemas/model/origin.js"
+import { getInlineSourceLabel } from "./citation.js"
 
 /**
  * Serialize an argument's full contents — metadata, the premise/claim logic
@@ -31,6 +33,33 @@ export function serializeArgumentToMarkdown(
     return sections.join("\n\n") + "\n"
 }
 
+const ORIGIN_LEAD = "Based on origin text"
+
+/**
+ * The passage an anchored part of the argument was written from. Quoted rather
+ * than located: a reader holding the exported document can find the passage by
+ * searching the source text for it, whereas the anchor's code-point offsets
+ * would be unusable outside the app.
+ *
+ * Whitespace is collapsed because a passage may span lines in the source text
+ * and this renders as a single markdown line.
+ */
+function originPassage(anchor: TOriginAnchor): string {
+    return `${ORIGIN_LEAD} "${anchor.exact.replace(/\s+/g, " ").trim()}"`
+}
+
+/**
+ * The anchors attached to one target — an expression id, a premise id, or the
+ * argument id. `origin` is optional-chained because a snapshot rehydrated from
+ * wire data written before origin data existed omits the slice entirely.
+ */
+function anchorsFor(
+    snapshot: TProjectReactiveSnapshot,
+    targetId: string
+): TOriginAnchor[] {
+    return snapshot.origin?.anchors?.[targetId] ?? []
+}
+
 function renderHeader(snapshot: TProjectReactiveSnapshot): string {
     const { argument } = snapshot
     const lines: string[] = [`# ${argument.title}`]
@@ -43,6 +72,24 @@ function renderHeader(snapshot: TProjectReactiveSnapshot): string {
         ? `Published${argument.publishedOn ? ` on ${formatDate(argument.publishedOn)}` : ""}`
         : "Draft"
     lines.push("", `> Version ${argument.version} — ${status}`)
+
+    // Provenance for the argument as a whole rides in the same blockquote as
+    // the version line — it describes the document, not any one logic item.
+    const originDocument = snapshot.origin?.document
+    if (originDocument) {
+        const attribution = originDocument.reference
+            ? ` — ${getInlineSourceLabel(originDocument.reference)}`
+            : ""
+        const anchors = anchorsFor(snapshot, argument.id)
+        for (const anchor of anchors) {
+            lines.push(`> ${originPassage(anchor)}${attribution}`)
+        }
+        // With no whole-argument passage, still name the source, so passages
+        // quoted further down are attributed to something.
+        if (anchors.length === 0 && originDocument.reference) {
+            lines.push(`> ${ORIGIN_LEAD}${attribution}`)
+        }
+    }
 
     return lines.join("\n")
 }
@@ -59,10 +106,18 @@ function renderLogic(snapshot: TProjectReactiveSnapshot): string {
                 item.role === "conclusion" ? "Conclusion" : "Supporting premise"
             const heading = item.title ? `${role} — ${item.title}` : role
             lines.push("", `### ${heading}`, "")
+            for (const anchor of anchorsFor(snapshot, item.premiseId)) {
+                lines.push(originPassage(anchor), "")
+            }
         } else if (item.type === "claim") {
             const indent = "  ".repeat(item.depth)
             const prefix = item.negated ? "NOT " : ""
             lines.push(`${indent}- ${prefix}${claimLabel(item, snapshot)}`)
+            // A nested bullet, not a bare line: a line following a list item is
+            // folded into that item's paragraph by markdown renderers.
+            for (const anchor of anchorsFor(snapshot, item.expressionId)) {
+                lines.push(`${indent}  - ${originPassage(anchor)}`)
+            }
         } else if (item.type === "operator") {
             const indent = "  ".repeat(item.depth)
             lines.push(`${indent}- *${item.label}*`)

@@ -31,7 +31,12 @@ import {
     applySkeletonOverlay,
     nextSkeletonOperator,
 } from "../overlay/index.js"
-import { goldenSnapshot } from "./derived-view-goldens.js"
+import {
+    goldenSnapshot,
+    emptyOriginGoldenSnapshot,
+    originGoldenSnapshot,
+    unanchoredOriginGoldenSnapshot,
+} from "./derived-view-goldens.js"
 
 const snapshot = goldenSnapshot()
 const items = buildTextTree(snapshot)
@@ -183,6 +188,69 @@ describe("engine/render", () => {
           - Smith 2020 — cited by: Q follows
           "
         `)
+    })
+
+    test("serializeArgumentToMarkdown — an argument with no source text is unchanged", () => {
+        expect(serializeArgumentToMarkdown(emptyOriginGoldenSnapshot())).toBe(
+            serializeArgumentToMarkdown(snapshot)
+        )
+    })
+
+    test("serializeArgumentToMarkdown — anchored content quotes its passage", () => {
+        expect(serializeArgumentToMarkdown(originGoldenSnapshot()))
+            .toMatchInlineSnapshot(`
+              "# The golden argument
+
+              A worked example.
+
+              > Version 3 — Published on 2026-01-15
+              > Based on origin text "All men are mortal." — The Republic
+
+              ## Logic
+
+              ### Conclusion
+
+              - Q follows
+                - Based on origin text "Therefore Socrates is mortal."
+              - *is true if*
+              - P is true
+
+              ### Supporting premise — Ground
+
+              Based on origin text "Socrates is a man."
+
+              - P is true
+
+              ### Supporting premise — Objection
+
+              - NOT R the rebutted
+
+              ## Claims
+              - **P is true** _(claim)_ — because reasons
+              - **Q follows** _(claim)_
+              - **R the rebutted** _(claim)_ — a countered claim
+
+              ## Sources
+              - Smith 2020 — cited by: Q follows
+              "
+            `)
+    })
+
+    test("serializeArgumentToMarkdown — passages quote text, never offsets", () => {
+        const originLines = serializeArgumentToMarkdown(originGoldenSnapshot())
+            .split("\n")
+            .filter((line) => line.includes("Based on origin text"))
+        expect(originLines).toHaveLength(3)
+        for (const line of originLines) expect(line).not.toMatch(/\d/)
+    })
+
+    test("serializeArgumentToMarkdown — a source with no whole-argument passage still names itself", () => {
+        const header = serializeArgumentToMarkdown(
+            unanchoredOriginGoldenSnapshot()
+        ).split("\n\n")[2]
+        expect(header).toBe(
+            "> Version 3 — Published on 2026-01-15\n> Based on origin text — The Republic"
+        )
     })
 
     test("serializeArgumentText — plain-text export", () => {

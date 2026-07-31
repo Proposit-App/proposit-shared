@@ -21,6 +21,11 @@ declare which parts of it go unspoken in the natural-language original.
   reported as a contradiction.
 - **Attribution without a prompt.** A source text can carry the same structured
   reference a cited source does, so a reader can find the original.
+- **A copied argument brings its source text with it.** Copying an argument as a
+  document now quotes, beside each part that was linked to the source, the
+  passage it came from — and names the source itself at the top. Someone handed
+  only the copy can see what each piece was written from, with no offsets or
+  identifiers to decode.
 - **Source-text limits per tier.** Each account tier now has a ceiling on a
   single source text and on the total stored across an account. Unverified
   accounts get none, as with every other allowance.

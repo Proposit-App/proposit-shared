@@ -4,7 +4,7 @@
 // byte-for-byte. Fixtures are hand-built wire-shaped snapshots — no engine run —
 // so the inputs are stable and reviewable.
 
-import type { TProjectReactiveSnapshot } from "../engine.js"
+import type { TProjectOriginData, TProjectReactiveSnapshot } from "../engine.js"
 import type { TClaim } from "../../schemas/model/claims.js"
 import type { TClaimCitation } from "../../schemas/model/citations.js"
 import type { TPropositionalExpressionCombined } from "../../schemas/logic.js"
@@ -268,6 +268,102 @@ export function goldenSnapshot(): TProjectReactiveSnapshot {
             },
         ],
     } as unknown as TProjectReactiveSnapshot
+}
+
+const ORIGIN_DOCUMENT_TEXT =
+    "All men are mortal.\nSocrates is a man.\nTherefore Socrates is mortal."
+
+function originAnchor(
+    targetType: "expression" | "premise" | "argument",
+    targetId: string,
+    exact: string
+): TProjectOriginData["anchors"][string][number] {
+    return {
+        id: `anchor-${targetId}`,
+        argumentId: "a",
+        argumentVersion: 3,
+        documentId: "doc1",
+        targetType,
+        targetId,
+        exact,
+        startCodePoint: ORIGIN_DOCUMENT_TEXT.indexOf(exact),
+        endCodePoint: ORIGIN_DOCUMENT_TEXT.indexOf(exact) + exact.length,
+        checksum: "c",
+        createdOn: new Date("2026-01-01T00:00:00Z"),
+    } as unknown as TProjectOriginData["anchors"][string][number]
+}
+
+function originDocument(
+    reference?: unknown
+): TProjectOriginData["document"] | undefined {
+    return {
+        id: "doc1",
+        text: ORIGIN_DOCUMENT_TEXT,
+        digest: "d",
+        checksum: "c",
+        creatorId: "u",
+        createdOn: new Date("2026-01-01T00:00:00Z"),
+        reference,
+    } as unknown as TProjectOriginData["document"]
+}
+
+function originLink(): TProjectOriginData["link"] {
+    return {
+        id: "link1",
+        argumentId: "a",
+        argumentVersion: 3,
+        documentId: "doc1",
+        stance: "representation",
+        checksum: "c",
+        createdOn: new Date("2026-01-01T00:00:00Z"),
+    } as unknown as TProjectOriginData["link"]
+}
+
+/**
+ * The golden snapshot plus origin data: a source document with a structured
+ * reference, and one anchor of each target type — the argument as a whole, the
+ * `supp` premise, and the `concl#e2` claim expression (the conclusion's `Q`).
+ * The expression anchor's passage spans a newline on purpose, so the export's
+ * whitespace collapsing is covered by the golden output itself.
+ */
+export function originGoldenSnapshot(): TProjectReactiveSnapshot {
+    const snapshot = goldenSnapshot()
+    snapshot.origin = {
+        document: originDocument({ type: "Book", title: "The Republic" }),
+        link: originLink(),
+        anchors: {
+            a: [originAnchor("argument", "a", "All men are mortal.")],
+            supp: [originAnchor("premise", "supp", "Socrates is a man.")],
+            "concl#e2": [
+                originAnchor(
+                    "expression",
+                    "concl#e2",
+                    "Therefore\nSocrates is mortal."
+                ),
+            ],
+        },
+    }
+    return snapshot
+}
+
+/** The golden snapshot with an origin slice present but empty. */
+export function emptyOriginGoldenSnapshot(): TProjectReactiveSnapshot {
+    const snapshot = goldenSnapshot()
+    snapshot.origin = { document: undefined, link: undefined, anchors: {} }
+    return snapshot
+}
+
+/** The golden snapshot with a referenced source but no argument-level anchor. */
+export function unanchoredOriginGoldenSnapshot(): TProjectReactiveSnapshot {
+    const snapshot = goldenSnapshot()
+    snapshot.origin = {
+        document: originDocument({ type: "Book", title: "The Republic" }),
+        link: originLink(),
+        anchors: {
+            supp: [originAnchor("premise", "supp", "Socrates is a man.")],
+        },
+    }
+    return snapshot
 }
 
 // Golden fixtures for the optimistic claim-reaction reducer

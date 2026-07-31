@@ -1,1 +1,1 @@
-Copy an entire argument as a single formatted document — its title, description, logic, claims, and cited sources — for pasting elsewhere.
+Copy an entire argument as a single formatted document — its title, description, logic, claims, and cited sources — for pasting elsewhere. Any part of the argument linked to a passage of its source text carries that passage, quoted, beside it, so a reader holding only the copy can see what each piece was written from.
