@@ -30,4 +30,8 @@ declare which parts of it go unspoken in the natural-language original.
   single source text and on the total stored across an account. Unverified
   accounts get none, as with every other allowance. The two limits are
   optional in this release so an app carrying it keeps working against a
-  server that has not deployed yet; they become required in a later one.
+  server that has not deployed yet; they become required in a later one. A
+  limit that is _absent_ means the server predates the feature — a surface
+  should hide the attach control rather than offer an upgrade; a limit of
+  _zero_ means the tier genuinely allows none, which is what an upgrade
+  prompt is for.

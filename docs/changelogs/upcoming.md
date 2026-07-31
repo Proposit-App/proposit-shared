@@ -77,13 +77,27 @@ anchors }`, with `anchors` keyed by the anchor's `targetId`.
   path silently broke. Re-writing the same document (how attribution is
   applied) keeps them.
 - `addOriginAnchor` rejects an anchor whose `documentId` is not the attached
-  document's. This engine keeps a parallel origin store rather than embedding
+  document's, and `fromServerData` routes its anchors through the same guard —
+  so a `GET …/origin` body carrying `document: null` alongside anchors is
+  refused at load rather than producing an engine whose markdown export quotes
+  an unattached source. This engine keeps a parallel origin store rather than embedding
   core's `OriginLibrary`, so it inherits none of that library's span/quote
   checks — the id check is the one it can make, and the JSDoc now says so.
 - `mutateAttachOriginDocument` rejects a `link.documentId` that does not match
   the document being attached.
+- **Deleting a premise, expression, or variable does NOT reap its origin
+  anchors — the persistence layer must.** They become unreachable from every
+  in-memory reader (derivation and the markdown export both walk live content
+  and look anchors up by target id), so nothing renders wrong, but they ride
+  the snapshot and, once persisted, become rows nothing collects. A consumer
+  deleting an argument entity deletes its anchors in the same transaction.
 - `mutateMarkExpressionEnthymeme` refuses an operator or formula expression,
-  and a premise-bound variable expression. Core reports either as a `P-6`
+  and a premise-bound variable expression — **on the mark only.** Unmarking is
+  never guarded, because an invalid mark is reachable without this library
+  (core reports P-6 without throwing) and guarding the unmark would leave the
+  argument unpublishable with no way to repair it. A dangling variable
+  reference is reported as its own Structural problem rather than as a
+  premise-bound one, matching how core classifies it. Core reports either as a `P-6`
   Presentable violation but does not throw, so an unguarded mutation let an
   author discover the violation at publish time. Its returned changeset now
   holds a **copy** of the expression rather than the engine's own object, so a
@@ -116,14 +130,18 @@ anchors }`, with `anchors` keyed by the anchor's `targetId`.
   (`patchExpressionAppFields` / `updateExtras`) so an unmarked entity's checksum
   is byte-identical to what it was before the mark, which is what keeps
   hierarchical checksums valid.
-- `CreateOriginAnchorRequestSchema` cannot express `endCodePoint >
-startCodePoint`: JSON Schema has no cross-field comparison, and
-  `Type.Refine`'s `~refine` predicate is ignored by `Value.Check`,
-  `Value.Parse`, and `Value.Assert` alike in typebox 1.3.8 — encoding it that
-  way would assert a constraint that runs nowhere. The rule, and the
-  span-within-document rule the schema also cannot see, are stated as server
-  obligations in the schema's JSDoc. `endCodePoint` carries `minimum: 1`, which
-  a schema can enforce.
+- `CreateOriginAnchorRequestSchema` enforces `endCodePoint > startCodePoint`
+  through `Type.Refine`. The predicate runs under `Value.Check`,
+  `Value.Assert`, and `Value.Parse` alike, so a zero-length or backwards span
+  is refused on the client too — inside `strictFetch`'s pre-send
+  `Value.Assert` — and not only at the server. The real limitation is
+  serialization: `~refine` holds functions, so `JSON.stringify` of the schema
+  drops it and a check against the round-tripped copy accepts a backwards
+  span. Anything emitting these schemas as OpenAPI or as an LLM
+  structured-output contract must validate against the live schema object. The
+  span-within-document rule stays a server obligation, stated in the schema's
+  JSDoc — the document is not in the request, so nothing there can see its
+  length.
 - No `package.json` `exports` entries were added — the existing
   `"./schemas/*"` and `"./engine/*"` wildcards cover the new modules and already
   declare `types`, `import`, and `default`.
