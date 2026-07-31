@@ -324,7 +324,10 @@ function originLink(): TProjectOriginData["link"] {
  * reference, and one anchor of each target type — the argument as a whole, the
  * `supp` premise, and the `concl#e2` claim expression (the conclusion's `Q`).
  * The expression anchor's passage spans a newline on purpose, so the export's
- * whitespace collapsing is covered by the golden output itself.
+ * whitespace collapsing is covered by the golden output itself. Every anchor's
+ * `exact` occurs verbatim in `ORIGIN_DOCUMENT_TEXT`, so its offsets slice back
+ * out to itself the way core's `OriginLibrary` requires — pinned by a test, not
+ * left to whoever edits a quote next.
  */
 export function originGoldenSnapshot(): TProjectReactiveSnapshot {
     const snapshot = goldenSnapshot()
@@ -338,7 +341,7 @@ export function originGoldenSnapshot(): TProjectReactiveSnapshot {
                 originAnchor(
                     "expression",
                     "concl#e2",
-                    "Therefore\nSocrates is mortal."
+                    "Socrates is a man.\nTherefore Socrates is mortal."
                 ),
             ],
         },

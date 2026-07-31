@@ -2,6 +2,8 @@ import { Type } from "typebox"
 import {
     AttachOriginDocumentRequestSchema,
     CreateOriginAnchorRequestSchema,
+    DeleteOriginAnchorResponseSchema,
+    DetachOriginResponseSchema,
     GetOriginResponseSchema,
     MarkEnthymemeRequestSchema,
     UpdateOriginRequestSchema,
@@ -19,7 +21,7 @@ import {
     PropositionalExpressionSchema,
     PropositionalPremiseSchema,
 } from "../../schemas/logic.js"
-import { strictFetch } from "../../utils/utils.js"
+import { parseResponse, strictFetch } from "../../utils/utils.js"
 import type { TApiClientConfig } from "../config.js"
 import { resolveBaseUrl } from "../internal.js"
 
@@ -89,8 +91,10 @@ export async function updateArgumentOriginImpl(
 }
 
 // Detaches the source text, dropping its link and every anchor into it —
-// anchors are offsets into one exact text and do not survive it. No response
-// body.
+// anchors are offsets into one exact text and do not survive it. Routed
+// through `parseResponse` rather than returning bare `void`, so a 401/403/409
+// surfaces instead of reading as success to a UI that removed the pane
+// optimistically.
 // `DELETE /api/v1/argument/{argumentId}/{version}/origin`.
 export async function detachArgumentOriginImpl(
     config: TApiClientConfig,
@@ -98,9 +102,12 @@ export async function detachArgumentOriginImpl(
     version: number
 ) {
     const baseUrl = resolveBaseUrl(config)
-    await config.fetchImpl(
-        `${baseUrl}/api/v1/argument/${argumentId}/${version}/origin`,
-        { method: "DELETE" }
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/origin`,
+            { method: "DELETE" }
+        ),
+        DetachOriginResponseSchema
     )
 }
 
@@ -125,7 +132,9 @@ export async function createOriginAnchorImpl(
     )
 }
 
-// Removes one anchor. No response body.
+// Removes one anchor. Routed through `parseResponse` for the same reason the
+// detach above is: a highlight removed optimistically must come back when the
+// request is refused.
 // `DELETE /api/v1/argument/{argumentId}/{version}/origin/anchors/{anchorId}`.
 export async function deleteOriginAnchorImpl(
     config: TApiClientConfig,
@@ -134,9 +143,12 @@ export async function deleteOriginAnchorImpl(
     anchorId: string
 ) {
     const baseUrl = resolveBaseUrl(config)
-    await config.fetchImpl(
-        `${baseUrl}/api/v1/argument/${argumentId}/${version}/origin/anchors/${anchorId}`,
-        { method: "DELETE" }
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/${version}/origin/anchors/${anchorId}`,
+            { method: "DELETE" }
+        ),
+        DeleteOriginAnchorResponseSchema
     )
 }
 

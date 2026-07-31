@@ -1,3 +1,4 @@
+import { isClaimBound } from "@proposit/proposit-core"
 import type {
     TPropositionalExpressionCombined,
     TPropositionalPremise,
@@ -18,12 +19,17 @@ import type { ProjectChangeset } from "./types.js"
 // already tracks in its changeset, so a consumer persists them through
 // `persistChangeset` alongside every other logic edit.
 //
-// Unmarking DELETES the key. A present `enthymeme` key — even holding `null`
-// or `false` — is included in the entity checksum, which would change the
-// checksum of every premise and expression in existence and break
-// hierarchical checksums. Core's `updateExtras` and `patchExpressionAppFields`
-// both delete a key whose value is `undefined`, which is why `undefined` is
-// passed here rather than `false`.
+// Unmarking DELETES the key. `entityChecksum` includes a field whenever the
+// key is *present* on the entity, and `createChecksumConfig` unions the
+// app's extra fields onto core's per-entity defaults rather than replacing
+// them — and core's defaults now carry `enthymeme`. This app's effective
+// `expressionFields` therefore contains it, and a mark demonstrably changes
+// both the expression checksum and the premise checksum. Storing `null` or
+// `false` to mean "not marked" would move every unmarked entity in existence
+// off its current checksum and break hierarchical checksums and sync
+// detection. Core's `updateExtras` and `patchExpressionAppFields` both delete
+// a key whose value is `undefined`, which is why `undefined` is passed here
+// rather than `false`.
 
 /**
  * Marks (or unmarks) a premise as going unspoken in the natural-language
@@ -51,6 +57,16 @@ export function mutateMarkPremiseEnthymeme(
  * Marks (or unmarks) a claim expression as going unspoken in the
  * natural-language original.
  *
+ * Only a **claim-bound variable expression** may be marked. Core reports a
+ * mark on an operator or formula expression, or on a premise-bound variable
+ * expression, as a `P-6` Presentable violation — a premise-bound variable's
+ * truth is derived from another premise's evaluation rather than asserted, so
+ * declaring it unspoken says nothing. Per core's standing rule only Structural
+ * violations throw, so core itself accepts the write and surfaces it at
+ * `validate('presentable')`; this mutation refuses up front instead, because
+ * it is the single route every caller takes and an author should not discover
+ * the violation at publish time.
+ *
  * **Persistence: changeset.** An expression is a changeset entity; persist the
  * returned `changes` through `persistChangeset`. Core's
  * `patchExpressionAppFields` returns nothing, so the changeset is assembled
@@ -64,6 +80,22 @@ export function mutateMarkExpressionEnthymeme(
     expression: TPropositionalExpressionCombined
     changes: ProjectChangeset
 } {
+    const target = engine.getExpression(expressionId)
+    if (!target) {
+        throw new Error(`Expression ${expressionId} not found`)
+    }
+    if (target.type !== "variable") {
+        throw new Error(
+            `Expression ${expressionId} is ${target.type}, not a claim; only a claim can be marked unspoken`
+        )
+    }
+    const variable = engine.getVariable(target.variableId)
+    if (!variable || !isClaimBound(variable)) {
+        throw new Error(
+            `Expression ${expressionId} is bound to a premise, not a claim; only a claim can be marked unspoken`
+        )
+    }
+
     engine.patchExpressionAppFields(expressionId, {
         enthymeme: marked ? true : undefined,
     } as Partial<TPropositionalExpressionCombined>)
@@ -74,7 +106,15 @@ export function mutateMarkExpressionEnthymeme(
     return {
         expression,
         changes: {
-            expressions: { added: [], modified: [expression], removed: [] },
+            // A copy, not the engine's own object: the changeset is a record
+            // of one moment, and a caller that queues changesets must not see
+            // an earlier one silently re-write itself when the entity is
+            // mutated again.
+            expressions: {
+                added: [],
+                modified: [{ ...expression }],
+                removed: [],
+            },
         },
     }
 }
@@ -91,6 +131,12 @@ export function mutateMarkExpressionEnthymeme(
  * Attaches a source text to the argument version, together with the link
  * carrying its stance.
  *
+ * Attaching over an existing, *different* document replaces it and **drops
+ * every anchor into the old one** — an anchor is a pair of code-point offsets
+ * into one exact text, and correcting a source means replacing it. This is the
+ * same rule {@link mutateDetachOriginDocument} states; the replace path is
+ * where it is easiest to forget.
+ *
  * **Persistence: model surface, not the changeset.**
  */
 export function mutateAttachOriginDocument(
@@ -98,6 +144,11 @@ export function mutateAttachOriginDocument(
     document: TOriginDocument,
     link: TOriginLink
 ): { document: TOriginDocument; link: TOriginLink } {
+    if (link.documentId !== document.id) {
+        throw new Error(
+            `Link ${link.id} points at document ${link.documentId}, not the document being attached (${document.id})`
+        )
+    }
     engine.setOriginDocument(document)
     engine.setOriginLink(link)
     return { document, link }

@@ -3,7 +3,10 @@ import { sha256Hex } from "@proposit/proposit-core"
 import { CHECKSUM_CONFIG } from "../../checksum.js"
 import { PropositArgumentEngine } from "../engine.js"
 import { createClaimLookup } from "../library-adapters.js"
-import { mutateCreateExpression } from "../mutations/expressions.js"
+import {
+    mutateCreateExpression,
+    mutateWrapExpression,
+} from "../mutations/expressions.js"
 import type { TArgument } from "../../schemas/model/arguments.js"
 import type { TPropositionalVariable } from "../../schemas/logic.js"
 import type {
@@ -31,6 +34,7 @@ export type TOriginTestScene = {
     creatorId: string
     premiseId: string
     claimBoundExpressionId: string
+    operatorExpressionId: string
     premiseBoundExpressionId: string
 }
 
@@ -62,9 +66,13 @@ export function buildOriginScene(): TOriginTestScene {
     }
 
     const claimId = v4()
+    const secondClaimId = v4()
     const engine = new PropositArgumentEngine(
         argument,
-        createClaimLookup([{ id: claimId, version: 1 }]),
+        createClaimLookup([
+            { id: claimId, version: 1 },
+            { id: secondClaimId, version: 1 },
+        ]),
         { checksumConfig: CHECKSUM_CONFIG }
     )
 
@@ -92,6 +100,21 @@ export function buildOriginScene(): TOriginTestScene {
         creatorId,
     }
     engine.addVariable(claimBoundVariable)
+
+    const secondClaimBoundVariable: TPropositionalVariable = {
+        id: v4(),
+        argumentId,
+        argumentVersion,
+        claimId: secondClaimId,
+        claimVersion: 1,
+        symbol: "R",
+        checksum: "test",
+        descendantChecksum: null,
+        combinedChecksum: "test",
+        createdOn: now,
+        creatorId,
+    }
+    engine.addVariable(secondClaimBoundVariable)
 
     const otherPremiseId = v4()
     engine.createPremiseWithId(otherPremiseId, {
@@ -132,6 +155,26 @@ export function buildOriginScene(): TOriginTestScene {
         createdOn: now,
     })
 
+    // Wrapping turns the supporting premise into an `and` over two claim-bound
+    // variables, so the scene also carries an operator expression — the shape
+    // core's P-6 rule refuses a mark on. Built by wrapping rather than by
+    // creating the operator first, because core collapses a childless operator.
+    const operatorExpressionId = v4()
+    mutateWrapExpression(engine, {
+        premiseId,
+        targetExpressionId: claimBoundExpressionId,
+        direction: "after",
+        operatorId: operatorExpressionId,
+        operatorType: "and",
+        siblingId: v4(),
+        siblingType: "variable",
+        variableId: secondClaimBoundVariable.id,
+        argumentId,
+        argumentVersion,
+        creatorId,
+        createdOn: now,
+    })
+
     const premiseBoundExpressionId = v4()
     mutateCreateExpression(engine, {
         premiseId: otherPremiseId,
@@ -152,6 +195,7 @@ export function buildOriginScene(): TOriginTestScene {
         creatorId,
         premiseId,
         claimBoundExpressionId,
+        operatorExpressionId,
         premiseBoundExpressionId,
     }
 }

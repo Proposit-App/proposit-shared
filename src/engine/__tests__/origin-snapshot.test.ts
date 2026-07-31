@@ -36,7 +36,7 @@ describe("origin data on the reactive snapshot", () => {
         scene.engine.setOriginDocument(document)
         scene.engine.setOriginLink(link)
 
-        const { origin } = scene.engine.getProjectSnapshot()
+        const origin = scene.engine.getOrigin()
         expect(origin.document).toEqual(document)
         expect(origin.link).toEqual(link)
     })
@@ -70,7 +70,7 @@ describe("origin data on the reactive snapshot", () => {
         scene.engine.addOriginAnchor(expressionAnchor)
         scene.engine.addOriginAnchor(secondPremiseAnchor)
 
-        const { anchors } = scene.engine.getProjectSnapshot().origin
+        const { anchors } = scene.engine.getOrigin()
         expect(anchors[scene.premiseId]).toEqual([
             premiseAnchor,
             secondPremiseAnchor,
@@ -95,7 +95,7 @@ describe("origin data on the reactive snapshot", () => {
 
         scene.engine.removeOriginAnchor(anchor.id)
 
-        expect(scene.engine.getProjectSnapshot().origin.anchors).toEqual({})
+        expect(scene.engine.getOrigin().anchors).toEqual({})
     })
 
     test("clearOrigin returns the snapshot to the empty shape", () => {
@@ -150,7 +150,7 @@ describe("origin data on the reactive snapshot", () => {
             { document, link, anchors: [anchor] }
         )
 
-        const { origin } = restored.getProjectSnapshot()
+        const origin = restored.getOrigin()
         expect(origin.document).toEqual(document)
         expect(origin.link).toEqual(link)
         expect(origin.anchors[scene.premiseId]).toEqual([anchor])

@@ -32,6 +32,33 @@ describe("enthymeme suggestions", () => {
         ).toEqual([])
     })
 
+    test("a representation link with no document yields none", () => {
+        const scene = buildOriginScene()
+        // Reachable from a `GET …/origin` body whose two fields are typed
+        // independently, or a detach that dropped the document row only.
+        scene.engine.setOriginLink(
+            makeLink(scene, "a-document-that-is-gone", "representation")
+        )
+
+        expect(
+            deriveEnthymemeSuggestions(scene.engine.getProjectSnapshot())
+        ).toEqual([])
+        expect(
+            deriveEnthymemeContradictions(scene.engine.getProjectSnapshot())
+        ).toEqual([])
+    })
+
+    test("a snapshot with no origin slice at all yields none", () => {
+        const scene = buildOriginScene()
+        const snapshot = {
+            ...scene.engine.getProjectSnapshot(),
+            origin: undefined,
+        }
+
+        expect(deriveEnthymemeSuggestions(snapshot)).toEqual([])
+        expect(deriveEnthymemeContradictions(snapshot)).toEqual([])
+    })
+
     test("a seed-stance document with wholly unanchored content yields none", () => {
         const scene = buildOriginScene()
         attach(scene, "seed")

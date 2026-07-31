@@ -13,9 +13,11 @@ import {
 /**
  * Response body for `GET /api/v1/argument/[argumentId]/[version]/origin`.
  *
- * The same triple the reactive snapshot's `origin` slice holds, so a client
- * can hydrate the snapshot from this read without reshaping anything. Both
- * `document` and `link` are `null` on an argument with no source text.
+ * Feeds `PropositArgumentEngine.fromServerData`'s fourth parameter directly —
+ * that parameter accepts `null` as well as absence precisely so this body
+ * needs no reshaping. `document` and `link` are `null` on an argument with no
+ * source text, because JSON cannot carry `undefined`; the snapshot's `origin`
+ * slice only ever exposes `undefined`.
  */
 export const GetOriginResponseSchema = Type.Object({
     document: Type.Union([OriginDocumentSchema, Type.Null()]),
@@ -72,12 +74,22 @@ export type TUpdateOriginRequest = Static<typeof UpdateOriginRequestSchema>
  * authoritative** and the server derives `exact` (and any surrounding
  * context) by slicing the document at those code-point offsets. The
  * pipeline-produced direction is the reverse and does not travel this route.
+ *
+ * **The server must reject `endCodePoint <= startCodePoint`, and any span
+ * that runs past the end of the document.** Neither is expressible here:
+ * JSON Schema has no cross-field comparison, and the document length is not
+ * in the request at all. `Type.Refine` looks like it would carry the first
+ * one, but in typebox 1.3.8 a `~refine` predicate is ignored by `Value.Check`,
+ * `Value.Parse`, and `Value.Assert` alike — encoding the rule that way would
+ * assert a constraint that runs nowhere, which is worse than stating it here.
+ * `endCodePoint` carries `minimum: 1` because a zero-length span is degenerate
+ * regardless of where it starts, and that much a schema can say.
  */
 export const CreateOriginAnchorRequestSchema = Type.Object({
     targetType: Type.Index(OriginAnchorSchema, Type.Literal("targetType")),
     targetId: Type.String(),
     startCodePoint: Type.Integer({ minimum: 0 }),
-    endCodePoint: Type.Integer({ minimum: 0 }),
+    endCodePoint: Type.Integer({ minimum: 1 }),
 })
 export type TCreateOriginAnchorRequest = Static<
     typeof CreateOriginAnchorRequestSchema
@@ -96,3 +108,26 @@ export const MarkEnthymemeRequestSchema = Type.Object({
     marked: Type.Boolean(),
 })
 export type TMarkEnthymemeRequest = Static<typeof MarkEnthymemeRequestSchema>
+
+/**
+ * Response body for `DELETE …/origin`.
+ *
+ * A body rather than a bare 204 so the client can route the response through
+ * `parseResponse` and see a 401/403/404/409 instead of mistaking it for
+ * success. `detachedAnchorIds` names the anchors that went with the document —
+ * a detach always takes them, and a UI rolling back an optimistic removal
+ * needs to know which highlights disappeared.
+ */
+export const DetachOriginResponseSchema = Type.Object({
+    detachedDocumentId: Type.Union([Type.String(), Type.Null()]),
+    detachedAnchorIds: Type.Array(Type.String()),
+})
+export type TDetachOriginResponse = Static<typeof DetachOriginResponseSchema>
+
+/** Response body for `DELETE …/origin/anchors/[anchorId]`. */
+export const DeleteOriginAnchorResponseSchema = Type.Object({
+    deletedAnchorId: Type.String(),
+})
+export type TDeleteOriginAnchorResponse = Static<
+    typeof DeleteOriginAnchorResponseSchema
+>

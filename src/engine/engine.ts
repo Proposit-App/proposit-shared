@@ -93,7 +93,15 @@ export type TProjectReactiveSnapshot = TReactiveSnapshot<
 > & {
     claims: Record<string, TClaim>
     citations: Record<string, TClaimCitation[]>
-    origin: TProjectOriginData
+    /**
+     * Optional, and every reader must optional-chain it. A snapshot this
+     * engine builds always carries it, but a snapshot rehydrated from wire
+     * data written before origin data existed does not, and neither does one
+     * hand-built by a consumer's test fixture or optimistic overlay. Typing it
+     * as required would make it a breaking change for every such caller while
+     * still being a lie at runtime.
+     */
+    origin?: TProjectOriginData
     validationIssues: TCoreValidationIssue[]
 }
 
@@ -374,8 +382,19 @@ export class PropositArgumentEngine extends ArgumentEngine<
         return this.getOriginData()
     }
 
-    /** Sets (or replaces) the argument version's source text. */
+    /**
+     * Sets, replaces, or clears the argument version's source text.
+     *
+     * **Swapping in a different document drops every anchor**, because an
+     * anchor is a pair of code-point offsets into one exact text and means
+     * nothing against another. Re-writing the same document — which is how an
+     * attribution is applied — keeps them, so the guard compares ids rather
+     * than object identity.
+     */
     setOriginDocument(document: TOriginDocument | undefined): void {
+        if (document?.id !== this.originDocument?.id) {
+            this.originAnchorsMap.clear()
+        }
         this.originDocument = document
         this.originDirty = true
         this.notifySubscribers()
@@ -388,11 +407,40 @@ export class PropositArgumentEngine extends ArgumentEngine<
         this.notifySubscribers()
     }
 
+    /**
+     * Anchors on one target.
+     *
+     * **Reaping anchors whose target has been deleted is the persistence
+     * layer's job, not this engine's.** Removing a premise, expression, or
+     * variable leaves that target's anchors in the store: they are unreachable
+     * from every reader here (derivation and the markdown export both walk
+     * live content and look anchors up by target id), but they do ride the
+     * snapshot, and once anchors are persisted they become rows nothing
+     * collects. A consumer deleting an argument entity deletes its anchors in
+     * the same transaction.
+     */
     getOriginAnchorsForTarget(targetId: string): TOriginAnchor[] {
         return this.originAnchorsMap.get(targetId) ?? []
     }
 
+    /**
+     * Records one anchor, rejecting any that does not belong to the attached
+     * document.
+     *
+     * Core's `OriginLibrary` also refuses an anchor whose span does not slice
+     * out its own quote, and one whose span leaves the document. This engine
+     * keeps a **parallel origin store** rather than embedding that library, so
+     * it inherits none of those checks — the id check below is the only one it
+     * can make without the code-point index. A caller that mints anchors (the
+     * persistence layer, the ingestion pipeline) is responsible for the span
+     * and quote checks.
+     */
     addOriginAnchor(anchor: TOriginAnchor): void {
+        if (anchor.documentId !== this.originDocument?.id) {
+            throw new Error(
+                `Anchor ${anchor.id} references document ${anchor.documentId}, which is not the attached source text`
+            )
+        }
         const existing = this.originAnchorsMap.get(anchor.targetId) ?? []
         this.originAnchorsMap.set(anchor.targetId, [...existing, anchor])
         this.originDirty = true
@@ -645,6 +693,11 @@ export class PropositArgumentEngine extends ArgumentEngine<
      * `origin` is optional so an argument with no source text — and every
      * caller written before origin data existed — loads unchanged.
      *
+     * `document` and `link` accept `null` as well as absence so the body of
+     * `GET …/origin` can be handed straight in; JSON cannot carry `undefined`,
+     * so the wire says `null` and this normalizes it. The snapshot only ever
+     * exposes `undefined`.
+     *
      * Does NOT trigger reactive notifications during initial data loading.
      */
     static fromServerData(
@@ -652,8 +705,8 @@ export class PropositArgumentEngine extends ArgumentEngine<
         claims: TClaim[],
         citations: TClaimCitation[],
         origin?: {
-            document?: TOriginDocument
-            link?: TOriginLink
+            document?: TOriginDocument | null
+            link?: TOriginLink | null
             anchors?: TOriginAnchor[]
         }
     ): PropositArgumentEngine {
@@ -717,8 +770,8 @@ export class PropositArgumentEngine extends ArgumentEngine<
             existing.push(cc)
             engine.citationsMap.set(cc.claimId, existing)
         }
-        engine.originDocument = origin?.document
-        engine.originLink = origin?.link
+        engine.originDocument = origin?.document ?? undefined
+        engine.originLink = origin?.link ?? undefined
         for (const anchor of origin?.anchors ?? []) {
             const existing = engine.originAnchorsMap.get(anchor.targetId) ?? []
             existing.push(anchor)

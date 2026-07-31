@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest"
+import { sliceByCodePoints } from "@proposit/proposit-core"
 import { buildTextTree } from "../text-tree.js"
 import {
     counterargumentPremiseIds,
@@ -211,7 +212,7 @@ describe("engine/render", () => {
               ### Conclusion
 
               - Q follows
-                - Based on origin text "Therefore Socrates is mortal."
+                - Based on origin text "Socrates is a man. Therefore Socrates is mortal."
               - *is true if*
               - P is true
 
@@ -434,5 +435,32 @@ describe("engine/overlay", () => {
         expect(nextSkeletonOperator("iff", true, false)).toBe("implies")
         expect(nextSkeletonOperator("iff", true, true)).toBe("and")
         expect(nextSkeletonOperator("and", false, false)).toBe("or")
+    })
+
+    test("every golden origin anchor slices back out to its own quote", () => {
+        // The same invariant core's OriginLibrary enforces on a real anchor.
+        // Without this, a fixture quote edited to something the document does
+        // not contain yields startCodePoint -1 and still renders fine.
+        for (const snapshot of [
+            originGoldenSnapshot(),
+            unanchoredOriginGoldenSnapshot(),
+        ]) {
+            const text = snapshot.origin?.document?.text
+            expect(text).toBeDefined()
+            for (const anchors of Object.values(
+                snapshot.origin?.anchors ?? {}
+            )) {
+                for (const anchor of anchors) {
+                    expect(anchor.startCodePoint).toBeGreaterThanOrEqual(0)
+                    expect(
+                        sliceByCodePoints(
+                            text!,
+                            anchor.startCodePoint,
+                            anchor.endCodePoint
+                        )
+                    ).toBe(anchor.exact)
+                }
+            }
+        }
     })
 })

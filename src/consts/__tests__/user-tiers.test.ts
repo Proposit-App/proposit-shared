@@ -44,10 +44,23 @@ describe("UserTierLimits", () => {
 
     it("never lets one document exceed a tier's aggregate storage", () => {
         for (const limits of Object.values(UserTierLimits)) {
-            expect(limits.maxSourceTextChars).toBeLessThanOrEqual(
-                limits.maxStoredSourceTextChars
+            // The schema fields are optional for wire compatibility with a
+            // server that predates them; this constant always supplies both.
+            expect(limits.maxSourceTextChars).toBeDefined()
+            expect(limits.maxStoredSourceTextChars).toBeDefined()
+            expect(limits.maxSourceTextChars!).toBeLessThanOrEqual(
+                limits.maxStoredSourceTextChars!
             )
         }
+    })
+
+    it("parses a tier-limits body from a server that predates the source-text fields", () => {
+        const { maxSourceTextChars, maxStoredSourceTextChars, ...older } =
+            UserTierLimits[UserTiers.FREE]
+        void maxSourceTextChars
+        void maxStoredSourceTextChars
+
+        expect(Value.Check(UserTierLimitsSchema, older)).toBe(true)
     })
 })
 

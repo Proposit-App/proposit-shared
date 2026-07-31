@@ -33,7 +33,15 @@ export type TEnthymemeContradiction = TEnthymemeSuggestion & {
  * from here" is true under either stance.
  */
 function claimsToRepresentSource(snapshot: TProjectReactiveSnapshot): boolean {
-    return snapshot.origin.link?.stance === "representation"
+    // The document is checked as well as the stance, not just for symmetry: a
+    // link can outlive its document (a detach that removed the row but not the
+    // link, or a `GET …/origin` body whose two fields are typed
+    // independently), and a `representation` stance with nothing to compare
+    // against would suggest that every premise in the argument goes unspoken.
+    return (
+        snapshot.origin?.document !== undefined &&
+        snapshot.origin.link?.stance === "representation"
+    )
 }
 
 /**
@@ -85,7 +93,7 @@ export function deriveEnthymemeSuggestions(
     const suggestions: TEnthymemeSuggestion[] = []
     for (const { targetType, targetId, marked } of markableContent(snapshot)) {
         if (marked) continue
-        if ((snapshot.origin.anchors[targetId] ?? []).length > 0) continue
+        if ((snapshot.origin?.anchors[targetId] ?? []).length > 0) continue
         suggestions.push({ targetType, targetId })
     }
     return suggestions
@@ -106,7 +114,7 @@ export function deriveEnthymemeContradictions(
     const contradictions: TEnthymemeContradiction[] = []
     for (const { targetType, targetId, marked } of markableContent(snapshot)) {
         if (!marked) continue
-        const anchors = snapshot.origin.anchors[targetId] ?? []
+        const anchors = snapshot.origin?.anchors[targetId] ?? []
         if (anchors.length === 0) continue
         contradictions.push({
             targetType,

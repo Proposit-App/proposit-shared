@@ -155,10 +155,19 @@ export const UserTierLimitsSchema = Type.Object({
     // system every origin anchor is an offset into. Measuring the raw paste
     // would let the same document pass or fail depending on its line endings.
     // This library owns the numbers; the server owns enforcement.
+    //
+    // OPTIONAL for this release only, and required in a later one. Response
+    // parsing is a hard `Value.Assert` with no defaulting, so making them
+    // required immediately would mean a client carrying this version could not
+    // parse `/me` from a server that has not deployed yet. The web app can be
+    // sequenced behind a server deploy; the mobile app ships through app-store
+    // review on its own schedule and cannot. `UserTierLimits` below always
+    // supplies both — a caller reading them off that constant never sees the
+    // absence.
     /** Per source-text document. */
-    maxSourceTextChars: Type.Integer(),
+    maxSourceTextChars: Type.Optional(Type.Integer()),
     /** Across all of one user's source-text documents. */
-    maxStoredSourceTextChars: Type.Integer(),
+    maxStoredSourceTextChars: Type.Optional(Type.Integer()),
 })
 export type TUserTierLimits = Static<typeof UserTierLimitsSchema>
 
