@@ -84,35 +84,55 @@ export function mutateMarkExpressionEnthymeme(
     if (!target) {
         throw new Error(`Expression ${expressionId} not found`)
     }
-    if (target.type !== "variable") {
-        throw new Error(
-            `Expression ${expressionId} is ${target.type}, not a claim; only a claim can be marked unspoken`
-        )
-    }
-    const variable = engine.getVariable(target.variableId)
-    if (!variable || !isClaimBound(variable)) {
-        throw new Error(
-            `Expression ${expressionId} is bound to a premise, not a claim; only a claim can be marked unspoken`
-        )
+
+    // Only the MARK is guarded. Unmarking deletes a key and is always safe —
+    // and must be, because an invalid mark is reachable: core reports P-6 at
+    // the Presentable tier without throwing, so a server route, the ingestion
+    // pipeline, or a bare `patchExpressionAppFields` can leave one behind.
+    // Guarding the unmark too would make exactly those expressions
+    // unrepairable through this library, and an argument carrying one is
+    // unpublishable until it is cleared.
+    if (marked) {
+        if (target.type !== "variable") {
+            throw new Error(
+                `Expression ${expressionId} is ${target.type}, not a claim; only a claim can be marked unspoken`
+            )
+        }
+        const variable = engine.getVariable(target.variableId)
+        if (!variable) {
+            // Core treats a dangling variable reference as a Structural
+            // problem rather than a P-6 one, so it is reported as what it is
+            // rather than folded into the premise-bound message.
+            throw new Error(
+                `Expression ${expressionId} references variable ${target.variableId}, which does not exist in this argument`
+            )
+        }
+        if (!isClaimBound(variable)) {
+            throw new Error(
+                `Expression ${expressionId} is bound to a premise, not a claim; only a claim can be marked unspoken`
+            )
+        }
     }
 
     engine.patchExpressionAppFields(expressionId, {
         enthymeme: marked ? true : undefined,
     } as Partial<TPropositionalExpressionCombined>)
-    const expression = engine.getExpression(expressionId)
-    if (!expression) {
+    const patched = engine.getExpression(expressionId)
+    if (!patched) {
         throw new Error(`Expression ${expressionId} not found`)
     }
+    // One copy, used for both fields. `getExpression` hands back core's live
+    // map entry, so returning it directly would let a later mutation rewrite
+    // a value the caller had already stashed — the exact hazard an optimistic
+    // rollback depends on not existing. A shallow copy suffices: an
+    // expression is entirely scalar.
+    const expression = { ...patched }
     return {
         expression,
         changes: {
-            // A copy, not the engine's own object: the changeset is a record
-            // of one moment, and a caller that queues changesets must not see
-            // an earlier one silently re-write itself when the entity is
-            // mutated again.
             expressions: {
                 added: [],
-                modified: [{ ...expression }],
+                modified: [expression],
                 removed: [],
             },
         },

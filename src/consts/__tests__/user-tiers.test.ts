@@ -44,12 +44,8 @@ describe("UserTierLimits", () => {
 
     it("never lets one document exceed a tier's aggregate storage", () => {
         for (const limits of Object.values(UserTierLimits)) {
-            // The schema fields are optional for wire compatibility with a
-            // server that predates them; this constant always supplies both.
-            expect(limits.maxSourceTextChars).toBeDefined()
-            expect(limits.maxStoredSourceTextChars).toBeDefined()
-            expect(limits.maxSourceTextChars!).toBeLessThanOrEqual(
-                limits.maxStoredSourceTextChars!
+            expect(limits.maxSourceTextChars).toBeLessThanOrEqual(
+                limits.maxStoredSourceTextChars
             )
         }
     })

@@ -198,6 +198,12 @@ describe("the enthymeme checksum invariant", () => {
 describe("enthymeme mutation guards", () => {
     test("marking an operator expression is refused", () => {
         const scene = buildOriginScene()
+        // Pin the shape as well as the message: `formula` produces the same
+        // message, so a fixture that stopped yielding an operator would keep
+        // this passing on the wrong expression type.
+        expect(
+            scene.engine.getExpression(scene.operatorExpressionId)?.type
+        ).toBe("operator")
 
         expect(() =>
             mutateMarkExpressionEnthymeme(
@@ -205,7 +211,44 @@ describe("enthymeme mutation guards", () => {
                 scene.operatorExpressionId,
                 true
             )
-        ).toThrow(/only a claim can be marked unspoken/)
+        ).toThrow(/is operator, not a claim/)
+    })
+
+    test("an invalid mark can always be cleared, whatever it sits on", () => {
+        const scene = buildOriginScene()
+        // Reachable without this library: core reports P-6 at the Presentable
+        // tier and does not throw, so a server route or the ingestion pipeline
+        // can persist this. Guarding the unmark would strand the argument —
+        // it validates as unpublishable with no way back.
+        scene.engine.patchExpressionAppFields(scene.operatorExpressionId, {
+            enthymeme: true,
+        } as never)
+        expect(
+            scene.engine.getExpression(scene.operatorExpressionId)
+        ).toHaveProperty("enthymeme", true)
+
+        const { expression } = mutateMarkExpressionEnthymeme(
+            scene.engine,
+            scene.operatorExpressionId,
+            false
+        )
+
+        expect("enthymeme" in expression).toBe(false)
+    })
+
+    test("a premise-bound mark can also be cleared", () => {
+        const scene = buildOriginScene()
+        scene.engine.patchExpressionAppFields(scene.premiseBoundExpressionId, {
+            enthymeme: true,
+        } as never)
+
+        const { expression } = mutateMarkExpressionEnthymeme(
+            scene.engine,
+            scene.premiseBoundExpressionId,
+            false
+        )
+
+        expect("enthymeme" in expression).toBe(false)
     })
 
     test("marking a premise-bound variable expression is refused", () => {
@@ -236,6 +279,23 @@ describe("enthymeme mutation guards", () => {
         )
 
         expect(asVariableExpression(captured!).enthymeme).toBe(true)
+    })
+
+    test("the returned expression does not re-write itself either", () => {
+        const scene = buildOriginScene()
+        const { expression } = mutateMarkExpressionEnthymeme(
+            scene.engine,
+            scene.claimBoundExpressionId,
+            true
+        )
+
+        mutateMarkExpressionEnthymeme(
+            scene.engine,
+            scene.claimBoundExpressionId,
+            false
+        )
+
+        expect(asVariableExpression(expression).enthymeme).toBe(true)
     })
 })
 

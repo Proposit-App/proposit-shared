@@ -131,6 +131,49 @@ describe("origin data on the reactive snapshot", () => {
         })
     })
 
+    test("fromServerData refuses anchors with no attached document", () => {
+        // The shape a mis-cascaded document delete produces. Loading it
+        // cleanly let the markdown export quote a source that is not attached,
+        // because renderLogic reads anchors without checking for a document.
+        const scene = buildOriginScene()
+        const snapshot = scene.engine.snapshot() as TProjectSnapshot
+        const anchor = makeAnchor(
+            scene,
+            "a-deleted-document",
+            "premise",
+            scene.premiseId
+        )
+
+        expect(() =>
+            PropositArgumentEngine.fromServerData(snapshot, [], [], {
+                document: null,
+                link: null,
+                anchors: [anchor],
+            })
+        ).toThrow(/not the attached source text/)
+    })
+
+    test("fromServerData refuses an anchor into a document other than the attached one", () => {
+        const scene = buildOriginScene()
+        const snapshot = scene.engine.snapshot() as TProjectSnapshot
+        const document = makeDocument(scene)
+
+        expect(() =>
+            PropositArgumentEngine.fromServerData(snapshot, [], [], {
+                document,
+                link: makeLink(scene, document.id, "seed"),
+                anchors: [
+                    makeAnchor(
+                        scene,
+                        "another-document",
+                        "premise",
+                        scene.premiseId
+                    ),
+                ],
+            })
+        ).toThrow(/not the attached source text/)
+    })
+
     test("fromServerData loads supplied origin data without notifying", () => {
         const scene = buildOriginScene()
         const snapshot = scene.engine.snapshot() as TProjectSnapshot

@@ -436,6 +436,21 @@ export class PropositArgumentEngine extends ArgumentEngine<
      * and quote checks.
      */
     addOriginAnchor(anchor: TOriginAnchor): void {
+        this.insertOriginAnchor(anchor)
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    /**
+     * The guard and the insert, without the reactive notification, so the
+     * load path in {@link fromServerData} enforces the same rule the mutation
+     * path does while keeping its no-notifications-during-load contract.
+     * Without this, a `GET …/origin` body carrying `document: null` alongside
+     * anchors — the shape a mis-cascaded document delete produces — loaded
+     * cleanly, and the markdown export then quoted a source no longer
+     * attached.
+     */
+    private insertOriginAnchor(anchor: TOriginAnchor): void {
         if (anchor.documentId !== this.originDocument?.id) {
             throw new Error(
                 `Anchor ${anchor.id} references document ${anchor.documentId}, which is not the attached source text`
@@ -443,8 +458,6 @@ export class PropositArgumentEngine extends ArgumentEngine<
         }
         const existing = this.originAnchorsMap.get(anchor.targetId) ?? []
         this.originAnchorsMap.set(anchor.targetId, [...existing, anchor])
-        this.originDirty = true
-        this.notifySubscribers()
     }
 
     removeOriginAnchor(anchorId: string): void {
@@ -773,9 +786,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         engine.originDocument = origin?.document ?? undefined
         engine.originLink = origin?.link ?? undefined
         for (const anchor of origin?.anchors ?? []) {
-            const existing = engine.originAnchorsMap.get(anchor.targetId) ?? []
-            existing.push(anchor)
-            engine.originAnchorsMap.set(anchor.targetId, existing)
+            engine.insertOriginAnchor(anchor)
         }
 
         return engine

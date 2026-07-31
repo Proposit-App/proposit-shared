@@ -17,7 +17,15 @@ export const UserTierNames: Record<UserTierValues, string> = {
     [UserTiers.NO_ASSIST]: "No AI Assist",
 }
 
-export const UserTierLimits: Record<UserTierValues, TUserTierLimits> = {
+// `Required<>` because the two source-text fields are optional on the schema
+// for wire compatibility with a server that predates them, but this constant
+// is the local source of truth and always supplies both. Without it the
+// optionality propagates to every consumer, which is the pressure toward a
+// `?? 0` fallback that the absent-vs-zero contract exists to prevent.
+export const UserTierLimits: Record<
+    UserTierValues,
+    Required<TUserTierLimits>
+> = {
     [UserTiers.UNVERIFIED]: {
         maxArguments: 0,
         maxStatementsPerArg: 0,

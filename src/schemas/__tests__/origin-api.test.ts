@@ -7,6 +7,7 @@ import {
     MarkEnthymemeRequestSchema,
     UpdateOriginRequestSchema,
 } from "../api/argument/index.js"
+import { createApiClient } from "../../api-client/index.js"
 
 describe("origin API bodies", () => {
     it("accepts an attach request with only the pasted text", () => {
@@ -50,6 +51,50 @@ describe("origin API bodies", () => {
                 targetType: "claim",
             })
         ).toBe(false)
+    })
+
+    it("rejects a zero-length span", () => {
+        // A backwards drag or an off-by-one at a grapheme cluster produces
+        // this; `minimum` alone cannot see it.
+        expect(
+            Value.Check(CreateOriginAnchorRequestSchema, {
+                targetType: "premise",
+                targetId: "premise-1",
+                startCodePoint: 120,
+                endCodePoint: 120,
+            })
+        ).toBe(false)
+    })
+
+    it("rejects a span that runs backwards", () => {
+        expect(
+            Value.Check(CreateOriginAnchorRequestSchema, {
+                targetType: "premise",
+                targetId: "premise-1",
+                startCodePoint: 40,
+                endCodePoint: 5,
+            })
+        ).toBe(false)
+    })
+
+    it("rejects a backwards span on the client too, through strictFetch", async () => {
+        // `strictFetch` runs `Value.Assert(requestSchema, payload)` before it
+        // sends, so the constraint is enforced on both sides of the wire.
+        const client = createApiClient({
+            baseUrl: "https://example.test",
+            fetchImpl: (() => {
+                throw new Error("must not reach the network")
+            }) as unknown as typeof fetch,
+        })
+
+        await expect(
+            client.createOriginAnchor("arg-1", 1, {
+                targetType: "premise",
+                targetId: "premise-1",
+                startCodePoint: 40,
+                endCodePoint: 5,
+            })
+        ).rejects.toThrow()
     })
 
     it("rejects a negative code-point offset", () => {

@@ -75,22 +75,33 @@ export type TUpdateOriginRequest = Static<typeof UpdateOriginRequestSchema>
  * context) by slicing the document at those code-point offsets. The
  * pipeline-produced direction is the reverse and does not travel this route.
  *
- * **The server must reject `endCodePoint <= startCodePoint`, and any span
- * that runs past the end of the document.** Neither is expressible here:
- * JSON Schema has no cross-field comparison, and the document length is not
- * in the request at all. `Type.Refine` looks like it would carry the first
- * one, but in typebox 1.3.8 a `~refine` predicate is ignored by `Value.Check`,
- * `Value.Parse`, and `Value.Assert` alike — encoding the rule that way would
- * assert a constraint that runs nowhere, which is worse than stating it here.
- * `endCodePoint` carries `minimum: 1` because a zero-length span is degenerate
- * regardless of where it starts, and that much a schema can say.
+ * `endCodePoint` must exceed `startCodePoint`, which `Type.Refine` carries:
+ * the predicate runs under `Value.Check`, `Value.Assert`, and `Value.Parse`
+ * alike, so a zero-length or backwards span is refused on the client — inside
+ * `strictFetch`'s pre-send `Value.Assert` — as well as on the server.
+ *
+ * The one thing a refinement cannot do is survive serialization: `~refine`
+ * holds functions, so `JSON.stringify` of this schema drops it and a check
+ * against the round-tripped copy accepts a backwards span. That matters to
+ * anything emitting these schemas as OpenAPI or as an LLM structured-output
+ * contract — validate against the live schema object, never a serialized one.
+ *
+ * **The span-within-document rule stays a server obligation.** The document
+ * is not in the request, so nothing here can see its length.
  */
-export const CreateOriginAnchorRequestSchema = Type.Object({
-    targetType: Type.Index(OriginAnchorSchema, Type.Literal("targetType")),
-    targetId: Type.String(),
-    startCodePoint: Type.Integer({ minimum: 0 }),
-    endCodePoint: Type.Integer({ minimum: 1 }),
-})
+export const CreateOriginAnchorRequestSchema = Type.Refine(
+    Type.Object({
+        targetType: Type.Index(OriginAnchorSchema, Type.Literal("targetType")),
+        targetId: Type.String(),
+        startCodePoint: Type.Integer({ minimum: 0 }),
+        endCodePoint: Type.Integer({ minimum: 1 }),
+    }),
+    (value) => {
+        const span = value as { startCodePoint: number; endCodePoint: number }
+        return span.endCodePoint > span.startCodePoint
+    },
+    () => "endCodePoint must be greater than startCodePoint"
+)
 export type TCreateOriginAnchorRequest = Static<
     typeof CreateOriginAnchorRequestSchema
 >
