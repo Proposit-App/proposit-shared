@@ -148,3 +148,167 @@ as their owner but supplies no numbers. `UNVERIFIED` is `0`/`0`; `FREE` and
 `500_000`/`100_000_000`. They are constants in a published library, so revising
 them is a version bump rather than a migration, but they should be looked at
 before the release goes out.
+
+---
+
+# Rework — dual-review findings
+
+Nine findings. Seven fixed as described, two pushed back on with evidence
+(finding 5's second half; finding 9b's mechanism). Commits `8b19681` (code +
+tests) and `7bc96e3` (docs).
+
+## Fixed
+
+**1 — replacing a source text kept the old document's anchors.** Real, and the
+worst of the nine: the export would quote a passage absent from the attached
+document and attribute it to that document. Fixed at the root rather than in
+the mutation the report named — `setOriginDocument` now clears anchors whenever
+the document **id** changes, so every caller is covered, while re-writing the
+same document (how `mutateAttributeOriginDocument` applies a reference) keeps
+them. Added a second guard in `addOriginAnchor` rejecting an anchor whose
+`documentId` is not the attached document's, and a mismatch check in
+`mutateAttachOriginDocument` for `link.documentId`. The parallel-origin-store
+asymmetry against core's `OriginLibrary` is now stated in `addOriginAnchor`'s
+JSDoc. Four tests: replace-drops-anchors, attribute-keeps-anchors,
+stray-link-refused, foreign-anchor-refused.
+
+**2 — the expression mark had no P-6 guard.** Fixed: `type !== "variable"` and
+non-claim-bound both throw, matching the not-found throw style. Two tests, one
+per half. This needed an operator expression in the shared fixture, which is
+now built by wrapping the claim-bound expression rather than creating a
+childless operator (core collapses those).
+
+**3 — the derivation gate ignored `document`.** Fixed:
+`snapshot.origin?.document !== undefined && …stance === "representation"`. Two
+tests — a link outliving its document, and a snapshot with no origin slice at
+all. The release note that reads "and one with no source at all — reports none"
+was aspirational before this fix and is now true, so it stands as written.
+
+**4 — `null` on the wire vs `undefined` in the snapshot.** Fixed by widening
+`fromServerData` rather than changing the response schema, so the wire keeps
+the explicit-`null` style the rest of this codebase uses (`Nullable(...)`
+appears throughout `schemas/api`) and `undefined` never has to survive a JSON
+round-trip it cannot. Two tests write the exact consumer line the report
+predicted — `fromServerData(snap, [], [], read.value)` — one populated, one
+nulled, asserting `createdOn` decodes to a real `Date` and that `null` becomes
+`undefined` rather than being stored.
+
+**5 (first half) — the changeset aliased live engine state.** Real. Fixed with
+`modified: [{ ...expression }]`, plus a test that captures a changeset, mutates
+again, and asserts the captured entity still reads `true`.
+
+**6 — the two deletes swallowed every error.** Fixed: both now return a body
+and route through `parseResponse`, following the `deleteClaim` /
+`deleteClaimCitation` precedent rather than the `removeArgumentParticipant`
+wart. Added `DetachOriginResponseSchema` (naming the anchors that went with the
+document, which a rollback needs) and `DeleteOriginAnchorResponseSchema`. Test:
+a 403 yields `ok: false`.
+
+**7 — `origin` was required.** Fixed: optional, with the `?.` at every reader
+including the derivation. The self-contradiction the report identified is gone
+— `render/markdown.ts`'s defensive optional-chaining is now load-bearing rather
+than dead. The breaking-change line is in the changelog's *Changed* section.
+
+**8 — new required tier fields.** Fixed: both `Type.Optional`, with the reason
+and the "required in a later release" commitment in the schema comment, the
+changelog, and the release notes. Test: a `/me` limits body lacking both fields
+parses. The invariant test is kept, with presence assertions ahead of the
+comparison.
+
+**9a — anchor reaping.** Not implemented; documented as the persistence
+layer's job on `getOriginAnchorsForTarget`, which the report offers as an
+acceptable resolution. Hooking every delete path is real code for something
+inert in memory — derivation and the export both walk live content — and the
+server has to delete the rows in the same transaction regardless.
+
+**9c — invalid golden anchor.** Real: `"Therefore\nSocrates is mortal."` is
+absent from `ORIGIN_DOCUMENT_TEXT`, so `indexOf` returned `-1`. Changed to
+`"Socrates is a man.\nTherefore Socrates is mortal."`, which genuinely spans
+the newline, and updated the inline golden. Added a test asserting **every**
+golden anchor slices back out to its own `exact` via core's
+`sliceByCodePoints` — the invariant core's library enforces — so this cannot
+drift again.
+
+**9d — the populated read was untested.** Covered by the two finding-4 tests
+above.
+
+## Pushed back on
+
+**5, second half — the checksum comment is correct as written; do not weaken
+it.** The report states that under this app's `CHECKSUM_CONFIG`,
+`expressionFields` is an allowlist of `premiseId`/`createdOn`/`creatorId` and
+that marking changes no checksum. Both halves are false. `createChecksumConfig`
+**unions** the app's extra fields onto core's per-entity defaults rather than
+replacing them, and core 3.4.0 added `enthymeme` to those defaults. Measured:
+
+- effective `expressionFields` = `type, parentId, position, argumentId,
+  argumentVersion, premiseId, variableId, operator, enthymeme, createdOn,
+  creatorId`
+- expression checksum `17b44ed7` → `64d8cfc3` on mark
+- premise checksum `5d3924b3` → `4c2eb3ef` on mark
+
+Rewriting the comment to say the mark is checksum-neutral would have removed
+the only in-code statement of the epic's highest-severity risk, and invited a
+future reader to persist `enthymeme: null` believing it harmless. The comment
+is instead **strengthened** to name the union behavior explicitly, and pinned
+by two new tests: one asserting `enthymeme` is in the effective config, one
+asserting a mark changes both checksums and an unmark restores them *exactly*.
+That second test is the epic's acceptance criterion 6 for this node.
+
+**9b — the span constraint cannot go in the schema, and `Type.Refine` would
+have been worse than nothing.** `Type.Refine` exists in typebox 1.3.8, but its
+`~refine` predicate is ignored by `Value.Check`, `Value.Parse`, **and**
+`Value.Assert` — verified in-process, before any package boundary is involved:
+a schema refining `b > a` accepts `{a: 40, b: 5}` under all three. Shipping it
+would have put a constraint in the contract that runs nowhere, which is the
+same failure shape as a coded error envelope with no `parseResponse` branch.
+What shipped instead: `endCodePoint` gets `minimum: 1` (real, and a schema can
+say it), and the JSDoc states both the cross-field rule and the
+span-within-document rule as server obligations — the latter being one the
+schema could never carry, since the document length is not in the request.
+
+## Surface change since the previous report
+
+**Yes — three changes the consumer briefs must absorb.**
+
+1. `TProjectReactiveSnapshot.origin` is now **optional**. Readers must write
+   `snapshot.origin?.document` / `snapshot.origin?.anchors[id]`.
+2. `fromServerData`'s fourth parameter accepts `null` on `document` and `link`,
+   so `client.getArgumentOrigin(...)`'s `.value` feeds in directly. This is a
+   widening — nothing that compiled before stops compiling.
+3. `detachArgumentOrigin` and `deleteOriginAnchor` now return
+   `parseResponse`-shaped results (`{ ok, value }` / `{ ok, error }`) instead
+   of `void`. **This one breaks a caller written against the previous report.**
+
+Everything else is unchanged: the snapshot's inner shape, all eight mutation
+signatures and their persistence split, the other six client signatures, and
+every request schema. Two response schemas were added
+(`DetachOriginResponseSchema`, `DeleteOriginAnchorResponseSchema`); none
+changed.
+
+Newly enforced preconditions the server slice must satisfy — these throw rather
+than degrading: an attach's `link.documentId` must equal `document.id`; an
+anchor's `documentId` must equal the attached document's; only a claim-bound
+variable expression may be marked.
+
+## Recorded, not implemented — the tier-limit error envelope
+
+There is no coded error envelope for a tier-limit rejection, and none was
+added. The gap is real: the attach route exists partly to enforce
+`maxSourceTextChars`, so the server will return the generic `ErrorResponse` and
+a client wanting to say "that text is too long — the limit is N characters"
+must string-match `errorMessage`, which is not a contract.
+
+**Recommendation: add one, at the epic level rather than here.** The right
+shape is the existing optional `errorCode` discriminant on `ErrorResponseSchema`
+(`src/schemas/common.ts:92`) carrying something like
+`SOURCE_TEXT_LIMIT_EXCEEDED`, plus the limit and the measured length as fields,
+so a client can render the number without parsing prose. That is a smaller
+change than a new envelope type and needs no `parseResponse` branch, because
+`errorCode` already rides the error path that `parseResponse` parses today.
+
+If a genuinely new coded envelope is chosen instead, it needs a **detection
+branch in `parseResponse` at the root normalizer** — a schema plus a type guard
+alone leaves the guard unreachable. Whoever takes that decision should make it
+once for the epic, since the same shape will serve the ingestion budget refusals
+already in flight.
