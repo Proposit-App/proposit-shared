@@ -312,3 +312,140 @@ branch in `parseResponse` at the root normalizer** — a schema plus a type guar
 alone leaves the guard unreachable. Whoever takes that decision should make it
 once for the epic, since the same shape will serve the ingestion budget refusals
 already in flight.
+
+---
+
+# Rework round 2 — second-review findings
+
+All eight fixed. No pushbacks: I re-tested the one claim I had defended and it
+was wrong. Commits `cf87a91` (code + tests) and `3889942` (docs).
+
+## 1 — my `Type.Refine` pushback was wrong. Retracted.
+
+The reviewer is right and I was not. My round-1 probe called
+`Type.Refine(type, check, "a string")`; the third argument is an **error
+callback**, not a message. Re-run with `() => "…"`:
+
+| | round-1 probe (string error) | correct call |
+|---|---|---|
+| `Value.Check(bad)` | `true` | `false` |
+| `Value.Assert(bad)` | did not throw | threw |
+| `Value.Parse(bad)` | did not throw | threw |
+
+So the refinement enforces under all three, and my "it runs nowhere"
+conclusion was an artifact of my own call shape. I had published that claim in
+two places and it is now removed from both.
+
+`CreateOriginAnchorRequestSchema` is wrapped in `Type.Refine` enforcing
+`endCodePoint > startCodePoint`. Three tests: a zero-length span, a backwards
+span, and — the reviewer's point about both sides of the wire —
+`client.createOriginAnchor(...)` rejecting a backwards span before it reaches
+the network, via `strictFetch`'s pre-send `Value.Assert`. That test's
+`fetchImpl` throws if called, so it fails loudly if the assertion ever stops
+running.
+
+**The real caveat, verified before publishing it this time.** `~refine` holds
+functions, so it does not survive serialization:
+
+```
+Object.keys(JSON.parse(JSON.stringify(schema))) → ["type", "required", "properties"]
+"~refine" in the live schema  → true
+"~refine" in the round-tripped copy → false
+Value.Check(roundTripped, {a: 40, b: 5}) → true      // accepts the bad value
+```
+
+That is recorded in the JSDoc and the changelog: validate against the live
+schema object, never a serialized one — which matters to anything emitting
+these as OpenAPI or as an LLM structured-output contract. The
+span-within-document rule stays a stated server obligation, since the document
+is not in the request.
+
+**Process note on myself.** I pushed back on a mechanism after one probe and
+did not re-read the signature I was calling. The evidence I offered was real
+output from a wrong call. Verifying the call shape before disputing a mechanism
+is the lesson, and it is the reason this round has no pushbacks: I re-checked
+each finding against the code before writing anything.
+
+## 2 — the P-6 guard ran on unmark
+
+Correct and consequential: the repair action threw on exactly the expressions
+needing repair, and an invalid mark *is* reachable (core reports P-6 without
+throwing, so the server route and the pipeline can persist one). The guard is
+now inside `if (marked)`. Two tests: an operator expression marked directly
+through `patchExpressionAppFields` then cleared through the mutation, and the
+same for a premise-bound expression. My round-1 test unmarked a claim-bound
+expression and never reached the guard, as the report said.
+
+## 3 — `fromServerData` bypassed the anchor guard
+
+Correct. Fixed the way the report suggested — one rule, one place: the guard
+and the map insert moved into a private `insertOriginAnchor`, which
+`addOriginAnchor` calls before notifying and the load path calls without
+notifying, preserving `fromServerData`'s no-notifications contract. Two tests:
+anchors with `document: null`, and anchors into a document other than the
+attached one.
+
+## 4 — `result.expression` still aliased
+
+Correct, and the same defect one field over. One `{ ...patched }` now feeds
+both `expression` and `changes.expressions.modified[0]`. Test: stash
+`result.expression`, toggle the mark again, assert the stashed object still
+reads `true`.
+
+## 5 — optional tier limits leaked into every consumer
+
+Correct. `UserTierLimits` is typed `Record<UserTierValues,
+Required<TUserTierLimits>>`, which makes the JSDoc true and drops the `!` from
+the invariant test — the casualty the report predicted. The absent-vs-zero
+contract is now stated in the schema JSDoc and the release notes: **absent**
+means the server predates the feature, so hide the attach surface; **zero**
+means the tier genuinely allows none, so show the upgrade prompt. Different
+screens, and they were about to be guessed.
+
+## 6 — the reaping obligation was documented where nobody would look
+
+Correct — it sat on a read accessor. Now a bullet in the changelog's *Changed*
+section, naming the leak, why in-memory readers do not see it, and the required
+behavior (delete anchors in the same transaction as the entity). The JSDoc
+stays where it is as well.
+
+## 7 — the `!variable` branch misreported the cause
+
+Correct. Split, with its own message naming the missing variable, matching how
+core classifies it (Structural, not P-6 — `presentable.js` skips an undefined
+variable rather than reporting it). **No dedicated test**, deliberately: a
+dangling `variableId` is not reachable through this engine's public API —
+`addVariable`/`bindVariableToPremise` validate the reference and
+`removeVariable` cascades its expressions — which is precisely why core treats
+it as an invariant violation rather than a grammar one. Testing it would mean
+corrupting engine state to assert a message string. With finding 2 fixed, the
+second half of the report's concern is gone anyway: this branch no longer runs
+on unmark, so it can no longer strand anything.
+
+## 8 — the operator fixture's shape was unpinned
+
+Correct. The test now asserts `getExpression(operatorExpressionId).type ===
+"operator"` before exercising the guard, and matches the narrower
+`/is operator, not a claim/` rather than the message `formula` shares.
+
+## Consumed surface — one change, and it is a tightening
+
+`CreateOriginAnchorRequestSchema` now **rejects** `endCodePoint <=
+startCodePoint`, client-side as well as server-side. A consumer sending a
+zero-length or backwards span gets a thrown `Value.Assert` from
+`createOriginAnchor` where it previously got a network round-trip. Nothing
+that was sending valid spans is affected, and the TypeScript type
+`TCreateOriginAnchorRequest` is unchanged.
+
+Everything else is unchanged since the previous report: the snapshot shape and
+its optionality, all eight mutation signatures and the persistence split, all
+eight client signatures and their return shapes, every other request and
+response schema. `UserTierLimits`' annotation went from `TUserTierLimits` to
+`Required<TUserTierLimits>`, which is a widening for readers — the two fields
+stop being `number | undefined` — and breaks nothing.
+
+Newly enforced preconditions, added this round: `fromServerData` throws on an
+anchor that does not belong to the document it is given (previously only the
+mutation path checked). A server slice loading an argument whose document was
+deleted without cascading its anchors will now see that at load rather than in
+the export.
