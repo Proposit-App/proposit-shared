@@ -12,6 +12,8 @@ Runtime-agnostic TypeScript shared between `proposit-server` and `proposit-mobil
 
 - `@proposit/shared/api-client` — the `createApiClient` factory and its types
 - `@proposit/shared/engine/*` — mutations, optimistic updates, derivation, rendering
+- `@proposit/shared/schemas/model/origin` — the origin-data model: a source text, the link carrying its stance, and the anchors tying argument content to passages of it
+- `@proposit/shared/engine/origin-derivation` — enthymeme suggestions and contradictions, derived purely from the reactive snapshot
 - `@proposit/shared/ui` — design tokens and brand assets
 
 `package.json`'s `exports` map is the authoritative list.
