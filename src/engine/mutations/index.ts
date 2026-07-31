@@ -38,3 +38,14 @@ export {
     mutateUpdateClaim,
     mutateRemoveClaimWithCascade,
 } from "./claims.js"
+
+export {
+    mutateMarkPremiseEnthymeme,
+    mutateMarkExpressionEnthymeme,
+    mutateAttachOriginDocument,
+    mutateDetachOriginDocument,
+    mutateSetOriginStance,
+    mutateAddOriginAnchor,
+    mutateRemoveOriginAnchor,
+    mutateAttributeOriginDocument,
+} from "./origin.js"
