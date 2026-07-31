@@ -1,17 +1,13 @@
----
-from: proposit-app
-initiative: 2026-07-29-argument-origin-data-and-enthymeme-annotations
----
-
 # Quote origin passages in the markdown export
 
 Epic: [Argument origin data and enthymeme annotations](tcw://W/proposit-app/2026-07-29-argument-origin-data-and-enthymeme-annotations)
 
 Slice **J** of the epic. Ships in **one** `@proposit/shared` release together with
-the sibling slice *Origin data schemas, mutations, and capability master* (C).
+the sibling slice _Origin data schemas, mutations, and capability master_ (C).
 
 **Blocked by:** slice C — this reads origin data off the reactive snapshot that C
-adds. Do not start it first.
+adds. Do not start it first. _(Resolved: C landed on the `origin-data-schemas`
+branch at status `review`.)_
 
 ---
 
