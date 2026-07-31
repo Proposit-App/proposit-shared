@@ -17,35 +17,53 @@ export const UserTierNames: Record<UserTierValues, string> = {
     [UserTiers.NO_ASSIST]: "No AI Assist",
 }
 
-export const UserTierLimits: Record<UserTierValues, TUserTierLimits> = {
+// `Required<>` because the two source-text fields are optional on the schema
+// for wire compatibility with a server that predates them, but this constant
+// is the local source of truth and always supplies both. Without it the
+// optionality propagates to every consumer, which is the pressure toward a
+// `?? 0` fallback that the absent-vs-zero contract exists to prevent.
+export const UserTierLimits: Record<
+    UserTierValues,
+    Required<TUserTierLimits>
+> = {
     [UserTiers.UNVERIFIED]: {
         maxArguments: 0,
         maxStatementsPerArg: 0,
         maxCitationsPerArg: 0,
         maxTokensPerMonth: 0,
+        maxSourceTextChars: 0,
+        maxStoredSourceTextChars: 0,
     },
     [UserTiers.FREE]: {
         maxArguments: 50,
         maxStatementsPerArg: 25,
         maxCitationsPerArg: 100,
         maxTokensPerMonth: 10_000,
+        maxSourceTextChars: 20_000,
+        maxStoredSourceTextChars: 200_000,
     },
     [UserTiers.PREMIUM]: {
         maxArguments: 1000,
         maxStatementsPerArg: 50,
         maxCitationsPerArg: 100,
         maxTokensPerMonth: 500_000,
+        maxSourceTextChars: 100_000,
+        maxStoredSourceTextChars: 5_000_000,
     },
     [UserTiers.ENTERPRISE]: {
         maxArguments: 100_000,
         maxStatementsPerArg: 1_000,
         maxCitationsPerArg: 1_000,
         maxTokensPerMonth: 10_000_000,
+        maxSourceTextChars: 500_000,
+        maxStoredSourceTextChars: 100_000_000,
     },
     [UserTiers.NO_ASSIST]: {
         maxArguments: 50,
         maxStatementsPerArg: 25,
         maxCitationsPerArg: 100,
         maxTokensPerMonth: 0,
+        maxSourceTextChars: 20_000,
+        maxStoredSourceTextChars: 200_000,
     },
 }

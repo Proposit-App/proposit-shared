@@ -1,0 +1,1 @@
+Mark a premise or claim as going unspoken in the natural-language original — possible on any argument, including one with no source text. Nothing is ever marked automatically; the system may suggest, but only a person declares.

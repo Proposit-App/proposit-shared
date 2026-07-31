@@ -46,6 +46,16 @@ import {
     deleteReactionImpl,
 } from "./argument/reactions.js"
 import {
+    getArgumentOriginImpl,
+    attachArgumentOriginImpl,
+    updateArgumentOriginImpl,
+    detachArgumentOriginImpl,
+    createOriginAnchorImpl,
+    deleteOriginAnchorImpl,
+    markPremiseEnthymemeImpl,
+    markExpressionEnthymemeImpl,
+} from "./argument/origin.js"
+import {
     getArgumentParticipantsImpl,
     addArgumentEditorImpl,
     removeArgumentParticipantImpl,
@@ -128,6 +138,14 @@ const impls = {
     getArgumentParticipants: getArgumentParticipantsImpl,
     addArgumentEditor: addArgumentEditorImpl,
     removeArgumentParticipant: removeArgumentParticipantImpl,
+    getArgumentOrigin: getArgumentOriginImpl,
+    attachArgumentOrigin: attachArgumentOriginImpl,
+    updateArgumentOrigin: updateArgumentOriginImpl,
+    detachArgumentOrigin: detachArgumentOriginImpl,
+    createOriginAnchor: createOriginAnchorImpl,
+    deleteOriginAnchor: deleteOriginAnchorImpl,
+    markPremiseEnthymeme: markPremiseEnthymemeImpl,
+    markExpressionEnthymeme: markExpressionEnthymemeImpl,
     getAllArguments: getAllArgumentsImpl,
     createArgument: createArgumentImpl,
     importArgument: importArgumentImpl,

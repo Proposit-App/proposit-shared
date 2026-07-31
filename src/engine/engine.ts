@@ -21,6 +21,11 @@ import type {
 } from "../schemas/logic.js"
 import type { TClaim } from "../schemas/model/claims.js"
 import type { TClaimCitation } from "../schemas/model/citations.js"
+import type {
+    TOriginAnchor,
+    TOriginDocument,
+    TOriginLink,
+} from "../schemas/model/origin.js"
 import { CHECKSUM_CONFIG } from "../checksum.js"
 import { createClaimLookup } from "./library-adapters.js"
 
@@ -56,8 +61,29 @@ export type TProjectSnapshot = TArgumentEngineSnapshot<
 >
 
 /**
+ * The argument version's origin data: the source text it was built from, the
+ * link carrying the stance, and the document spans individual parts derive
+ * from.
+ *
+ * `document` and `link` are scalars rather than collections because the
+ * product allows at most one source text per argument version, even though
+ * core's origin library admits several. Encoding the rule here keeps every
+ * reading surface — web, mobile, markdown export — free of it.
+ *
+ * `anchors` is keyed by the anchor's `targetId`: an expression id, a premise
+ * id, or the argument id. That is the index a reading surface asks for —
+ * "does this item have provenance, and from which passage".
+ */
+export type TProjectOriginData = {
+    document: TOriginDocument | undefined
+    link: TOriginLink | undefined
+    anchors: Record<string, TOriginAnchor[]>
+}
+
+/**
  * Extended reactive snapshot. Adds project-level claim and citation edge
- * data and computed validation issues to core's reactive snapshot.
+ * data, origin data, and computed validation issues to core's reactive
+ * snapshot.
  */
 export type TProjectReactiveSnapshot = TReactiveSnapshot<
     TArgument,
@@ -67,6 +93,15 @@ export type TProjectReactiveSnapshot = TReactiveSnapshot<
 > & {
     claims: Record<string, TClaim>
     citations: Record<string, TClaimCitation[]>
+    /**
+     * Optional, and every reader must optional-chain it. A snapshot this
+     * engine builds always carries it, but a snapshot rehydrated from wire
+     * data written before origin data existed does not, and neither does one
+     * hand-built by a consumer's test fixture or optimistic overlay. Typing it
+     * as required would make it a breaking change for every such caller while
+     * still being a lie at runtime.
+     */
+    origin?: TProjectOriginData
     validationIssues: TCoreValidationIssue[]
 }
 
@@ -89,6 +124,9 @@ export class PropositArgumentEngine extends ArgumentEngine<
     // so that setClaim() makes new claims visible to addVariable() validation.
     private claimsMap: Map<string, TClaim>
     private citationsMap = new Map<string, TClaimCitation[]>()
+    private originDocument: TOriginDocument | undefined
+    private originLink: TOriginLink | undefined
+    private originAnchorsMap = new Map<string, TOriginAnchor[]>()
 
     // Shared context object that is captured by the mutableLookup closure
     // and also accessible after construction so the rollback() override can
@@ -210,10 +248,16 @@ export class PropositArgumentEngine extends ArgumentEngine<
     // Dirty tracking for structural sharing
     private claimsDirty = true
     private citationsDirty = true
+    private originDirty = true
 
     // Cached records for reactive snapshot
     private cachedClaims: Record<string, TClaim> = {}
     private cachedCitations: Record<string, TClaimCitation[]> = {}
+    private cachedOrigin: TProjectOriginData = {
+        document: undefined,
+        link: undefined,
+        anchors: {},
+    }
 
     // Full combined snapshot cache (for useSyncExternalStore referential stability)
     private cachedProjectSnapshot: TProjectReactiveSnapshot | undefined
@@ -242,6 +286,18 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.citationsDirty = false
         }
         return this.cachedCitations
+    }
+
+    private getOriginData(): TProjectOriginData {
+        if (this.originDirty) {
+            this.cachedOrigin = {
+                document: this.originDocument,
+                link: this.originLink,
+                anchors: Object.fromEntries(this.originAnchorsMap),
+            }
+            this.originDirty = false
+        }
+        return this.cachedOrigin
     }
 
     // ──── Typed snapshot accessor ────
@@ -318,6 +374,121 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.citationsDirty = true
             this.notifySubscribers()
         }
+    }
+
+    // ──── Origin accessors ────
+
+    getOrigin(): TProjectOriginData {
+        return this.getOriginData()
+    }
+
+    /**
+     * Sets, replaces, or clears the argument version's source text.
+     *
+     * **Swapping in a different document drops every anchor**, because an
+     * anchor is a pair of code-point offsets into one exact text and means
+     * nothing against another. Re-writing the same document — which is how an
+     * attribution is applied — keeps them, so the guard compares ids rather
+     * than object identity.
+     */
+    setOriginDocument(document: TOriginDocument | undefined): void {
+        if (document?.id !== this.originDocument?.id) {
+            this.originAnchorsMap.clear()
+        }
+        this.originDocument = document
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    /** Sets (or replaces) the document↔argument-version link and its stance. */
+    setOriginLink(link: TOriginLink | undefined): void {
+        this.originLink = link
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    /**
+     * Anchors on one target.
+     *
+     * **Reaping anchors whose target has been deleted is the persistence
+     * layer's job, not this engine's.** Removing a premise, expression, or
+     * variable leaves that target's anchors in the store: they are unreachable
+     * from every reader here (derivation and the markdown export both walk
+     * live content and look anchors up by target id), but they do ride the
+     * snapshot, and once anchors are persisted they become rows nothing
+     * collects. A consumer deleting an argument entity deletes its anchors in
+     * the same transaction.
+     */
+    getOriginAnchorsForTarget(targetId: string): TOriginAnchor[] {
+        return this.originAnchorsMap.get(targetId) ?? []
+    }
+
+    /**
+     * Records one anchor, rejecting any that does not belong to the attached
+     * document.
+     *
+     * Core's `OriginLibrary` also refuses an anchor whose span does not slice
+     * out its own quote, and one whose span leaves the document. This engine
+     * keeps a **parallel origin store** rather than embedding that library, so
+     * it inherits none of those checks — the id check below is the only one it
+     * can make without the code-point index. A caller that mints anchors (the
+     * persistence layer, the ingestion pipeline) is responsible for the span
+     * and quote checks.
+     */
+    addOriginAnchor(anchor: TOriginAnchor): void {
+        this.insertOriginAnchor(anchor)
+        this.originDirty = true
+        this.notifySubscribers()
+    }
+
+    /**
+     * The guard and the insert, without the reactive notification, so the
+     * load path in {@link fromServerData} enforces the same rule the mutation
+     * path does while keeping its no-notifications-during-load contract.
+     * Without this, a `GET …/origin` body carrying `document: null` alongside
+     * anchors — the shape a mis-cascaded document delete produces — loaded
+     * cleanly, and the markdown export then quoted a source no longer
+     * attached.
+     */
+    private insertOriginAnchor(anchor: TOriginAnchor): void {
+        if (anchor.documentId !== this.originDocument?.id) {
+            throw new Error(
+                `Anchor ${anchor.id} references document ${anchor.documentId}, which is not the attached source text`
+            )
+        }
+        const existing = this.originAnchorsMap.get(anchor.targetId) ?? []
+        this.originAnchorsMap.set(anchor.targetId, [...existing, anchor])
+    }
+
+    removeOriginAnchor(anchorId: string): void {
+        let removed = false
+        for (const [targetId, anchors] of this.originAnchorsMap.entries()) {
+            const filtered = anchors.filter((a) => a.id !== anchorId)
+            if (filtered.length === anchors.length) continue
+            if (filtered.length > 0) {
+                this.originAnchorsMap.set(targetId, filtered)
+            } else {
+                this.originAnchorsMap.delete(targetId)
+            }
+            removed = true
+        }
+        if (removed) {
+            this.originDirty = true
+            this.notifySubscribers()
+        }
+    }
+
+    /**
+     * Drops the document, the link, and every anchor together. Anchors are
+     * code-point offsets into one exact text, so a document that goes away
+     * takes its anchors with it.
+     */
+    clearOrigin(): void {
+        this.originDocument = undefined
+        this.originLink = undefined
+        this.originAnchorsMap.clear()
+        this.originDirty = true
+        this.notifySubscribers()
     }
 
     // ──── canFork override ────
@@ -463,6 +634,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
         const base = super.buildReactiveSnapshot()
         const claims = this.getClaimsRecord()
         const citations = this.getCitationsRecord()
+        const origin = this.getOriginData()
 
         // Recompute validation when base engine snapshot changes
         let validationIssues: TCoreValidationIssue[]
@@ -506,7 +678,8 @@ export class PropositArgumentEngine extends ArgumentEngine<
             this.cachedProjectSnapshot &&
             base === this.lastBaseSnapshot &&
             claims === this.cachedProjectSnapshot.claims &&
-            citations === this.cachedProjectSnapshot.citations
+            citations === this.cachedProjectSnapshot.citations &&
+            origin === this.cachedProjectSnapshot.origin
         ) {
             return this.cachedProjectSnapshot
         }
@@ -515,6 +688,7 @@ export class PropositArgumentEngine extends ArgumentEngine<
             ...base,
             claims,
             citations,
+            origin,
             validationIssues,
         }
         this.cachedProjectSnapshot = snapshot
@@ -527,14 +701,27 @@ export class PropositArgumentEngine extends ArgumentEngine<
     /**
      * Creates a PropositArgumentEngine from server-provided data: an engine
      * snapshot (for logic state) plus arrays of claims and citation
-     * edges.
+     * edges, and optionally the argument version's origin data.
+     *
+     * `origin` is optional so an argument with no source text — and every
+     * caller written before origin data existed — loads unchanged.
+     *
+     * `document` and `link` accept `null` as well as absence so the body of
+     * `GET …/origin` can be handed straight in; JSON cannot carry `undefined`,
+     * so the wire says `null` and this normalizes it. The snapshot only ever
+     * exposes `undefined`.
      *
      * Does NOT trigger reactive notifications during initial data loading.
      */
     static fromServerData(
         snapshot: TProjectSnapshot,
         claims: TClaim[],
-        citations: TClaimCitation[]
+        citations: TClaimCitation[],
+        origin?: {
+            document?: TOriginDocument | null
+            link?: TOriginLink | null
+            anchors?: TOriginAnchor[]
+        }
     ): PropositArgumentEngine {
         const claimLookup = createClaimLookup(claims)
         const engine = new PropositArgumentEngine(
@@ -595,6 +782,11 @@ export class PropositArgumentEngine extends ArgumentEngine<
             const existing = engine.citationsMap.get(cc.claimId) ?? []
             existing.push(cc)
             engine.citationsMap.set(cc.claimId, existing)
+        }
+        engine.originDocument = origin?.document ?? undefined
+        engine.originLink = origin?.link ?? undefined
+        for (const anchor of origin?.anchors ?? []) {
+            engine.insertOriginAnchor(anchor)
         }
 
         return engine
