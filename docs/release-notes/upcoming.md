@@ -28,4 +28,6 @@ declare which parts of it go unspoken in the natural-language original.
   identifiers to decode.
 - **Source-text limits per tier.** Each account tier now has a ceiling on a
   single source text and on the total stored across an account. Unverified
-  accounts get none, as with every other allowance.
+  accounts get none, as with every other allowance. The two limits are
+  optional in this release so an app carrying it keeps working against a
+  server that has not deployed yet; they become required in a later one.
