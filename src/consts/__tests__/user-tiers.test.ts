@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
+import { Value } from "typebox/value"
 import { UserTiers } from "../../schemas/model/index.js"
+import { UserTierLimitsSchema } from "../../schemas/model/users.js"
 import { UserTierLimits, UserTierNames } from "../index.js"
 
 const tierValues = Object.values(UserTiers).map(String).sort()
@@ -26,6 +28,26 @@ describe("UserTiers", () => {
 describe("UserTierLimits", () => {
     it("has an entry for every tier and no entry for anything else", () => {
         expect(Object.keys(UserTierLimits).sort()).toEqual(tierValues)
+    })
+
+    it("every entry satisfies the schema", () => {
+        for (const limits of Object.values(UserTierLimits)) {
+            expect(Value.Check(UserTierLimitsSchema, limits)).toBe(true)
+        }
+    })
+
+    it("gives an unverified account no source-text storage at all", () => {
+        const unverified = UserTierLimits[UserTiers.UNVERIFIED]
+        expect(unverified.maxSourceTextChars).toBe(0)
+        expect(unverified.maxStoredSourceTextChars).toBe(0)
+    })
+
+    it("never lets one document exceed a tier's aggregate storage", () => {
+        for (const limits of Object.values(UserTierLimits)) {
+            expect(limits.maxSourceTextChars).toBeLessThanOrEqual(
+                limits.maxStoredSourceTextChars
+            )
+        }
     })
 })
 

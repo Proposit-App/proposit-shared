@@ -150,6 +150,15 @@ export const UserTierLimitsSchema = Type.Object({
     maxStatementsPerArg: Type.Integer(),
     maxCitationsPerArg: Type.Integer(),
     maxTokensPerMonth: Type.Integer(),
+    // Both source-text ceilings are measured on the NORMALIZED text — the
+    // form core's `normalizeOriginText` emits, which is also the coordinate
+    // system every origin anchor is an offset into. Measuring the raw paste
+    // would let the same document pass or fail depending on its line endings.
+    // This library owns the numbers; the server owns enforcement.
+    /** Per source-text document. */
+    maxSourceTextChars: Type.Integer(),
+    /** Across all of one user's source-text documents. */
+    maxStoredSourceTextChars: Type.Integer(),
 })
 export type TUserTierLimits = Static<typeof UserTierLimitsSchema>
 
