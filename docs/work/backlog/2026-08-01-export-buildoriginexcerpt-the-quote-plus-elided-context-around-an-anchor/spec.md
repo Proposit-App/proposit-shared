@@ -23,10 +23,14 @@ export type TOriginExcerpt = {
 
 export function buildOriginExcerpt(
     text: string,
-    anchor: Pick<TCoreOriginAnchor, "startCodePoint" | "endCodePoint">,
+    anchor: Pick<TOriginAnchor, "startCodePoint" | "endCodePoint">,
     contextCodePoints?: number // default 60
 ): TOriginExcerpt
 ```
+
+`Pick<TOriginAnchor, …>` rather than the whole anchor, matching `originPassage`'s
+`Pick<TOriginAnchor, "exact">` in the same module — a caller holding offsets from
+somewhere else needs no fabricated anchor.
 
 Lives in `src/engine/render/` and is exported from the existing
 `./engine/render` subpath, beside `originPassagesFor`. No new `exports` entry.
@@ -47,7 +51,19 @@ Lives in `src/engine/render/` and is exported from the existing
    `sliceByCodePoints`. A UTF-16 slice is wrong for any text containing an
    astral-plane character and passes every ASCII test.
 
-3. **Snap inward to a word boundary — but only where the window actually cut.**
+3. **Collapse whitespace** in all three pieces, `/\s+/g → " "`.
+   `normalizeOriginText` deliberately preserves internal whitespace and line
+   breaks — the document is meant to be the original — but an excerpt renders in
+   a small box where a paragraph break wastes the height we capped.
+   `originPassage` already collapses for the same reason. The quote is collapsed
+   too: it changes no words, and a quote spanning a paragraph break otherwise
+   reads as two fragments.
+
+   Collapsing happens **before** the word-boundary trim, so the trim only ever
+   has single spaces to find. The 60-code-point budget is applied at slice time,
+   against the raw text, so collapsing cannot inflate the window.
+
+4. **Snap inward to a word boundary — but only where the window actually cut.**
    Trim `before` from its *leading* edge up to and including the first whitespace
    run **only when `windowStart > 0`**; trim `after` from its *trailing* edge back
    to the last whitespace run **only when `windowEnd < len`**.
@@ -66,21 +82,16 @@ Lives in `src/engine/render/` and is exported from the existing
    token — it trims to `""`. That is correct and honest: the elision flag still
    fires, so the reader sees `…` with no context, rather than half a URL.
 
-4. **Set the flags.** `elidedStart = windowStart > 0`,
+5. **Set the flags.** `elidedStart = windowStart > 0`,
    `elidedEnd = windowEnd < len`. Note these describe the **window**, not the
    trim: an anchor at offset 0 gets `elidedStart: false` and therefore no leading
    `…`, which is the truth. A window that reached offset 0 but whose `before`
    trimmed to `""` also gets `false` — nothing was dropped that a reader would
    miss.
 
-5. **Collapse whitespace** in all three pieces, `/\s+/g → " "`, then trim the
-   outer edges of `before` and `after`. `normalizeOriginText` deliberately
-   preserves internal whitespace and line breaks — the document is meant to be
-   the original — but an excerpt renders in a small box where a paragraph break
-   wastes the height. `originPassage` already collapses for the same reason.
-
-   The quote is collapsed too. Collapsing changes no words, and a quote that
-   spans a paragraph break otherwise reads as two fragments.
+6. **Trim the outer edges** of `before` and `after` of any single space the
+   collapse left behind, so the caller can concatenate `… ` + `before` without
+   a double gap.
 
 ## Acceptance criteria
 
