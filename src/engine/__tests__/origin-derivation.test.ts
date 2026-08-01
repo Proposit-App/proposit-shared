@@ -8,6 +8,7 @@ import {
     mutateMarkPremiseEnthymeme,
 } from "../mutations/origin.js"
 import {
+    addDerivationPremise,
     buildOriginScene,
     makeAnchor,
     makeDocument,
@@ -127,6 +128,99 @@ describe("enthymeme suggestions", () => {
         expect(suggestions.map((s) => s.targetId)).not.toContain(
             scene.premiseId
         )
+    })
+})
+
+describe("engine-synthesized derivation premises", () => {
+    test("neither the derivation premise nor its consequent is suggested", () => {
+        const scene = buildOriginScene()
+        const derivation = addDerivationPremise(scene)
+        attach(scene, "representation")
+
+        const suggested = deriveEnthymemeSuggestions(
+            scene.engine.getProjectSnapshot()
+        ).map((s) => s.targetId)
+
+        expect(suggested).not.toContain(derivation.premiseId)
+        expect(suggested).not.toContain(derivation.consequentExpressionId)
+    })
+
+    test("a claim is suggested once, not once per expression bound to it", () => {
+        const scene = buildOriginScene()
+        addDerivationPremise(scene)
+        attach(scene, "representation")
+
+        const suggested = deriveEnthymemeSuggestions(
+            scene.engine.getProjectSnapshot()
+        ).map((s) => s.targetId)
+
+        expect(
+            suggested.filter((id) => id === scene.claimBoundExpressionId)
+        ).toHaveLength(1)
+        expect(new Set(suggested).size).toBe(suggested.length)
+    })
+
+    test("anchoring and marking the authored expression silences the claim entirely", () => {
+        const scene = buildOriginScene()
+        const { consequentExpressionId: derivationConsequentId } =
+            addDerivationPremise(scene)
+        const document = attach(scene, "representation")
+        scene.engine.addOriginAnchor(
+            makeAnchor(
+                scene,
+                document.id,
+                "expression",
+                scene.claimBoundExpressionId
+            )
+        )
+        mutateMarkExpressionEnthymeme(
+            scene.engine,
+            scene.claimBoundExpressionId,
+            true
+        )
+
+        const snapshot = scene.engine.getProjectSnapshot()
+
+        // The rest of the scene is still unanchored, so only this claim's own
+        // targets must be gone — both of them, not just the authored one.
+        expect(
+            deriveEnthymemeSuggestions(snapshot).map((s) => s.targetId)
+        ).not.toContain(scene.claimBoundExpressionId)
+        expect(
+            deriveEnthymemeSuggestions(snapshot).map((s) => s.targetId)
+        ).not.toContain(derivationConsequentId)
+        expect(deriveEnthymemeContradictions(snapshot)).toEqual([
+            {
+                targetType: "expression",
+                targetId: scene.claimBoundExpressionId,
+                anchorIds: [
+                    snapshot.origin!.anchors[scene.claimBoundExpressionId][0]
+                        .id,
+                ],
+            },
+        ])
+    })
+
+    test("every derived target names content present in the authored snapshot", () => {
+        const scene = buildOriginScene()
+        addDerivationPremise(scene)
+        attach(scene, "representation")
+        const snapshot = scene.engine.getProjectSnapshot()
+
+        const authored = new Set<string>()
+        for (const premiseSnapshot of Object.values(snapshot.premises)) {
+            if (premiseSnapshot.premise.type === "derivation") continue
+            authored.add(premiseSnapshot.premise.id)
+            for (const expression of Object.values(
+                premiseSnapshot.expressions
+            )) {
+                authored.add(expression.id)
+            }
+        }
+
+        for (const { targetId } of deriveEnthymemeSuggestions(snapshot)) {
+            expect(authored).toContain(targetId)
+        }
     })
 })
 

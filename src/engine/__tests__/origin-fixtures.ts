@@ -7,6 +7,7 @@ import {
     mutateCreateExpression,
     mutateWrapExpression,
 } from "../mutations/expressions.js"
+import { mutateCreateDerivationPremise } from "../mutations/premises.js"
 import type { TArgument } from "../../schemas/model/arguments.js"
 import type { TPropositionalVariable } from "../../schemas/logic.js"
 import type {
@@ -32,6 +33,8 @@ export type TOriginTestScene = {
     argumentId: string
     argumentVersion: number
     creatorId: string
+    claimId: string
+    claimBoundVariableId: string
     premiseId: string
     claimBoundExpressionId: string
     operatorExpressionId: string
@@ -193,11 +196,37 @@ export function buildOriginScene(): TOriginTestScene {
         argumentId,
         argumentVersion,
         creatorId,
+        claimId,
+        claimBoundVariableId: claimBoundVariable.id,
         premiseId,
         claimBoundExpressionId,
         operatorExpressionId,
         premiseBoundExpressionId,
     }
+}
+
+/**
+ * Adds the engine-synthesized derivation premise a persisted claim carries in
+ * addition to its authored expression — the shape that made the suggestion
+ * derivation double-count. Adopt mode, so the derivation's consequent
+ * expression binds the same claim-bound variable the authored expression does.
+ */
+export function addDerivationPremise(scene: TOriginTestScene): {
+    premiseId: string
+    consequentExpressionId: string
+} {
+    const derivationPremiseId = v4()
+    const consequentExpressionId = v4()
+    mutateCreateDerivationPremise(scene.engine, derivationPremiseId, {
+        argumentId: scene.argumentId,
+        argumentVersion: scene.argumentVersion,
+        creatorId: scene.creatorId,
+        createdOn: new Date("2026-01-01T00:00:00Z"),
+        derivedClaimId: scene.claimId,
+        existingConsequentVariableId: scene.claimBoundVariableId,
+        consequentExpressionId,
+    })
+    return { premiseId: derivationPremiseId, consequentExpressionId }
 }
 
 export function makeDocument(scene: TOriginTestScene): TOriginDocument {

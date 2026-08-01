@@ -53,6 +53,12 @@ function claimsToRepresentSource(snapshot: TProjectReactiveSnapshot): boolean {
  * reports a mark on one as a Presentable violation — suggesting it would be
  * suggesting a violation. Operator and formula expressions are excluded for
  * the same reason.
+ *
+ * Derivation premises are excluded whole. They are engine-synthesized — one
+ * per claim, each carrying a consequent expression bound to the same claim the
+ * authored expression is — so walking them reports every claim twice plus a
+ * titleless premise the author never wrote, and a mark on one lands on content
+ * nothing renders and so nothing can un-mark.
  */
 function* markableContent(snapshot: TProjectReactiveSnapshot): Generator<{
     targetType: TOriginAnchorTargetType
@@ -60,6 +66,7 @@ function* markableContent(snapshot: TProjectReactiveSnapshot): Generator<{
     marked: boolean
 }> {
     for (const premiseSnapshot of Object.values(snapshot.premises)) {
+        if (premiseSnapshot.premise.type === "derivation") continue
         yield {
             targetType: "premise",
             targetId: premiseSnapshot.premise.id,
