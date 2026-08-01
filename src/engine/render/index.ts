@@ -6,7 +6,11 @@
 export { buildArgumentFormula } from "./formula.js"
 export type { TArgumentFormula, TPremiseFormula } from "./formula.js"
 
-export { serializeArgumentToMarkdown, originPassagesFor } from "./markdown.js"
+export {
+    serializeArgumentToMarkdown,
+    originPassagesFor,
+    originPassage,
+} from "./markdown.js"
 
 export { buildOriginExcerpt } from "./origin-excerpt.js"
 export type { TOriginExcerpt } from "./origin-excerpt.js"
