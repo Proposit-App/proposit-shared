@@ -8,6 +8,9 @@ export type { TArgumentFormula, TPremiseFormula } from "./formula.js"
 
 export { serializeArgumentToMarkdown, originPassagesFor } from "./markdown.js"
 
+export { buildOriginExcerpt } from "./origin-excerpt.js"
+export type { TOriginExcerpt } from "./origin-excerpt.js"
+
 export { serializeArgumentText } from "./text.js"
 export type { TArgumentHeader } from "./text.js"
 
