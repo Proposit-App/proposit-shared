@@ -22,6 +22,7 @@ import {
     getInlineSourceLabel,
     describeSource,
     parseByline,
+    originPassagesFor,
 } from "../render/index.js"
 import {
     mergeWithAddedModifiedReconciliation,
@@ -37,6 +38,8 @@ import {
     emptyOriginGoldenSnapshot,
     originGoldenSnapshot,
     unanchoredOriginGoldenSnapshot,
+    seedOriginGoldenSnapshot,
+    documentlessOriginGoldenSnapshot,
 } from "./derived-view-goldens.js"
 
 const snapshot = goldenSnapshot()
@@ -206,6 +209,7 @@ describe("engine/render", () => {
 
               > Version 3 — Published on 2026-01-15
               > Based on origin text "All men are mortal." — The Republic
+              > The author says this argument represents that text faithfully.
 
               ## Logic
 
@@ -250,8 +254,46 @@ describe("engine/render", () => {
             unanchoredOriginGoldenSnapshot()
         ).split("\n\n")[2]
         expect(header).toBe(
-            "> Version 3 — Published on 2026-01-15\n> Based on origin text — The Republic"
+            "> Version 3 — Published on 2026-01-15\n> Based on origin text — The Republic\n> The author says this argument represents that text faithfully."
         )
+    })
+
+    test("serializeArgumentToMarkdown — a seed source makes no fidelity claim", () => {
+        const seed = serializeArgumentToMarkdown(seedOriginGoldenSnapshot())
+        expect(seed).not.toContain("faithfully")
+        // The two fixtures differ only in the link's stance, so the whole
+        // contribution of `representation` is the one line removed here.
+        expect(seed).toBe(
+            serializeArgumentToMarkdown(originGoldenSnapshot()).replace(
+                "\n> The author says this argument represents that text faithfully.",
+                ""
+            )
+        )
+    })
+
+    test("serializeArgumentToMarkdown — a fidelity claim with no source text renders nothing", () => {
+        expect(
+            serializeArgumentToMarkdown(documentlessOriginGoldenSnapshot())
+        ).toBe(serializeArgumentToMarkdown(snapshot))
+    })
+
+    test("originPassagesFor — no origin data anywhere yields no passages", () => {
+        expect(originPassagesFor(undefined, "supp")).toEqual([])
+        expect(originPassagesFor(snapshot, "supp")).toEqual([])
+        expect(originPassagesFor(emptyOriginGoldenSnapshot(), "supp")).toEqual(
+            []
+        )
+        expect(originPassagesFor(originGoldenSnapshot(), "nosuch")).toEqual([])
+    })
+
+    test("originPassagesFor — quotes the passage, collapsing whitespace it spans", () => {
+        const origin = originGoldenSnapshot()
+        expect(originPassagesFor(origin, "supp")).toEqual([
+            'Based on origin text "Socrates is a man."',
+        ])
+        expect(originPassagesFor(origin, "concl#e2")).toEqual([
+            'Based on origin text "Socrates is a man. Therefore Socrates is mortal."',
+        ])
     })
 
     test("serializeArgumentText — plain-text export", () => {

@@ -307,13 +307,15 @@ function originDocument(
     } as unknown as TProjectOriginData["document"]
 }
 
-function originLink(): TProjectOriginData["link"] {
+function originLink(
+    stance: "representation" | "seed" = "representation"
+): TProjectOriginData["link"] {
     return {
         id: "link1",
         argumentId: "a",
         argumentVersion: 3,
         documentId: "doc1",
-        stance: "representation",
+        stance,
         checksum: "c",
         createdOn: new Date("2026-01-01T00:00:00Z"),
     } as unknown as TProjectOriginData["link"]
@@ -345,6 +347,31 @@ export function originGoldenSnapshot(): TProjectReactiveSnapshot {
                 ),
             ],
         },
+    }
+    return snapshot
+}
+
+/**
+ * `originGoldenSnapshot()` differing only in the link's stance, so a test
+ * comparing the two isolates what the stance alone contributes to a render.
+ */
+export function seedOriginGoldenSnapshot(): TProjectReactiveSnapshot {
+    const snapshot = originGoldenSnapshot()
+    if (snapshot.origin) snapshot.origin.link = originLink("seed")
+    return snapshot
+}
+
+/**
+ * A source the author claims to represent faithfully, but whose document is
+ * absent — the shape a snapshot takes when the link survived and the document
+ * did not. Nothing that describes the source text can render from it.
+ */
+export function documentlessOriginGoldenSnapshot(): TProjectReactiveSnapshot {
+    const snapshot = goldenSnapshot()
+    snapshot.origin = {
+        document: undefined,
+        link: originLink(),
+        anchors: {},
     }
     return snapshot
 }
