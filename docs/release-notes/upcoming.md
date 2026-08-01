@@ -11,15 +11,17 @@ the two apart. That distinction is the point of the feature.
 The markdown export now says it. When the link's stance is `representation`, the
 header blockquote carries:
 
-> This argument sets out to represent that text faithfully.
+> The author says this argument represents that text faithfully.
 
 `seed` emits nothing. It is the default an author never has to choose, and a
 line disclaiming fidelity would be noise on nearly every export. An argument
 with no source text at all exports exactly what it exported before.
 
-The web and mobile apps add their own reader-visible indicators in parallel.
-They match the meaning, not the string — an export sentence does not belong on a
-badge.
+The web and mobile apps show the same sentence on their own reading surfaces.
+The wording is coordinated deliberately: someone who exports an argument and then
+opens it on a phone should not meet two different-sounding claims. Each surface
+keeps its own copy rather than importing a shared constant, since only the
+sentence is common — the presentation around it is not.
 
 ## `originPassagesFor` is now importable
 

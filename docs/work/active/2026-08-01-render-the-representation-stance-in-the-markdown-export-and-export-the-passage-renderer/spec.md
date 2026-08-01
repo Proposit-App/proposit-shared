@@ -57,10 +57,12 @@ before it happens.
 
 ## Non-goals
 
-- **No wording contract with the other surfaces.** Web and mobile add their own
-  reader-visible indicators in parallel; they match the *meaning*, and will not
-  import this string. Exporting the sentence would over-fit an export voice
-  ("This argument…", full stop, blockquote line) onto a chip or a badge.
+- **No shared *constant* for the sentence.** The wording is coordinated across
+  all three surfaces and must stay so, but web and mobile do not import this
+  string — each keeps its own copy, because the surrounding presentation differs
+  (a blockquote line here, a chip or a badge there) and only the sentence is
+  common. If the three drift, the fix is to export the constant then; today
+  nobody has asked for it.
 - No offsets, no jargon, no stance vocabulary in the reader-facing string. A
   reader has never seen the words "stance", "representation", or "seed"; the
   export states the claim, it does not name the enum.
@@ -84,13 +86,19 @@ worth saying.
 
 Wording:
 
-> This argument sets out to represent that text faithfully.
+> The author says this argument represents that text faithfully.
 
-"sets out to" rather than "does" because the stance is the author's claim, not a
-verified fact — the same hedge the authoring panel's help text carries. "that
-text" rather than "the origin text" because the preceding line has already named
-the source, either by quoting a whole-argument passage or by naming the
-reference.
+Attributed to the author rather than asserted flat, because nothing verifies the
+claim and a reader should know whose assertion it is rather than infer it from a
+turn of phrase. "that text" rather than "the origin text" because the preceding
+line has already named the source, either by quoting a whole-argument passage or
+by naming the reference.
+
+The wording is fixed across all three surfaces — mobile shipped it first and web
+is being changed to match — so someone who exports an argument and then opens it
+on a phone does not meet two different-sounding claims. This is the one part of
+the string that is *not* this node's call: the sentence is coordinated, even
+though (per the non-goals) the other surfaces still do not import it.
 
 Placement: last line of the header blockquote, after the passage/attribution
 lines. The passages establish *what* text; the stance then qualifies the

@@ -40,13 +40,18 @@ const ORIGIN_LEAD = "Based on origin text"
  * faithfully, stated for the reader who was handed the document and cannot
  * otherwise tell a representation from a loose jumping-off point.
  *
- * "sets out to" because this is a claim, not a verified fact. Nothing is
- * emitted for the other stance: an argument that merely used a text as a
- * starting point is the unremarkable default, and a line disclaiming fidelity
- * would be noise on the overwhelming majority of exports.
+ * Attributed to the author because nothing verifies it — a reader should know
+ * whose assertion this is rather than infer it from a turn of phrase. The
+ * wording is deliberately the same on every reading surface, so someone who
+ * exports an argument and then opens it on a phone does not meet two
+ * different-sounding claims.
+ *
+ * Nothing is emitted for the other stance: an argument that merely used a text
+ * as a starting point is the unremarkable default, and a line disclaiming
+ * fidelity would be noise on the overwhelming majority of exports.
  */
 const REPRESENTATION_CLAIM =
-    "This argument sets out to represent that text faithfully."
+    "The author says this argument represents that text faithfully."
 
 /**
  * The passage an anchored part of the argument was written from. Quoted rather

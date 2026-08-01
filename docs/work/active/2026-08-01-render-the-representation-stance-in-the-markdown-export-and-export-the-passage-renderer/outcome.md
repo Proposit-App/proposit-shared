@@ -8,7 +8,7 @@
 existing `if (originDocument)` block, after the passage and attribution lines:
 
 ```
-> This argument sets out to represent that text faithfully.
+> The author says this argument represents that text faithfully.
 ```
 
 Emitted only when `snapshot.origin?.link?.stance === "representation"`. `seed`
@@ -17,8 +17,12 @@ emits nothing, as specified — no disclaimer, no empty line.
 Three deliberate choices, each recorded as a comment on the constant or the
 branch rather than here:
 
-- **"sets out to"** — the stance is the author's claim, not a verified fact. The
-  same hedge the web authoring panel's help text carries.
+- **"The author says…"** — nothing verifies the claim, so a reader should know
+  whose assertion it is rather than infer it from a turn of phrase. Standardised
+  across all three surfaces (mobile shipped this wording first, web is being
+  changed to match), so exporting an argument and then opening it on a phone
+  does not present two different-sounding claims. This was a coordinator
+  correction to an earlier draft that hedged with "sets out to" instead.
 - **"that text"** — the preceding line has already named the source, either by
   quoting a whole-argument passage or by naming the reference, so the sentence
   does not re-introduce it.
@@ -55,6 +59,19 @@ which is the copy this change exists to delete.
 
 No `package.json` change: `./engine/render` already existed and already declared
 `types` / `import` / `default`.
+
+## Shipped behaviour is ahead of the capability ledger
+
+This item records `arguments/copy-to-clipboard` as `changed:`, which covers the
+export. It does **not** cover the reading-side capability the stance now needs —
+that a reader can see whether an argument claims to represent its source
+faithfully. Three separate inbox requests describe that one gap (this node's, the
+mobile agent's, and the server agent's), filed independently for the same
+finding. The orchestrator is merging them before adoption; they are deliberately
+untouched here.
+
+Until that lands, the shipped behaviour is ahead of the ledger: the export states
+the claim, and no capability entry yet says a reader can see it.
 
 ## Escalation folded in
 

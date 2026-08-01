@@ -14,7 +14,7 @@
   `exports` subpath — `./engine/render` already existed.
 - `serializeArgumentToMarkdown` states the author's fidelity claim when the
   argument's origin link carries stance `representation`: the header blockquote
-  gains the line `This argument sets out to represent that text faithfully.`,
+  gains the line `The author says this argument represents that text faithfully.`,
   after the passage and attribution lines. Guarded on the origin _document_, not
   just the link, so a claim about a source the export never names cannot
   render.

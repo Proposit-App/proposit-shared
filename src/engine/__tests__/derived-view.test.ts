@@ -209,7 +209,7 @@ describe("engine/render", () => {
 
               > Version 3 — Published on 2026-01-15
               > Based on origin text "All men are mortal." — The Republic
-              > This argument sets out to represent that text faithfully.
+              > The author says this argument represents that text faithfully.
 
               ## Logic
 
@@ -254,7 +254,7 @@ describe("engine/render", () => {
             unanchoredOriginGoldenSnapshot()
         ).split("\n\n")[2]
         expect(header).toBe(
-            "> Version 3 — Published on 2026-01-15\n> Based on origin text — The Republic\n> This argument sets out to represent that text faithfully."
+            "> Version 3 — Published on 2026-01-15\n> Based on origin text — The Republic\n> The author says this argument represents that text faithfully."
         )
     })
 
@@ -265,7 +265,7 @@ describe("engine/render", () => {
         // contribution of `representation` is the one line removed here.
         expect(seed).toBe(
             serializeArgumentToMarkdown(originGoldenSnapshot()).replace(
-                "\n> This argument sets out to represent that text faithfully.",
+                "\n> The author says this argument represents that text faithfully.",
                 ""
             )
         )
