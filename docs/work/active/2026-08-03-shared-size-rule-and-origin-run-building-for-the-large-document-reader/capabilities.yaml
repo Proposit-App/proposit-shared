@@ -1,0 +1,5 @@
+new:
+    - arguments/step-through-traced-passages
+    - arguments/find-text-in-the-source-text
+changed:
+    - arguments/see-the-original-source-text
