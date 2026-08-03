@@ -87,7 +87,7 @@ async function persistAgainstRejectingStore(err: Error): Promise<string[]> {
 
 describe("ReviewEngine — debounced persist failures", () => {
     it("swallows an unavailable-storage rejection from the debounced save", async () => {
-        const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+        const warn = vi.spyOn(console, "warn").mockImplementation(vi.fn())
         try {
             const unhandled = await persistAgainstRejectingStore(
                 new ReviewStorageUnavailableError("SSR")
@@ -100,7 +100,7 @@ describe("ReviewEngine — debounced persist failures", () => {
     })
 
     it("warns but does not leak a real persist failure from the debounced save", async () => {
-        const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+        const warn = vi.spyOn(console, "warn").mockImplementation(vi.fn())
         try {
             const unhandled = await persistAgainstRejectingStore(
                 new ReviewStorageQuotaError()
