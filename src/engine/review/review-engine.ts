@@ -13,6 +13,7 @@ import type {
 } from "../../schemas/review.js"
 import type { UUID } from "../../schemas/common.js"
 import type { TReviewStore, TReviewKey } from "./review-store.js"
+import { ReviewStorageUnavailableError } from "./review-store.js"
 import {
     buildClaimQueue,
     buildOperatorQueue,
@@ -209,10 +210,20 @@ export class ReviewEngine {
         this.cancelPersist()
         this.saveTimer = setTimeout(() => {
             this.saveTimer = undefined
-            void this.store.save(this.key, {
-                draft: this.draft,
-                lastResult: this.lastResult,
-            })
+            // Nothing awaits this save, so its rejection has to be handled
+            // here or it escapes as an unhandled rejection. A timer that
+            // fires after the window is gone — navigation, unmount, a torn
+            // down test environment — is the expected case and says nothing
+            // a caller could act on; anything else is a real persist failure.
+            this.store
+                .save(this.key, {
+                    draft: this.draft,
+                    lastResult: this.lastResult,
+                })
+                .catch((err: unknown) => {
+                    if (err instanceof ReviewStorageUnavailableError) return
+                    console.warn("review-engine: persist failed", err)
+                })
         }, 200)
     }
 
