@@ -59,8 +59,8 @@ function collapse(text: string): string {
  *
  * Out-of-range and inverted spans degrade rather than throw. `originAnchors`
  * carries no constraint tying a span to its document's length, so a reading
- * surface has to survive one; a consumer that filters them out first (the web
- * app's `anchorsForTarget` does) simply never exercises this.
+ * surface has to survive one; a consumer that filters them out first (as
+ * `anchorsForTarget` does) simply never exercises this.
  */
 export function buildOriginExcerpt(
     text: string,

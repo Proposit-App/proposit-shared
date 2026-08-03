@@ -15,6 +15,9 @@ export {
 export { buildOriginExcerpt } from "./origin-excerpt.js"
 export type { TOriginExcerpt } from "./origin-excerpt.js"
 
+export { anchorsForTarget, buildOriginRuns } from "./origin-runs.js"
+export type { TOriginRun } from "./origin-runs.js"
+
 export {
     LARGE_ORIGIN_DOCUMENT_CODE_POINTS,
     isLargeOriginDocument,
