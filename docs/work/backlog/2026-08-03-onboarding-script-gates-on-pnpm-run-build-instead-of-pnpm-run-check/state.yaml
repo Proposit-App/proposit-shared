@@ -1,0 +1,8 @@
+slug: 2026-08-03-onboarding-script-gates-on-pnpm-run-build-instead-of-pnpm-run-check
+title: Onboarding script gates on pnpm run build instead of pnpm run check
+created: '2026-08-03'
+resolution: null
+effort: low
+complexity: low
+tags:
+- tech-debt
