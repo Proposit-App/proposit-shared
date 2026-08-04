@@ -113,7 +113,7 @@ export const argumentsByFigureCurationId: Record<
             ],
             "premises": [
                 {
-                    "title": "If \"Pure democracy cannot cure faction\" then \"Republics can cure faction\"",
+                    "title": "From assembly to representation",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -131,7 +131,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"The federal Constitution balances scale\" and \"Large republics control faction better\" then \"The Union outcontrols state factions\"",
+                    "title": "Scale joined to federal design",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -164,7 +164,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Uniform opinion is impossible\" then \"Faction arises from human nature\"",
+                    "title": "No cure by making men alike",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -182,7 +182,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"The Union checks faction\" and \"The Union outcontrols state factions\" then \"The federal Constitution balances scale\"",
+                    "title": "Vindication of the federal plan",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -215,7 +215,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Faction serves adverse interests\" then \"Faction arises from human nature\"",
+                    "title": "From definition to origin",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -233,7 +233,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "The Union outcontrols state factions",
+                    "title": "The case for the Union",
                     "role": "conclusion",
                     "tree": {
                         "type": "variable",
@@ -241,7 +241,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Republics can cure faction\" and \"Large republics control faction better\" then \"The Union outcontrols state factions\"",
+                    "title": "Representation scaled up",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -274,7 +274,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Self-interest biases judgment\" and \"Property creates interests\" then \"Majority factions can oppress\"",
+                    "title": "Interested judges of their own cause",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -307,7 +307,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Liberty cannot be removed\" and \"Faction has two remedies\" then \"Republics can cure faction\"",
+                    "title": "Controlling effects, not causes",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -340,7 +340,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Majority factions can oppress\" and \"Faction ruins popular government\" then \"The Union checks faction\"",
+                    "title": "Why a safeguard is needed",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -373,7 +373,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Faction arises from human nature\" then \"Faction has two remedies\"",
+                    "title": "Two paths from an incurable cause",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -500,7 +500,7 @@ export const argumentsByFigureCurationId: Record<
             ],
             "premises": [
                 {
-                    "title": "If \"Utility depends on truth\" and \"Temperate speech is not enough\" and \"Dissent sustains mental life\" then \"Debate reveals partial truth\"",
+                    "title": "Answering the utility and temperance pleas",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -537,7 +537,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Suppression assumes infallibility\" and \"Judgment needs criticism\" and \"Truth needs open testing\" and \"No exception for certainty\" then \"Discussion keeps truth living\"",
+                    "title": "The argument from fallibility",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -578,7 +578,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"History condemns persecution\" and \"Persecution can suppress truth\" and \"Social stigma persecutes opinion\" then \"Dissent sustains mental life\"",
+                    "title": "What persecution actually costs",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -615,7 +615,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Discussion keeps truth living\" and \"Debate reveals partial truth\" and \"Truth should stay contested\" then \"Christian morality is incomplete\"",
+                    "title": "The doctrine applied to a received creed",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -652,7 +652,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "Christian morality is incomplete",
+                    "title": "The verdict on received morality",
                     "role": "conclusion",
                     "tree": {
                         "type": "variable",
@@ -660,7 +660,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Press liberty resists tyranny\" and \"Majority may not silence one\" and \"Silencing robs mankind\" and \"Suppression assumes infallibility\" then \"Social stigma persecutes opinion\"",
+                    "title": "Extending the principle beyond the law",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -780,7 +780,7 @@ export const argumentsByFigureCurationId: Record<
             ],
             "premises": [
                 {
-                    "title": "Moral duty exceeds human nature",
+                    "title": "The case for an unmet duty",
                     "role": "conclusion",
                     "tree": {
                         "type": "variable",
@@ -788,7 +788,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Surplus wealth should be given away\" and \"Luxury spending should be donated\" then \"Moral duty exceeds human nature\"",
+                    "title": "Consolidating the obligation to give",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -821,7 +821,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Dora case parallels luxury spending\" and \"No clear moral distinction exists\" then \"Everyone faces the same choice\"",
+                    "title": "The Dora case turned on the reader",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -854,7 +854,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"No clear moral distinction exists\" and \"Everyone faces the same choice\" then \"Surplus wealth should be given away\"",
+                    "title": "From moral parity to a practical demand",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -887,7 +887,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Bob's inaction is gravely wrong\" and \"Refusing to donate mirrors Bob\" then \"Others' inaction gives no excuse\"",
+                    "title": "Answering the everyone-else objection",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -920,7 +920,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Luxury spending can save lives\" and \"$200 can save a child\" then \"Refusing to donate mirrors Bob\"",
+                    "title": "Putting a price on the rescue",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -1102,7 +1102,7 @@ export const argumentsByFigureCurationId: Record<
             ],
             "premises": [
                 {
-                    "title": "If \"The many are not authoritative\" and \"The many cannot do greatest evil\" then \"Zeal can be dangerous\"",
+                    "title": "Limits of the crowd’s power",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -1135,7 +1135,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "Socrates must not escape",
+                    "title": "The case against escape",
                     "role": "conclusion",
                     "tree": {
                         "type": "variable",
@@ -1143,7 +1143,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Reason governs Socrates\" and \"Zeal can be dangerous\" and \"Wrongdoing is never right\" and \"Retaliation is unjust\" and \"One must do the right\" then \"Justice outranks life\"",
+                    "title": "Principle over survival",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -1188,7 +1188,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"The Delos ship nears arrival\" and \"Socrates accepts divine will\" and \"The dream predicts departure\" then \"Socrates follows God’s will\"",
+                    "title": "Timing left to the god",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",
@@ -1225,7 +1225,7 @@ export const argumentsByFigureCurationId: Record<
                     }
                 },
                 {
-                    "title": "If \"Escape would wrong the laws\" and \"The laws formed Socrates\" and \"Residence implies agreement\" and \"Socrates accepted the city\" and \"Escape would damage others\" and \"Justice outranks life\" and \"Laws require obedience or persuasion\" then \"Socrates must not escape\"",
+                    "title": "The laws’ claim on Socrates",
                     "role": "supporting",
                     "tree": {
                         "type": "operator",

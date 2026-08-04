@@ -129,9 +129,7 @@ claims:
           Socrates holds that the opinion of the many should not guide action; only
           the judgment of good and wise people deserves regard.
 premises:
-    - title:
-          If "The many are not authoritative" and "The many cannot do greatest
-          evil" then "Zeal can be dangerous"
+    - title: Limits of the crowd’s power
       role: supporting
       tree:
           type: operator
@@ -148,15 +146,12 @@ premises:
                             symbol: many_lack_moral_power
               - type: variable
                 symbol: harmful_cowardice_fear
-    - title: Socrates must not escape
+    - title: The case against escape
       role: conclusion
       tree:
           type: variable
           symbol: atonement_over_escape
-    - title:
-          If "Reason governs Socrates" and "Zeal can be dangerous" and "Wrongdoing
-          is never right" and "Retaliation is unjust" and "One must do the right"
-          then "Justice outranks life"
+    - title: Principle over survival
       role: supporting
       tree:
           type: operator
@@ -179,9 +174,7 @@ premises:
                             symbol: do_what_one_deems_right
               - type: variable
                 symbol: justice_first_life_second
-    - title:
-          If "The Delos ship nears arrival" and "Socrates accepts divine will" and
-          "The dream predicts departure" then "Socrates follows God’s will"
+    - title: Timing left to the god
       role: supporting
       tree:
           type: operator
@@ -200,10 +193,7 @@ premises:
                             symbol: dream_means_phthia
               - type: variable
                 symbol: follow_divine_will
-    - title: If "Escape would wrong the laws" and "The laws formed Socrates" and
-          "Residence implies agreement" and "Socrates accepted the city" and "Escape
-          would damage others" and "Justice outranks life" and "Laws require
-          obedience or persuasion" then "Socrates must not escape"
+    - title: The laws’ claim on Socrates
       role: supporting
       tree:
           type: operator

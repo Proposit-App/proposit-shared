@@ -100,9 +100,7 @@ claims:
           Christianity, show that sincere and respectable people can persecute
           profound truth in error.
 premises:
-    - title:
-          If "Utility depends on truth" and "Temperate speech is not enough" and
-          "Dissent sustains mental life" then "Debate reveals partial truth"
+    - title: Answering the utility and temperance pleas
       role: supporting
       tree:
           type: operator
@@ -121,10 +119,7 @@ premises:
                             symbol: FreedomNeedsOpenDissent
               - type: variable
                 symbol: DebateClarifiesPartialTruth
-    - title:
-          If "Suppression assumes infallibility" and "Judgment needs criticism" and
-          "Truth needs open testing" and "No exception for certainty" then
-          "Discussion keeps truth living"
+    - title: The argument from fallibility
       role: supporting
       tree:
           type: operator
@@ -145,9 +140,7 @@ premises:
                             symbol: NoExtremeException
               - type: variable
                 symbol: FreeDiscussionNeededForTruth
-    - title:
-          If "History condemns persecution" and "Persecution can suppress truth"
-          and "Social stigma persecutes opinion" then "Dissent sustains mental life"
+    - title: What persecution actually costs
       role: supporting
       tree:
           type: operator
@@ -166,9 +159,7 @@ premises:
                             symbol: SocialPenaltyActsAsPersecution
               - type: variable
                 symbol: FreedomNeedsOpenDissent
-    - title:
-          If "Discussion keeps truth living" and "Debate reveals partial truth" and
-          "Truth should stay contested" then "Christian morality is incomplete"
+    - title: The doctrine applied to a received creed
       role: supporting
       tree:
           type: operator
@@ -187,15 +178,12 @@ premises:
                             symbol: NoIntellectualSlumber
               - type: variable
                 symbol: ChristianMoralityIsIncomplete
-    - title: Christian morality is incomplete
+    - title: The verdict on received morality
       role: conclusion
       tree:
           type: variable
           symbol: ChristianMoralityIsIncomplete
-    - title:
-          If "Press liberty resists tyranny" and "Majority may not silence one" and
-          "Silencing robs mankind" and "Suppression assumes infallibility" then
-          "Social stigma persecutes opinion"
+    - title: Extending the principle beyond the law
       role: supporting
       tree:
           type: operator
