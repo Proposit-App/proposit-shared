@@ -211,6 +211,172 @@ describe("composeArgumentDiff", () => {
     })
 })
 
+const premise = (id: string, title?: string | null) =>
+    ({
+        id,
+        argumentId: "a1",
+        argumentVersion: 1,
+        checksum: "cs",
+        descendantChecksum: null,
+        combinedChecksum: "cs",
+        type: "freeform",
+        role: "supporting",
+        ...(title === undefined ? {} : { title }),
+    }) as unknown as Parameters<
+        typeof composeArgumentDiff
+    >[0]["premisesAfter"][number]
+
+describe("composeArgumentDiff — premise titles", () => {
+    const titleBase = {
+        coreDiff: emptyCore as never,
+        claimsBefore: [],
+        claimsAfter: [],
+        citationsBefore: [],
+        citationsAfter: [],
+        derivationPremiseIds: new Set<string>(),
+    }
+
+    it("reports a title-only edit as the premise's own change", () => {
+        // The premise checksum excludes display text, so core sees nothing —
+        // without the app-level comparison the version would read as unchanged.
+        const out = composeArgumentDiff({
+            ...titleBase,
+            premisesBefore: [premise("p1", "Old title")],
+            premisesAfter: [premise("p1", "New title")],
+        })
+        expect(out.premises.modified).toHaveLength(1)
+        expect(out.premises.modified[0].after.id).toBe("p1")
+        expect(out.premises.modified[0].state).toBe("modified-own")
+        expect(out.premises.modified[0].changes).toEqual([
+            { field: "title", before: "Old title", after: "New title" },
+        ])
+        expect(out.premises.modified[0].expressions).toEqual({
+            added: [],
+            removed: [],
+            modified: [],
+        })
+    })
+
+    it("leaves a premise whose title is unchanged out of the diff", () => {
+        const out = composeArgumentDiff({
+            ...titleBase,
+            premisesBefore: [premise("p1", "Same title")],
+            premisesAfter: [premise("p1", "Same title")],
+        })
+        expect(out.premises).toEqual({
+            added: [],
+            removed: [],
+            modified: [],
+        })
+    })
+
+    it("treats absent, null and empty-string titles as the same value", () => {
+        for (const [before, after] of [
+            [null, ""],
+            ["", null],
+            [undefined, null],
+            [undefined, ""],
+        ] as (string | null | undefined)[][]) {
+            const out = composeArgumentDiff({
+                ...titleBase,
+                premisesBefore: [premise("p1", before)],
+                premisesAfter: [premise("p1", after)],
+            })
+            expect(out.premises.modified).toEqual([])
+        }
+        // …while gaining or losing real text is a change.
+        const gained = composeArgumentDiff({
+            ...titleBase,
+            premisesBefore: [premise("p1", null)],
+            premisesAfter: [premise("p1", "A title")],
+        })
+        expect(gained.premises.modified).toHaveLength(1)
+        expect(gained.premises.modified[0].state).toBe("modified-own")
+    })
+
+    it("merges a title change into the structural entry for the same premise", () => {
+        const before = premise("p1", "Old title")
+        const after = premise("p1", "New title")
+        const coreWithModified = {
+            ...emptyCore,
+            premises: {
+                added: [],
+                removed: [],
+                modified: [
+                    {
+                        before,
+                        after,
+                        changes: [
+                            { field: "checksum", before: "cs", after: "cs2" },
+                        ],
+                        state: "modified-own",
+                        expressions: { added: [], removed: [], modified: [] },
+                    },
+                ],
+            },
+        }
+        const out = composeArgumentDiff({
+            ...titleBase,
+            coreDiff: coreWithModified as never,
+            premisesBefore: [before],
+            premisesAfter: [after],
+        })
+        expect(out.premises.modified).toHaveLength(1)
+        expect(out.premises.modified[0].changes).toEqual([
+            { field: "checksum", before: "cs", after: "cs2" },
+            { field: "title", before: "Old title", after: "New title" },
+        ])
+    })
+
+    it("promotes a modified-within premise to modified-own when its title changed", () => {
+        const before = premise("p1", "Old title")
+        const after = premise("p1", "New title")
+        const coreWithModified = {
+            ...emptyCore,
+            premises: {
+                added: [],
+                removed: [],
+                modified: [
+                    {
+                        before,
+                        after,
+                        changes: [],
+                        state: "modified-within",
+                        expressions: { added: [], removed: [], modified: [] },
+                    },
+                ],
+            },
+        }
+        const out = composeArgumentDiff({
+            ...titleBase,
+            coreDiff: coreWithModified as never,
+            premisesBefore: [before],
+            premisesAfter: [after],
+        })
+        expect(out.premises.modified).toHaveLength(1)
+        expect(out.premises.modified[0].state).toBe("modified-own")
+    })
+
+    it("ignores a title change on a derivation premise", () => {
+        const out = composeArgumentDiff({
+            ...titleBase,
+            derivationPremiseIds: new Set(["dp"]),
+            premisesBefore: [premise("dp", "Old title")],
+            premisesAfter: [premise("dp", "New title")],
+        })
+        expect(out.premises.modified).toEqual([])
+    })
+
+    it("does not report a title on a premise that only exists on one side", () => {
+        const out = composeArgumentDiff({
+            ...titleBase,
+            premisesBefore: [],
+            premisesAfter: [premise("p1", "A title")],
+        })
+        expect(out.premises.modified).toEqual([])
+    })
+})
+
 const cite = (
     claimId: string,
     supportingClaimId: string,

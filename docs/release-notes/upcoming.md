@@ -18,3 +18,12 @@ reasoning before reading a single claim.
 
 Only the titles changed. The claims, the logical structure, and the record of
 the run that produced each argument are untouched.
+
+## Version history now shows a renamed premise
+
+Comparing two versions of an argument used to miss a premise whose title was
+edited. If a new version only renamed its premises, the comparison came back
+empty and the version looked identical to the one before it.
+
+Renaming a premise now shows up the same way any other edit to that premise
+does — the premise is highlighted as the place the change happened.

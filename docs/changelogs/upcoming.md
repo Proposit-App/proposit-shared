@@ -26,4 +26,23 @@
 - **`src/fixtures/historical-figures/content.generated.ts` regenerated** by
   `pnpm run gen:fixtures` to pick up the new titles. Title strings only.
 
+## Fixed
+
+- **`composeArgumentDiff` now reports a premise `title` change**
+  (`src/engine/diff.ts`). `title` is application-level display text and is
+  deliberately excluded from the premise checksum (`src/checksum.ts` leaves
+  `premiseFields` at core's default), so `@proposit/proposit-core`'s structural
+  diff cannot see it — a version whose only edit was premise titles composed to
+  an entirely empty diff. The composition now compares titles across the
+  caller-supplied `premisesBefore` / `premisesAfter` arrays and emits the
+  premise under `premises.modified` with state `modified-own` and a
+  `{ field: "title" }` entry in `changes`, which `buildDiffRenderMaps` renders
+  as the `origin` cue.
+
+    A premise core already reported as modified absorbs the title change rather
+    than producing a second entry, and a `modified-within` premise is promoted
+    to `modified-own` when its own title moved. Derivation premises stay
+    filtered out, and absent / `null` / `""` titles compare equal so they never
+    register as an edit.
+
 </changes>
