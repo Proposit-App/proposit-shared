@@ -9,12 +9,27 @@ import {
     type TCuratedArgumentYaml,
 } from "../index.js"
 import type { TArgument } from "../../../schemas/model/arguments.js"
-import type { TClaim } from "../../../schemas/model/claims.js"
+import type {
+    TAxiomaticClaim,
+    TAxiomKind,
+    TClaim,
+} from "../../../schemas/model/claims.js"
 import type {
     TPropositionalExpressionCombined,
     TPropositionalPremise,
     TPropositionalVariable,
 } from "../../../schemas/logic.js"
+import {
+    mutateCreateDerivationPremise,
+    mutateCreateExpression,
+    mutateCreatePremise,
+    mutateCreateVariable,
+    populateDerivationFromAxiom,
+} from "../../../engine/mutations/index.js"
+import {
+    createTestEngine,
+    mkTestClaim,
+} from "../../../engine/mutations/__tests__/helpers.js"
 
 // ---------------------------------------------------------------------------
 // Minimal persisted-argument fixtures. Only the fields `lowerArgumentToCurated`
@@ -26,8 +41,17 @@ function normalClaim(id: string, title: string, body: string): TClaim {
     return { id, type: "normal", title, body } as unknown as TClaim
 }
 
-function axiomaticClaim(id: string, title: string, body: string): TClaim {
-    return { id, type: "axiomatic", title, body } as unknown as TClaim
+// An axiomatic claim carries no prose — its only content is its kind.
+function axiomaticClaim(id: string, axiom: TAxiomKind): TClaim {
+    return {
+        id,
+        type: "axiomatic",
+        title: null,
+        body: null,
+        url: null,
+        citation: null,
+        axiom,
+    } as unknown as TClaim
 }
 
 function claimBoundVariable(
@@ -107,20 +131,28 @@ function argument(title: string, description: string | null): TArgument {
 // Modeled on REAL persistence, not a toy: `addClaim` mints a per-claim hidden
 // derivation premise AND binds a second, engine-synthesized variable (auto
 // symbol) to each claim — that variable is referenced ONLY by the claim's
-// derivation premise. The argument also carries an axiomatic background claim
-// whose variable likewise appears only inside a derivation premise. None of
-// these synthesized claim-bound variables are authored claims; lowering must
-// drop them and recover exactly the two authored claims (P, Q). (An earlier
-// fixture reused the authored `var-q` inside the derivation premise, which hid
-// the double-count + axiomatic-throw bug entirely.)
-function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
+// derivation premise. Neither synthesized claim-bound variable is an authored
+// claim; lowering must drop them and recover exactly the two authored claims
+// (P, Q). (An earlier fixture reused the authored `var-q` inside the derivation
+// premise, which hid the double-count bug entirely.)
+//
+// Passing `axiomKind` attaches an axiomatic claim as the antecedent of Q's
+// derivation premise — the persisted shape of "Q rests on an axiom". Omitting
+// it yields an argument with no axiomatic support anywhere, which must lower
+// exactly as it did before the `axiom` field existed.
+function modusPonensInput(
+    idSuffix = "",
+    axiomKind?: TAxiomKind
+): TArgumentLoweringInput {
     const s = idSuffix
     return {
         argument: argument("Modus Ponens", null),
         claims: [
             normalClaim(`claim-p${s}`, "P title", "P body"),
             normalClaim(`claim-q${s}`, "Q title", "Q body"),
-            axiomaticClaim(`claim-axiom${s}`, "Axiom title", "Axiom body"),
+            ...(axiomKind
+                ? [axiomaticClaim(`claim-axiom${s}`, axiomKind)]
+                : []),
         ],
         variables: [
             // Authored claim-bound variables (appear in the freeform premises).
@@ -130,9 +162,17 @@ function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
             // symbols, referenced only by the derivation premises.
             claimBoundVariable(`var-p-deriv${s}`, "P1", `claim-p${s}`),
             claimBoundVariable(`var-q-deriv${s}`, "P3", `claim-q${s}`),
-            // Axiomatic background claim's variable — referenced only by a
-            // derivation premise; previously triggered the non-normal throw.
-            claimBoundVariable(`var-axiom${s}`, "P55", `claim-axiom${s}`),
+            // The axiomatic claim's variable — referenced only by a derivation
+            // premise, and never a curated claim of its own.
+            ...(axiomKind
+                ? [
+                      claimBoundVariable(
+                          `var-axiom${s}`,
+                          "P55",
+                          `claim-axiom${s}`
+                      ),
+                  ]
+                : []),
         ],
         premises: [
             freeformPremise(`prem-imp${s}`, "supporting", "If P then Q"),
@@ -150,8 +190,9 @@ function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
             variableExpr(`e4${s}`, `prem-p${s}`, null, 0, `var-p${s}`),
             // Q (conclusion)
             variableExpr(`e5${s}`, `prem-q${s}`, null, 0, `var-q${s}`),
-            // Derivation premise content — must be ignored. The Q-derivation
-            // references both the synthesized Q-variable and the axiom.
+            // Derivation premise content — never lowered to a premise. The
+            // Q-derivation references the synthesized Q-variable, plus the
+            // axiom variable when the fixture declares axiomatic support.
             variableExpr(
                 `e6${s}`,
                 `prem-deriv-p${s}`,
@@ -159,21 +200,25 @@ function modusPonensInput(idSuffix = ""): TArgumentLoweringInput {
                 0,
                 `var-p-deriv${s}`
             ),
-            operatorExpr(`e7${s}`, `prem-deriv-q${s}`, null, 0, "and"),
+            operatorExpr(`e7${s}`, `prem-deriv-q${s}`, null, 0, "implies"),
             variableExpr(
                 `e8${s}`,
                 `prem-deriv-q${s}`,
                 `e7${s}`,
-                0,
+                1,
                 `var-q-deriv${s}`
             ),
-            variableExpr(
-                `e9${s}`,
-                `prem-deriv-q${s}`,
-                `e7${s}`,
-                1,
-                `var-axiom${s}`
-            ),
+            ...(axiomKind
+                ? [
+                      variableExpr(
+                          `e9${s}`,
+                          `prem-deriv-q${s}`,
+                          `e7${s}`,
+                          0,
+                          `var-axiom${s}`
+                      ),
+                  ]
+                : []),
         ],
     }
 }
@@ -241,14 +286,42 @@ describe("lowerArgumentToCurated", () => {
         ).toBe(true)
     })
 
-    test("drops per-claim derivation variables and axiomatic background claims", () => {
+    test("drops per-claim derivation variables and the axiomatic claim's own variable", () => {
         // Every persisted claim binds a second engine-synthesized variable that
-        // appears only in its derivation premise, and axiomatic background claims
-        // appear only inside derivation premises. None are authored claims, so
-        // only the two authored claims (P, Q) survive — no double-counting, and
-        // the axiomatic claim does not trip the non-normal-claim guard.
-        const curated = lowerArgumentToCurated(modusPonensInput())
+        // appears only in its derivation premise, and an axiomatic claim's
+        // variable appears only inside a derivation premise. None are authored
+        // claims, so only the two authored claims (P, Q) survive — no
+        // double-counting, and the axiomatic claim does not trip the
+        // non-normal-claim guard.
+        const curated = lowerArgumentToCurated(
+            modusPonensInput("", "logical-principle")
+        )
         expect(curated.claims.map((claim) => claim.symbol)).toEqual(["P", "Q"])
+    })
+
+    test("carries an axiomatic antecedent back as the supported claim's kind", () => {
+        const curated = lowerArgumentToCurated(
+            modusPonensInput("", "logical-principle")
+        )
+        expect(curated.claims[1]).toEqual({
+            symbol: "Q",
+            title: "Q title",
+            body: "Q body",
+            axiom: "logical-principle",
+        })
+    })
+
+    test("omits the axiom key entirely on an unsupported claim", () => {
+        const curated = lowerArgumentToCurated(
+            modusPonensInput("", "logical-principle")
+        )
+        // P's derivation premise has no axiomatic antecedent. The key must be
+        // absent, not present-and-undefined, so the YAML is unchanged.
+        expect(Object.keys(curated.claims[0])).toEqual([
+            "symbol",
+            "title",
+            "body",
+        ])
     })
 })
 
@@ -274,6 +347,39 @@ describe("curatedArgumentContentDigest", () => {
             curatedArgumentContentDigest(changed)
         )
     })
+
+    test("is unchanged for an argument with no axiomatic support", () => {
+        // Frozen hash. Claims carry no `axiom`, so the hashed projection must
+        // serialize exactly as it did before the field existed — otherwise every
+        // stored curated argument reports drift and republishes for nothing.
+        const curated = lowerArgumentToCurated(modusPonensInput())
+        expect(curatedArgumentContentDigest(curated)).toBe(
+            "3670325cf0bc407014a0d8e3dc3de2b8a10bf23658c04ce9c049c109a1491bdf"
+        )
+    })
+
+    test("changes when a claim's axiom kind changes, and only then", () => {
+        const none = lowerArgumentToCurated(modusPonensInput())
+        const logical = lowerArgumentToCurated(
+            modusPonensInput("", "logical-principle")
+        )
+        const definition = lowerArgumentToCurated(
+            modusPonensInput("", "definition")
+        )
+        expect(curatedArgumentContentDigest(logical)).not.toBe(
+            curatedArgumentContentDigest(none)
+        )
+        expect(curatedArgumentContentDigest(logical)).not.toBe(
+            curatedArgumentContentDigest(definition)
+        )
+        expect(curatedArgumentContentDigest(logical)).toBe(
+            curatedArgumentContentDigest(
+                lowerArgumentToCurated(
+                    modusPonensInput("-other", "logical-principle")
+                )
+            )
+        )
+    })
 })
 
 describe("serializeArgumentYaml / parseArgumentYaml", () => {
@@ -283,7 +389,12 @@ describe("serializeArgumentYaml / parseArgumentYaml", () => {
         documentCurationId: "demo-01",
         claims: [
             { symbol: "P", title: "P title", body: "P body" },
-            { symbol: "Q", title: "Q title", body: "Q body" },
+            {
+                symbol: "Q",
+                title: "Q title",
+                body: "Q body",
+                axiom: "definition",
+            },
         ],
         premises: [
             {
@@ -349,5 +460,152 @@ describe("serializeArgumentYaml / parseArgumentYaml", () => {
     test("parsing rejects YAML that does not match the schema", () => {
         expect(() => parseArgumentYaml("title: 5\n")).toThrow()
         expect(() => parseArgumentYaml("just a string")).toThrow()
+    })
+
+    test("rejects an axiom kind outside the declared set", () => {
+        const invalid = {
+            ...fixture,
+            claims: [
+                {
+                    symbol: "P",
+                    title: "P title",
+                    body: "P body",
+                    axiom: "self-evident",
+                },
+            ],
+        } as unknown as TCuratedArgumentYaml
+        expect(() => serializeArgumentYaml(invalid)).toThrow()
+        expect(() =>
+            parseArgumentYaml(
+                "title: T\ndescription: ''\nclaims:\n  - symbol: P\n    title: t\n    body: b\n    axiom: self-evident\npremises: []\n"
+            )
+        ).toThrow()
+    })
+})
+
+// The engine is the authority on how axiomatic support is persisted, so this
+// drives the real mutation (`populateDerivationFromAxiom`) rather than a
+// hand-built derivation tree: whatever shape the engine writes, lowering must
+// read the kind back out of it, and the YAML must survive a round trip.
+describe("axiomatic support wired by the engine", () => {
+    const argId = "test-arg-id"
+    const argVersion = 1
+    const userId = "test-user-id"
+    const createdOn = new Date("2026-01-01")
+
+    function mkAxiomaticClaim(id: string, axiom: TAxiomKind): TAxiomaticClaim {
+        return {
+            id,
+            originArgumentId: argId,
+            version: argVersion,
+            published: false,
+            publishedOn: null,
+            creatorId: userId,
+            createdOn,
+            digest: `axiom-digest-${id}`,
+            type: "axiomatic",
+            kind: null,
+            title: null,
+            body: null,
+            titleContentHash: null,
+            url: null,
+            citation: null,
+            citationContentHash: null,
+            axiom,
+            parentId: null,
+            claimForkId: null,
+        } as TAxiomaticClaim
+    }
+
+    // A one-claim argument: the claim stated as the conclusion premise, plus its
+    // hidden derivation premise carrying the axiom as antecedent.
+    function loweringInputFromEngine(
+        axiom: TAxiomKind
+    ): TArgumentLoweringInput {
+        const meta = {
+            argumentId: argId,
+            argumentVersion: argVersion,
+            creatorId: userId,
+            createdOn,
+        }
+        const supported = mkTestClaim({
+            id: "claim-q",
+            title: "Q title",
+            body: "Q body",
+        })
+        const engine = createTestEngine(undefined, [supported])
+        const axiomatic = mkAxiomaticClaim("claim-axiom", axiom)
+        engine.setClaim(axiomatic)
+
+        mutateCreatePremise(engine, "prem-q", {
+            ...meta,
+            title: "Q",
+            role: "conclusion",
+        })
+        mutateCreateVariable(engine, "var-q", {
+            ...meta,
+            claimId: "claim-q",
+            claimVersion: 1,
+            symbol: "Q",
+        })
+        mutateCreateExpression(engine, {
+            ...meta,
+            premiseId: "prem-q",
+            expressionId: "expr-q",
+            parentId: null,
+            type: "variable",
+            variableId: "var-q",
+        })
+        mutateCreateDerivationPremise(engine, "prem-deriv-q", {
+            ...meta,
+            derivedClaimId: "claim-q",
+            existingConsequentVariableId: "var-q",
+            consequentExpressionId: "expr-q-deriv",
+        })
+        populateDerivationFromAxiom(engine, "prem-deriv-q", axiomatic)
+
+        const premises = engine.listPremises()
+        return {
+            argument: engine.getArgument(),
+            claims: [supported, axiomatic],
+            variables: engine.getVariables(),
+            premises: premises.map((premise) => premise.toPremiseData()),
+            expressions: premises.flatMap((premise) =>
+                premise.getExpressions()
+            ),
+        }
+    }
+
+    test("lowers to the supported claim carrying the kind, and nothing else", () => {
+        const curated = lowerArgumentToCurated(
+            loweringInputFromEngine("domain-rule")
+        )
+        expect(curated.claims).toEqual([
+            {
+                symbol: "Q",
+                title: "Q title",
+                body: "Q body",
+                axiom: "domain-rule",
+            },
+        ])
+        // The axiomatic claim's variable and the derivation premise holding it
+        // stay engine-internal.
+        expect(curated.premises).toEqual([
+            {
+                title: "Q",
+                role: "conclusion",
+                tree: { type: "variable", symbol: "Q" },
+            },
+        ])
+    })
+
+    test("survives a YAML round trip", () => {
+        const curated: TCuratedArgumentYaml = {
+            ...lowerArgumentToCurated(loweringInputFromEngine("stipulation")),
+            documentCurationId: "demo-01",
+        }
+        const yaml = serializeArgumentYaml(curated)
+        expect(yaml).toContain("axiom: stipulation")
+        expect(parseArgumentYaml(yaml)).toEqual(curated)
     })
 })

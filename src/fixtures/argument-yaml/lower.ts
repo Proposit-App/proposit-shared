@@ -16,11 +16,21 @@
 //     an authored claim-bound variable AND an engine-synthesized one bound to the
 //     same claim but referenced solely by the derivation premise. Only the
 //     authored variable becomes a curated claim (see the dedup below).
+// One piece of derivation-premise content is NOT discarded: an axiomatic claim
+// sitting as a derivation premise's antecedent is the supported claim's
+// axiomatic backing, so its kind is carried back onto that claim as `axiom`.
+// The axiomatic claim itself never becomes a curated claim — it holds no prose.
+//
 // AN-normalization expression nodes (formula buffers, etc.) are NOT stripped:
 // the curated form mirrors the persisted, normalized tree, so reconstructing the
 // stored expression tree verbatim reproduces the authored structure.
 
-import { isNormalClaim, type TClaim } from "../../schemas/model/claims.js"
+import {
+    isAxiomaticClaim,
+    isNormalClaim,
+    type TAxiomKind,
+    type TClaim,
+} from "../../schemas/model/claims.js"
 import type { TArgument } from "../../schemas/model/arguments.js"
 import type {
     TClaimBoundVariable,
@@ -121,25 +131,48 @@ export function lowerArgumentToCurated(
     // engine-synthesized one (auto symbol) that lives in the per-claim hidden
     // derivation premise `addClaim` mints. Recover only the authored claims by
     // dropping every claim-bound variable referenced ONLY by derivation-premise
-    // expressions — that also drops engine-added axiomatic background claims,
-    // whose variable likewise appears solely in a derivation premise. An
-    // authored variable that no freeform premise happens to reference (an
-    // "orphan" claim) is referenced by neither set and is therefore kept.
-    const derivationPremiseIds = new Set(
-        premises
-            .filter((premise) => premise.type === "derivation")
-            .map((premise) => premise.id)
-    )
+    // expressions — that also drops the axiomatic claim a derivation premise
+    // carries as its antecedent, whose variable likewise appears solely in a
+    // derivation premise. An authored variable that no freeform premise happens
+    // to reference (an "orphan" claim) is referenced by neither set and is
+    // therefore kept.
+    const derivationPremiseIds = new Set<string>()
+    const derivedClaimIdByPremiseId = new Map<string, string>()
+    for (const premise of premises) {
+        if (premise.type !== "derivation") {
+            continue
+        }
+        derivationPremiseIds.add(premise.id)
+        derivedClaimIdByPremiseId.set(premise.id, premise.derivedClaimId)
+    }
+
+    // An axiomatic claim is prose-free — its only content is its kind, which
+    // belongs to the claim it supports. Rather than surfacing it as a curated
+    // claim of its own, record the kind against the claim whose derivation
+    // premise holds it, so it re-emerges as that claim's `axiom` field.
+    const axiomKindByClaimId = new Map<string, TAxiomKind>()
+
     const referencedByFreeform = new Set<string>()
     const referencedByDerivation = new Set<string>()
     for (const expression of expressions) {
         if (expression.type !== "variable") {
             continue
         }
-        if (derivationPremiseIds.has(expression.premiseId)) {
-            referencedByDerivation.add(expression.variableId)
-        } else {
+        if (!derivationPremiseIds.has(expression.premiseId)) {
             referencedByFreeform.add(expression.variableId)
+            continue
+        }
+        referencedByDerivation.add(expression.variableId)
+        const variable = variablesById.get(expression.variableId)
+        if (!variable || !isClaimBoundVariable(variable)) {
+            continue
+        }
+        const claim = claimsById.get(variable.claimId)
+        const derivedClaimId = derivedClaimIdByPremiseId.get(
+            expression.premiseId
+        )
+        if (claim && isAxiomaticClaim(claim) && derivedClaimId !== undefined) {
+            axiomKindByClaimId.set(derivedClaimId, claim.axiom)
         }
     }
 
@@ -166,10 +199,15 @@ export function lowerArgumentToCurated(
                 `Claim-bound variable "${variable.symbol}" references a non-normal claim ${claim.id}; curated arguments only represent normal claims`
             )
         }
+        const axiom = axiomKindByClaimId.get(variable.claimId)
         curatedClaims.push({
             symbol: variable.symbol,
             title: claim.title,
             body: claim.body,
+            // Spread rather than `axiom: axiom` so an unsupported claim emits no
+            // key at all: its YAML and its content digest stay byte-identical to
+            // what they were before axiomatic support was expressible.
+            ...(axiom === undefined ? {} : { axiom }),
         })
     }
 

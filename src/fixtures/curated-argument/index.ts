@@ -8,6 +8,8 @@
 // required to express the data — they are the documented vocabulary for anyone
 // hand-editing or contributing a revised argument.
 
+import type { TAxiomKind } from "../../schemas/model/claims.js"
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -28,6 +30,11 @@ export interface CuratedClaim {
     symbol: string
     title: string
     body: string
+    // The axiomatic support this claim rests on, declared inline rather than as
+    // a second claim entry: the support carries no prose of its own, only its
+    // kind, and the derivation tree that attaches it is synthesized. Absent (not
+    // `null`) when the claim has no axiomatic support.
+    axiom?: TAxiomKind
 }
 
 export interface CuratedPremise {

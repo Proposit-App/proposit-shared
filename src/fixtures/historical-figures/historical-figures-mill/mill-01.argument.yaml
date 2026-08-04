@@ -13,6 +13,7 @@ claims:
           The beliefs with the strongest warrant are those that remain open to the
           whole world’s challenge; if challenge fails, they attain the best
           certainty fallible beings can have.
+      axiom: background-assumption
     - symbol: SilencingStealsTruth
       title: Silencing robs mankind
       body:
@@ -35,6 +36,7 @@ claims:
           The usefulness of an opinion is itself disputable, and truth is part of
           utility; therefore discussion cannot fairly protect utility while barring
           debate over truth.
+      axiom: stipulation
     - symbol: ChristianMoralityIsIncomplete
       title: Christian morality is incomplete
       body:
@@ -46,12 +48,14 @@ claims:
       body:
           Mankind is not justified in silencing a lone dissenter even if all others
           share the opposite opinion; the power to silence opinion is illegitimate.
+      axiom: background-assumption
     - symbol: JudgmentNeedsDiscussion
       title: Judgment needs criticism
       body:
           Human judgment becomes trustworthy through open criticism, discussion, and
           experience; without free contradiction and refutation, no rational
           assurance of being right is possible.
+      axiom: background-assumption
     - symbol: p1
       title: Press liberty resists tyranny
       body:
@@ -93,6 +97,7 @@ claims:
           All silencing of discussion presumes infallibility, because no person or
           authority can claim certainty enough to exclude others from judging an
           opinion.
+      axiom: logical-principle
     - symbol: SocratesChristAureliusExamples
       title: History condemns persecution
       body:
@@ -100,9 +105,7 @@ claims:
           Christianity, show that sincere and respectable people can persecute
           profound truth in error.
 premises:
-    - title:
-          If "Utility depends on truth" and "Temperate speech is not enough" and
-          "Dissent sustains mental life" then "Debate reveals partial truth"
+    - title: Answering the utility and temperance pleas
       role: supporting
       tree:
           type: operator
@@ -121,10 +124,7 @@ premises:
                             symbol: FreedomNeedsOpenDissent
               - type: variable
                 symbol: DebateClarifiesPartialTruth
-    - title:
-          If "Suppression assumes infallibility" and "Judgment needs criticism" and
-          "Truth needs open testing" and "No exception for certainty" then
-          "Discussion keeps truth living"
+    - title: The argument from fallibility
       role: supporting
       tree:
           type: operator
@@ -145,9 +145,7 @@ premises:
                             symbol: NoExtremeException
               - type: variable
                 symbol: FreeDiscussionNeededForTruth
-    - title:
-          If "History condemns persecution" and "Persecution can suppress truth"
-          and "Social stigma persecutes opinion" then "Dissent sustains mental life"
+    - title: What persecution actually costs
       role: supporting
       tree:
           type: operator
@@ -166,9 +164,7 @@ premises:
                             symbol: SocialPenaltyActsAsPersecution
               - type: variable
                 symbol: FreedomNeedsOpenDissent
-    - title:
-          If "Discussion keeps truth living" and "Debate reveals partial truth" and
-          "Truth should stay contested" then "Christian morality is incomplete"
+    - title: The doctrine applied to a received creed
       role: supporting
       tree:
           type: operator
@@ -187,15 +183,12 @@ premises:
                             symbol: NoIntellectualSlumber
               - type: variable
                 symbol: ChristianMoralityIsIncomplete
-    - title: Christian morality is incomplete
+    - title: The verdict on received morality
       role: conclusion
       tree:
           type: variable
           symbol: ChristianMoralityIsIncomplete
-    - title:
-          If "Press liberty resists tyranny" and "Majority may not silence one" and
-          "Silencing robs mankind" and "Suppression assumes infallibility" then
-          "Social stigma persecutes opinion"
+    - title: Extending the principle beyond the law
       role: supporting
       tree:
           type: operator

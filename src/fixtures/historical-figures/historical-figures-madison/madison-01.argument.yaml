@@ -7,6 +7,7 @@ claims:
           judgment and may corrupt integrity; the same problem applies even more
           strongly to legislative bodies deciding on classes that include their
           own members.
+      axiom: domain-rule
     - symbol: union_checks_faction
       title: The Union checks faction
       body: A well-constructed Union tends to break and control the violence of
@@ -27,12 +28,14 @@ claims:
       body: Destroying liberty would be a worse remedy than the disease, because
           liberty is essential to political life even though it nourishes
           faction.
+      axiom: background-assumption
     - symbol: pure_democracy_unfits_faction
       title: Pure democracy cannot cure faction
       body:
           A pure democracy, with citizens assembling and governing in person, can
           admit no cure for faction and is prone to turbulence, contention,
           insecurity, and property violations.
+      axiom: definition
     - symbol: majority_faction_can_oppress
       title: Majority factions can oppress
       body: When a faction includes a majority, popular government can let it
@@ -59,6 +62,7 @@ claims:
       body: It is impracticable to make every citizen hold the same opinions,
           passions, and interests, because human reason is fallible and unequal
           property interests arise naturally.
+      axiom: background-assumption
     - symbol: union_superior_to_states
       title: The Union outcontrols state factions
       body:
@@ -77,6 +81,7 @@ claims:
           A faction is a group of citizens, majorities or minorities, united by
           passion or interest adverse to the rights of others or the community’s
           permanent aggregate interests.
+      axiom: definition
     - symbol: federal_compound_structure
       title: The federal Constitution balances scale
       body:
@@ -84,7 +89,7 @@ claims:
           aggregate interests to the national government and local and
           particular interests to state legislatures.
 premises:
-    - title: If "Pure democracy cannot cure faction" then "Republics can cure faction"
+    - title: From assembly to representation
       role: supporting
       tree:
           type: operator
@@ -94,9 +99,7 @@ premises:
                 symbol: pure_democracy_unfits_faction
               - type: variable
                 symbol: republic_representation_cures
-    - title:
-          If "The federal Constitution balances scale" and "Large republics control
-          faction better" then "The Union outcontrols state factions"
+    - title: Scale joined to federal design
       role: supporting
       tree:
           type: operator
@@ -113,8 +116,7 @@ premises:
                             symbol: large_republic_advantage
               - type: variable
                 symbol: union_superior_to_states
-    - title: If "Uniform opinion is impossible" then "Faction arises from human
-          nature"
+    - title: No cure by making men alike
       role: supporting
       tree:
           type: operator
@@ -124,9 +126,7 @@ premises:
                 symbol: opinion_and_interest_diversity
               - type: variable
                 symbol: faction_arises_from_nature
-    - title:
-          If "The Union checks faction" and "The Union outcontrols state factions"
-          then "The federal Constitution balances scale"
+    - title: Vindication of the federal plan
       role: supporting
       tree:
           type: operator
@@ -143,9 +143,7 @@ premises:
                             symbol: union_superior_to_states
               - type: variable
                 symbol: federal_compound_structure
-    - title:
-          If "Faction serves adverse interests" then "Faction arises from human
-          nature"
+    - title: From definition to origin
       role: supporting
       tree:
           type: operator
@@ -155,14 +153,12 @@ premises:
                 symbol: faction_definition
               - type: variable
                 symbol: faction_arises_from_nature
-    - title: The Union outcontrols state factions
+    - title: The case for the Union
       role: conclusion
       tree:
           type: variable
           symbol: union_superior_to_states
-    - title:
-          If "Republics can cure faction" and "Large republics control faction
-          better" then "The Union outcontrols state factions"
+    - title: Representation scaled up
       role: supporting
       tree:
           type: operator
@@ -179,9 +175,7 @@ premises:
                             symbol: large_republic_advantage
               - type: variable
                 symbol: union_superior_to_states
-    - title:
-          If "Self-interest biases judgment" and "Property creates interests" then
-          "Majority factions can oppress"
+    - title: Interested judges of their own cause
       role: supporting
       tree:
           type: operator
@@ -198,8 +192,7 @@ premises:
                             symbol: property_divides_society
               - type: variable
                 symbol: majority_faction_can_oppress
-    - title: If "Liberty cannot be removed" and "Faction has two remedies" then
-          "Republics can cure faction"
+    - title: Controlling effects, not causes
       role: supporting
       tree:
           type: operator
@@ -216,9 +209,7 @@ premises:
                             symbol: faction_remedies
               - type: variable
                 symbol: republic_representation_cures
-    - title:
-          If "Majority factions can oppress" and "Faction ruins popular government"
-          then "The Union checks faction"
+    - title: Why a safeguard is needed
       role: supporting
       tree:
           type: operator
@@ -235,7 +226,7 @@ premises:
                             symbol: p1
               - type: variable
                 symbol: union_checks_faction
-    - title: If "Faction arises from human nature" then "Faction has two remedies"
+    - title: Two paths from an incurable cause
       role: supporting
       tree:
           type: operator

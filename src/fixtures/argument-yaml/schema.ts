@@ -7,6 +7,7 @@
 // to and is validated against on parse — NOT core's lossy snapshot YAML.
 
 import Type from "typebox"
+import { AxiomKindSchema } from "../../schemas/model/claims.js"
 import type { CuratedArgument } from "../curated-argument/index.js"
 import type { HistoricalFigureProvenance } from "../historical-figures/index.js"
 
@@ -59,6 +60,10 @@ const CuratedClaimYamlSchema = Type.Object({
     symbol: Type.String(),
     title: Type.String(),
     body: Type.String(),
+    // Optional axiomatic support. Present as one of the axiom-kind literals when
+    // the claim rests on a self-evident basis; the key is omitted otherwise,
+    // which is exactly how a claim without support has always serialized.
+    axiom: Type.Optional(AxiomKindSchema),
 })
 
 const CuratedPremiseYamlSchema = Type.Object({

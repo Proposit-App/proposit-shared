@@ -8,6 +8,7 @@ claims:
           money on a luxury upgrade when that money could instead save a child's
           life, because both acts sacrifice a child’s life for nonessential
           comfort.
+      axiom: stipulation
     - symbol: NoClearMoralDifference
       title: No clear moral distinction exists
       body:
@@ -26,6 +27,7 @@ claims:
           Bob acts gravely wrongly when he refuses to divert the train to save the
           child, even though the sacrifice would destroy his Bugatti and its
           financial value.
+      axiom: stipulation
     - symbol: CrowdDoesNotExcuse
       title: Others' inaction gives no excuse
       body:
@@ -67,14 +69,12 @@ claims:
           Even if human nature makes such sacrifice unlikely, people still ought to
           make it, and knowing that duty helps them live morally decent lives.
 premises:
-    - title: Moral duty exceeds human nature
+    - title: The case for an unmet duty
       role: conclusion
       tree:
           type: variable
           symbol: MoralDutyExceedsHumanNature
-    - title:
-          If "Surplus wealth should be given away" and "Luxury spending should be
-          donated" then "Moral duty exceeds human nature"
+    - title: Consolidating the obligation to give
       role: supporting
       tree:
           type: operator
@@ -91,9 +91,7 @@ premises:
                             symbol: LuxuryMoneyShouldBeDonated
               - type: variable
                 symbol: MoralDutyExceedsHumanNature
-    - title:
-          If "Dora case parallels luxury spending" and "No clear moral distinction
-          exists" then "Everyone faces the same choice"
+    - title: The Dora case turned on the reader
       role: supporting
       tree:
           type: operator
@@ -110,8 +108,7 @@ premises:
                             symbol: NoClearMoralDifference
               - type: variable
                 symbol: WeAreAllInThatSituation
-    - title: If "No clear moral distinction exists" and "Everyone faces the same
-          choice" then "Surplus wealth should be given away"
+    - title: From moral parity to a practical demand
       role: supporting
       tree:
           type: operator
@@ -128,9 +125,7 @@ premises:
                             symbol: WeAreAllInThatSituation
               - type: variable
                 symbol: GiveMostSurplusWealth
-    - title:
-          If "Bob's inaction is gravely wrong" and "Refusing to donate mirrors Bob"
-          then "Others' inaction gives no excuse"
+    - title: Answering the everyone-else objection
       role: supporting
       tree:
           type: operator
@@ -147,9 +142,7 @@ premises:
                             symbol: DonorsResembleBob
               - type: variable
                 symbol: CrowdDoesNotExcuse
-    - title:
-          If "Luxury spending can save lives" and "$200 can save a child" then
-          "Refusing to donate mirrors Bob"
+    - title: Putting a price on the rescue
       role: supporting
       tree:
           type: operator

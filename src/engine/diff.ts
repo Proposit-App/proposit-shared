@@ -156,7 +156,62 @@ export function composeArgumentDiff(
         ),
     })
 
+    // A premise `title` is application-level display text, deliberately outside
+    // the engine's premise checksum — so a title-only edit is invisible to the
+    // structural diff and is detected here instead. It is the premise's own
+    // content, hence `modified-own`. Absent / null / "" all mean "no title" and
+    // must not read as a change against one another.
+    const premiseTitle = (p: TPropositionalPremise) => p.title ?? ""
+    const titleChanges = new Map<
+        string,
+        { field: string; before: unknown; after: unknown }
+    >()
+    for (const after of input.premisesAfter) {
+        if (!keepPremise(after)) continue
+        const before = beforePremiseById.get(after.id)
+        if (!before) continue
+        if (premiseTitle(before) === premiseTitle(after)) continue
+        titleChanges.set(after.id, {
+            field: "title",
+            before: before.title ?? null,
+            after: after.title ?? null,
+        })
+    }
+
     type TModifiedPremise = TArgumentDiff["premises"]["modified"][number]
+    // Core's structurally-modified premises come first, absorbing any title
+    // change for the same premise so it is reported once, not twice.
+    const modifiedPremises: TModifiedPremise[] = coreDiff.premises.modified
+        .filter((m) => keepPremise(m.after))
+        .map((m) => {
+            const titleChange = titleChanges.get(m.after.id)
+            titleChanges.delete(m.after.id)
+            return {
+                before: requirePremise(
+                    beforePremiseById,
+                    m.before.id,
+                    "premisesBefore"
+                ),
+                after: requirePremise(
+                    afterPremiseById,
+                    m.after.id,
+                    "premisesAfter"
+                ),
+                changes: titleChange ? [...m.changes, titleChange] : m.changes,
+                state: titleChange ? "modified-own" : m.state,
+                expressions: keepExprSet(m.expressions),
+            } as TModifiedPremise
+        })
+    for (const [id, titleChange] of titleChanges) {
+        modifiedPremises.push({
+            before: requirePremise(beforePremiseById, id, "premisesBefore"),
+            after: requirePremise(afterPremiseById, id, "premisesAfter"),
+            changes: [titleChange],
+            state: "modified-own",
+            expressions: { added: [], removed: [], modified: [] },
+        } as TModifiedPremise)
+    }
+
     const premises: TArgumentDiff["premises"] = {
         added: coreDiff.premises.added
             .filter(keepPremise)
@@ -168,26 +223,7 @@ export function composeArgumentDiff(
             .map((p) =>
                 requirePremise(beforePremiseById, p.id, "premisesBefore")
             ),
-        modified: coreDiff.premises.modified
-            .filter((m) => keepPremise(m.after))
-            .map(
-                (m) =>
-                    ({
-                        before: requirePremise(
-                            beforePremiseById,
-                            m.before.id,
-                            "premisesBefore"
-                        ),
-                        after: requirePremise(
-                            afterPremiseById,
-                            m.after.id,
-                            "premisesAfter"
-                        ),
-                        changes: m.changes,
-                        state: m.state,
-                        expressions: keepExprSet(m.expressions),
-                    }) as TModifiedPremise
-            ),
+        modified: modifiedPremises,
     }
 
     return {
