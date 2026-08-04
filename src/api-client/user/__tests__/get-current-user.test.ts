@@ -16,6 +16,8 @@ const SAMPLE_CURRENT_USER_JSON = {
         maxStatementsPerArg: 30,
         maxCitationsPerArg: 20,
         maxTokensPerMonth: 100000,
+        maxSourceTextChars: 20000,
+        maxStoredSourceTextChars: 200000,
     },
     username: "alice",
     image: "https://cdn.test/avatar.png",

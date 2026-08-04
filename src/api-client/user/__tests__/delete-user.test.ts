@@ -13,10 +13,10 @@ const SAMPLE_USER_JSON = {
     username: "deleted",
     curationId: null,
     tier: 1,
+    accountState: "deleted",
     tokensUsed: 0,
     lifetimeTokensUsed: 0,
     tokenResetOn: "2026-01-01T00:00:00.000Z",
-    deleted: true,
     registrationDate: "2026-01-01T00:00:00.000Z",
     preferences: { advancedMode: false },
 }
@@ -50,7 +50,9 @@ describe("apiClient.deleteUser", () => {
         if (!result.ok) throw new Error("expected ok")
         expect(Value.Check(UserSchema, result.value)).toBe(true)
         expect(result.value.id).toBe(SAMPLE_USER_JSON.id)
-        expect(result.value.deleted).toBe(true)
+        // `accountState`, not a separate `deleted` flag — the boolean was the
+        // third place account state used to live, and it is gone.
+        expect(result.value.accountState).toBe("deleted")
     })
 
     test("returns parsed error on 401", async () => {
@@ -113,7 +115,6 @@ describe("apiClient.deleteUser", () => {
     test("throws when 200 body fails UserSchema validation", async () => {
         const malformed = {
             id: "00000000-0000-0000-0000-000000000002",
-            deleted: true,
         }
         const fetchImpl = vi.fn(() =>
             Promise.resolve(makeJsonResponse(200, malformed))

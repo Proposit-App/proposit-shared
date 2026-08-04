@@ -46,6 +46,16 @@ import {
     deleteReactionImpl,
 } from "./argument/reactions.js"
 import {
+    getArgumentOriginImpl,
+    attachArgumentOriginImpl,
+    updateArgumentOriginImpl,
+    detachArgumentOriginImpl,
+    createOriginAnchorImpl,
+    deleteOriginAnchorImpl,
+    markPremiseEnthymemeImpl,
+    markExpressionEnthymemeImpl,
+} from "./argument/origin.js"
+import {
     getArgumentParticipantsImpl,
     addArgumentEditorImpl,
     removeArgumentParticipantImpl,
@@ -90,6 +100,7 @@ import {
     searchUserEntitiesImpl,
 } from "./search.js"
 import { getUserClaimsImpl } from "./user/claims.js"
+import { deactivateAccountImpl } from "./user/deactivate-account.js"
 import { deleteUserImpl } from "./user/delete-user.js"
 import { getCurrentUserImpl } from "./user/get-current-user.js"
 import { getUserCitationsImpl } from "./user/citations.js"
@@ -127,6 +138,14 @@ const impls = {
     getArgumentParticipants: getArgumentParticipantsImpl,
     addArgumentEditor: addArgumentEditorImpl,
     removeArgumentParticipant: removeArgumentParticipantImpl,
+    getArgumentOrigin: getArgumentOriginImpl,
+    attachArgumentOrigin: attachArgumentOriginImpl,
+    updateArgumentOrigin: updateArgumentOriginImpl,
+    detachArgumentOrigin: detachArgumentOriginImpl,
+    createOriginAnchor: createOriginAnchorImpl,
+    deleteOriginAnchor: deleteOriginAnchorImpl,
+    markPremiseEnthymeme: markPremiseEnthymemeImpl,
+    markExpressionEnthymeme: markExpressionEnthymemeImpl,
     getAllArguments: getAllArgumentsImpl,
     createArgument: createArgumentImpl,
     importArgument: importArgumentImpl,
@@ -190,6 +209,7 @@ const impls = {
     modifyCurrentUser: modifyCurrentUserImpl,
     activateRegistrationInvite: activateRegistrationInviteImpl,
     issueInvitation: issueInvitationImpl,
+    deactivateAccount: deactivateAccountImpl,
     deleteUser: deleteUserImpl,
     getTaskPipeline: getTaskPipelineImpl,
     getTaskPipelineStagePayloads: getTaskPipelineStagePayloadsImpl,

@@ -1,0 +1,10 @@
+slug: 2026-07-29-add-an-api-client-method-for-account-deactivation
+title: Add an api-client method for account deactivation
+created: '2026-07-29'
+resolution: done
+priority: 44
+effort: low
+complexity: low
+tags:
+- tech-debt
+initiative: 2026-07-28-account-state-lifecycle-deactivate-ban-and-delete

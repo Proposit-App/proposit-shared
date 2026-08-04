@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest"
+import type { TReviewStore } from "../../review/review-store.js"
 import { ReviewEngine } from "../../review/review-engine.js"
-import { LocalStorageReviewStore } from "../../review/review-store.js"
+import {
+    LocalStorageReviewStore,
+    ReviewStorageQuotaError,
+    ReviewStorageUnavailableError,
+} from "../../review/review-store.js"
 import {
     buildEngineWithTwoPremises,
     completeClaimPhase,
@@ -34,6 +39,78 @@ Object.defineProperty(globalThis, "localStorage", {
     value: new MemoryStorage(),
     writable: true,
     configurable: true,
+})
+
+/** Store whose debounced `save` always rejects; everything else is unused. */
+function rejectingStore(err: Error): TReviewStore {
+    const unused = (): never => {
+        throw new Error("unexpected store call")
+    }
+    return {
+        load: () => Promise.resolve(undefined),
+        save: () => Promise.reject(err),
+        upsertClaimAssignment: unused,
+        upsertOperatorAssignment: unused,
+        saveResult: unused,
+        clear: unused,
+        keyFor: () => "test-key",
+    }
+}
+
+/**
+ * Arms the debounced persist against a rejecting store, fires the timer, then
+ * lets the event loop turn over so Node has decided what is unhandled.
+ */
+async function persistAgainstRejectingStore(err: Error): Promise<string[]> {
+    const unhandled: string[] = []
+    const onUnhandled = (reason: unknown): void => {
+        unhandled.push(String(reason))
+    }
+    process.on("unhandledRejection", onUnhandled)
+    vi.useFakeTimers()
+    try {
+        const argEngine = buildEngineWithTwoPremises()
+        const re = new ReviewEngine({ argEngine, store: rejectingStore(err) })
+        re.start()
+        const step = re.getSnapshot().currentStep
+        if (step?.kind !== "claim") throw new Error("expected a claim step")
+        re.setClaimValue(step.claimId, true)
+        vi.advanceTimersByTime(200)
+        vi.useRealTimers()
+        await new Promise((resolve) => setImmediate(resolve))
+        return unhandled
+    } finally {
+        vi.useRealTimers()
+        process.off("unhandledRejection", onUnhandled)
+    }
+}
+
+describe("ReviewEngine — debounced persist failures", () => {
+    it("swallows an unavailable-storage rejection from the debounced save", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(vi.fn())
+        try {
+            const unhandled = await persistAgainstRejectingStore(
+                new ReviewStorageUnavailableError("SSR")
+            )
+            expect(unhandled).toEqual([])
+            expect(warn).not.toHaveBeenCalled()
+        } finally {
+            warn.mockRestore()
+        }
+    })
+
+    it("warns but does not leak a real persist failure from the debounced save", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(vi.fn())
+        try {
+            const unhandled = await persistAgainstRejectingStore(
+                new ReviewStorageQuotaError()
+            )
+            expect(unhandled).toEqual([])
+            expect(warn).toHaveBeenCalledTimes(1)
+        } finally {
+            warn.mockRestore()
+        }
+    })
 })
 
 describe("ReviewEngine — bootstrap", () => {

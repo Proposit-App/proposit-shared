@@ -1,8 +1,0 @@
-slug: 2026-07-25-add-maxlength-caps-to-unbounded-stored-free-text-schema-fields
-title: Add maxLength caps to unbounded stored free-text schema fields
-phase: ''
-created: '2026-07-25'
-resolution: null
-tags:
-- tech-debt
-- product

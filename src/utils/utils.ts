@@ -79,8 +79,35 @@ export async function parseRequest<T extends TSchema>(
     schema: T
 ): Promise<Static<T>> {
     const json = (await request.json()) as JsonValue
-    const converted = Value.Convert(schema, json)
-    return Value.Parse(schema, converted)
+    return convertAssertDecode(schema, json)
+}
+
+/**
+ * Convert, then assert, then decode — the three steps a request/response body
+ * needs, composed explicitly rather than via `Value.Parse`.
+ *
+ * - **Convert** coerces the wire's stringly-typed values (`"true"`, `"42"`)
+ *   into the booleans and numbers the schema declares. Callers rely on this.
+ * - **Assert** rejects anything the schema does not admit. It has to run
+ *   *after* Convert (or a coercible value would be refused) and it has to be a
+ *   bare assert rather than part of `Value.Parse`'s pipeline, because that
+ *   pipeline applies each schema's `default` first — which would accept a body
+ *   with a required key omitted and silently invent the value.
+ * - **Decode** is what rehydrates `EncodableDate` into real `Date` instances.
+ *   `Value.Parse` does not run the decode pass, which is why this is not simply
+ *   a `Value.Parse` call.
+ *
+ * The decoded and encoded static types coincide for every schema here —
+ * `EncodableDate` is the only decoding type and it decodes to the `Date` it
+ * already infers as — but TypeScript cannot prove that for an unresolved `T`.
+ */
+function convertAssertDecode<T extends TSchema>(
+    schema: T,
+    value: unknown
+): Static<T> {
+    const converted = Value.Convert(schema, value)
+    Value.Assert(schema, converted)
+    return Value.Decode(schema, converted) as Static<T>
 }
 
 // Default (2-arg) form: the error half widens to include the
@@ -166,10 +193,10 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     }
 
     try {
-        // Convert first to handle custom Type.Base types (e.g. EncodableDate)
-        // whose Convert method is not called by Value.Parse directly
-        const converted = Value.Convert(schema, data)
-        const parsed = Value.Parse(schema, converted) satisfies Static<T>
+        // Same three steps as the request path — see convertAssertDecode. A
+        // response that does not match its schema is a server bug, and letting
+        // a default paper over it hides that bug from the client.
+        const parsed = convertAssertDecode(schema, data)
         return { value: parsed, ok: true }
     } catch (e) {
         console.error("Error parsing response", e, data)

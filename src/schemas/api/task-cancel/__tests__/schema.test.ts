@@ -38,15 +38,14 @@ describe("CancelTaskResponse", () => {
         expect(Value.Check(CancelTaskResponse, sampleCancelledTask)).toBe(true)
     })
 
-    it("round-trips a wire payload (string dates → Date via Convert+Parse)", () => {
+    it("round-trips a wire payload (string dates → Date via Decode)", () => {
         const wire = {
             ...sampleCancelledTask,
             createdOn: "2026-06-01T12:00:00.000Z",
             startedAt: "2026-06-01T12:00:01.000Z",
             settledAt: "2026-06-01T12:00:03.000Z",
         }
-        const converted = Value.Convert(CancelTaskResponse, wire)
-        const parsed = Value.Parse(CancelTaskResponse, converted)
+        const parsed = Value.Decode(CancelTaskResponse, wire)
         expect(parsed.createdOn).toBeInstanceOf(Date)
         expect(parsed.id).toBe(sampleTaskUuid)
         expect(parsed.status).toBe(TaskStatus.CANCELLED)

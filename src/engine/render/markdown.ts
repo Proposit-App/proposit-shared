@@ -1,6 +1,8 @@
 import type { TProjectReactiveSnapshot } from "../engine.js"
 import { buildTextTree, type TTextTreeItem } from "../text-tree.js"
 import type { TClaim } from "../../schemas/model/claims.js"
+import type { TOriginAnchor } from "../../schemas/model/origin.js"
+import { getInlineSourceLabel } from "./citation.js"
 
 /**
  * Serialize an argument's full contents — metadata, the premise/claim logic
@@ -31,6 +33,58 @@ export function serializeArgumentToMarkdown(
     return sections.join("\n\n") + "\n"
 }
 
+const ORIGIN_LEAD = "Based on origin text"
+
+/**
+ * The author's public claim that the argument reproduces its source text
+ * faithfully, stated for the reader who was handed the document and cannot
+ * otherwise tell a representation from a loose jumping-off point.
+ *
+ * Attributed to the author because nothing verifies it — a reader should know
+ * whose assertion this is rather than infer it from a turn of phrase. The
+ * wording is deliberately the same on every reading surface, so someone who
+ * exports an argument and then opens it on a phone does not meet two
+ * different-sounding claims.
+ *
+ * Nothing is emitted for the other stance: an argument that merely used a text
+ * as a starting point is the unremarkable default, and a line disclaiming
+ * fidelity would be noise on the overwhelming majority of exports.
+ */
+const REPRESENTATION_CLAIM =
+    "The author says this argument represents that text faithfully."
+
+/**
+ * The passage an anchored part of the argument was written from. Quoted rather
+ * than located: a reader holding the exported document can find the passage by
+ * searching the source text for it, whereas the anchor's code-point offsets
+ * would be unusable outside the app.
+ *
+ * Whitespace is collapsed because a passage may span lines in the source text
+ * and this renders as a single line.
+ */
+export function originPassage(anchor: Pick<TOriginAnchor, "exact">): string {
+    return `${ORIGIN_LEAD} "${anchor.exact.replace(/\s+/g, " ").trim()}"`
+}
+
+/**
+ * The passages one target of the argument was written from — an expression id,
+ * a premise id, or the argument id. Empty whenever there is no origin data,
+ * which is the ordinary state of an argument written from scratch rather than
+ * an error.
+ *
+ * Exported so every reading surface renders a passage the same way the export
+ * does. `origin` is optional-chained at both hops because a snapshot rehydrated
+ * from wire data written before origin data existed omits the slice entirely,
+ * and a caller that gets that wrong crashes on it.
+ */
+export function originPassagesFor(
+    snapshot: Pick<TProjectReactiveSnapshot, "origin"> | undefined,
+    targetId: string
+): string[] {
+    const anchors = snapshot?.origin?.anchors?.[targetId] ?? []
+    return anchors.map(originPassage)
+}
+
 function renderHeader(snapshot: TProjectReactiveSnapshot): string {
     const { argument } = snapshot
     const lines: string[] = [`# ${argument.title}`]
@@ -43,6 +97,29 @@ function renderHeader(snapshot: TProjectReactiveSnapshot): string {
         ? `Published${argument.publishedOn ? ` on ${formatDate(argument.publishedOn)}` : ""}`
         : "Draft"
     lines.push("", `> Version ${argument.version} — ${status}`)
+
+    // Provenance for the argument as a whole rides in the same blockquote as
+    // the version line — it describes the document, not any one logic item.
+    const originDocument = snapshot.origin?.document
+    if (originDocument) {
+        const attribution = originDocument.reference
+            ? ` — ${getInlineSourceLabel(originDocument.reference)}`
+            : ""
+        const passages = originPassagesFor(snapshot, argument.id)
+        for (const passage of passages) {
+            lines.push(`> ${passage}${attribution}`)
+        }
+        // With no whole-argument passage, still name the source, so passages
+        // quoted further down are attributed to something.
+        if (passages.length === 0 && originDocument.reference) {
+            lines.push(`> ${ORIGIN_LEAD}${attribution}`)
+        }
+        // Guarded by the document, not just the link: a fidelity claim about a
+        // source text the export never names would say nothing to a reader.
+        if (snapshot.origin?.link?.stance === "representation") {
+            lines.push(`> ${REPRESENTATION_CLAIM}`)
+        }
+    }
 
     return lines.join("\n")
 }
@@ -59,10 +136,21 @@ function renderLogic(snapshot: TProjectReactiveSnapshot): string {
                 item.role === "conclusion" ? "Conclusion" : "Supporting premise"
             const heading = item.title ? `${role} — ${item.title}` : role
             lines.push("", `### ${heading}`, "")
+            for (const passage of originPassagesFor(snapshot, item.premiseId)) {
+                lines.push(passage, "")
+            }
         } else if (item.type === "claim") {
             const indent = "  ".repeat(item.depth)
             const prefix = item.negated ? "NOT " : ""
             lines.push(`${indent}- ${prefix}${claimLabel(item, snapshot)}`)
+            // A nested bullet, not a bare line: a line following a list item is
+            // folded into that item's paragraph by markdown renderers.
+            for (const passage of originPassagesFor(
+                snapshot,
+                item.expressionId
+            )) {
+                lines.push(`${indent}  - ${passage}`)
+            }
         } else if (item.type === "operator") {
             const indent = "  ".repeat(item.depth)
             lines.push(`${indent}- *${item.label}*`)

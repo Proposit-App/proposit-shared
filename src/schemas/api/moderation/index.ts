@@ -1,4 +1,5 @@
 import { Type, type Static } from "typebox"
+import { MODERATION_REPORT_NOTE_MAX_LEN } from "../../../consts/moderation.js"
 import { UUID } from "../../common.js"
 
 // Closed set of report reasons so consumers can render a fixed reason picker.
@@ -18,7 +19,11 @@ export const ReportContentRequest = Type.Object({
     targetType: Type.Union([Type.Literal("argument"), Type.Literal("claim")]),
     targetId: UUID,
     reasonCode: ReportReasonCodeSchema,
-    note: Type.Optional(Type.String()),
+    // Capped: this body is the only validation the note passes through before
+    // it is persisted to an unbounded `text` column.
+    note: Type.Optional(
+        Type.String({ maxLength: MODERATION_REPORT_NOTE_MAX_LEN })
+    ),
 })
 
 // Ack for a filed report. `duplicate` lets the client tell the reporter they

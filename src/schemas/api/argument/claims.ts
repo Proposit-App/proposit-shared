@@ -1,6 +1,7 @@
 import Type, { type Static } from "typebox"
 import { Nullable } from "../../common.js"
-import { ClaimSchema, MutableClaimFieldsSchema } from "../../model.js"
+import { ClaimSchema } from "../../model.js"
+import { MutableClaimWriteFieldsSchema } from "../../model/claims.js"
 import { AxiomaticClaimSchema, AxiomKindSchema } from "../../model/claims.js"
 import { ClaimCitationSchema } from "../../model/citations.js"
 import {
@@ -10,7 +11,7 @@ import {
 } from "../../logic.js"
 
 export const ClaimCreationRequestSchema = Type.Object({
-    claimData: MutableClaimFieldsSchema,
+    claimData: MutableClaimWriteFieldsSchema,
 })
 export type TClaimCreationRequestSchema = Static<
     typeof ClaimCreationRequestSchema

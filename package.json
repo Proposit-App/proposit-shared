@@ -1,6 +1,6 @@
 {
     "name": "@proposit/shared",
-    "version": "0.50.1",
+    "version": "0.57.0",
     "description": "Runtime-agnostic TypeScript shared between proposit-server and proposit-mobile. Schemas, engine, api-client, and utilities.",
     "license": "MIT",
     "homepage": "https://github.com/Proposit-App/proposit-shared",
@@ -239,18 +239,19 @@
         "prettify:check": "pnpm exec prettier --cache --check .",
         "test": "pnpm exec vitest run",
         "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
+        "pack:branch": "bash scripts/pack-branch.sh",
         "prepublishOnly": "pnpm run check"
     },
     "peerDependencies": {
-        "@proposit/proposit-core": "^3.2.0"
+        "@proposit/proposit-core": "^3.4.0"
     },
     "dependencies": {
-        "typebox": "^1.1.14",
+        "typebox": "^1.3.8",
         "yaml": "^2.8.3"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",
-        "@proposit/proposit-core": "^3.2.0",
+        "@proposit/proposit-core": "^3.4.0",
         "@types/node": "^25.5.2",
         "eslint": "^9.39.4",
         "eslint-plugin-check-file": "^3.3.1",

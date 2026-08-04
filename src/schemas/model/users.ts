@@ -1,14 +1,20 @@
 import Type, { type Static, type TObjectOptions } from "typebox"
 import { EncodableDate, Nullable, UUID } from "../common.js"
 
+/**
+ * What a user is entitled to — and nothing else. Account state lives on its own
+ * axis (`AccountStates`) so that entering a state cannot destroy an
+ * entitlement.
+ *
+ * `NO_ASSIST` keeps the value `103` despite the gap below it: these numbers are
+ * persisted, so closing the gap would re-map existing rows.
+ */
 export const UserTiers = {
     UNVERIFIED: 0,
     FREE: 1,
     PREMIUM: 2,
     ENTERPRISE: 3,
 
-    BANNED: 101,
-    DEACTIVATED: 102,
     NO_ASSIST: 103,
 } as const
 export const UserTiersSchema = Type.Object({
@@ -17,8 +23,6 @@ export const UserTiersSchema = Type.Object({
     PREMIUM: Type.Literal(UserTiers.PREMIUM),
     ENTERPRISE: Type.Literal(UserTiers.ENTERPRISE),
 
-    BANNED: Type.Literal(UserTiers.BANNED),
-    DEACTIVATED: Type.Literal(UserTiers.DEACTIVATED),
     NO_ASSIST: Type.Literal(UserTiers.NO_ASSIST),
 })
 export type TUserTiers = Static<typeof UserTiersSchema>
@@ -26,6 +30,30 @@ export const AllUserTiersBuilder = (options?: TObjectOptions) =>
     Type.Index(UserTiersSchema, Type.KeyOf(UserTiersSchema), options)
 export const AllUserTiers = AllUserTiersBuilder()
 export type TAllUserTiers = Static<typeof AllUserTiers>
+
+/**
+ * Where an account stands in its lifecycle, independent of what it is entitled
+ * to. String-valued rather than numeric: the value is read in queries, logs,
+ * and admin payloads, where `"banned"` beats a magic number.
+ */
+export const AccountStates = {
+    ACTIVE: "active",
+    DEACTIVATED: "deactivated",
+    BANNED: "banned",
+    DELETED: "deleted",
+} as const
+export const AccountStatesSchema = Type.Object({
+    ACTIVE: Type.Literal(AccountStates.ACTIVE),
+    DEACTIVATED: Type.Literal(AccountStates.DEACTIVATED),
+    BANNED: Type.Literal(AccountStates.BANNED),
+    DELETED: Type.Literal(AccountStates.DELETED),
+})
+export type TAccountStates = Static<typeof AccountStatesSchema>
+export const AllAccountStates = Type.Index(
+    AccountStatesSchema,
+    Type.KeyOf(AccountStatesSchema)
+)
+export type TAllAccountStates = Static<typeof AllAccountStates>
 
 /**
  * Per-user persistent settings, stored server-side as a `jsonb` column so new
@@ -54,10 +82,10 @@ export const UserSchema = Type.Object({
     // for curated users. The DB column + unique index are owned server-side.
     curationId: Nullable(Type.String()),
     tier: AllUserTiers,
+    accountState: AllAccountStates,
     tokensUsed: Type.Integer(),
     lifetimeTokensUsed: Type.Integer(),
     tokenResetOn: EncodableDate,
-    deleted: Type.Boolean(),
     registrationDate: EncodableDate,
     // Per-user persistent settings (jsonb-backed; see UserPreferencesSchema).
     // The DB-side `NOT NULL DEFAULT '{"advancedMode": false}'` is owned by server.
@@ -122,6 +150,24 @@ export const UserTierLimitsSchema = Type.Object({
     maxStatementsPerArg: Type.Integer(),
     maxCitationsPerArg: Type.Integer(),
     maxTokensPerMonth: Type.Integer(),
+    // Both source-text ceilings are measured on the NORMALIZED text — the
+    // form core's `normalizeOriginText` emits, which is also the coordinate
+    // system every origin anchor is an offset into. Measuring the raw paste
+    // would let the same document pass or fail depending on its line endings.
+    // This library owns the numbers; the server owns enforcement.
+    //
+    // OPTIONAL for this release only, and required in a later one. Response
+    // parsing is a hard `Value.Assert` with no defaulting, so making them
+    // required immediately would mean a client carrying this version could not
+    // parse `/me` from a server that has not deployed yet. The web app can be
+    // sequenced behind a server deploy; the mobile app ships through app-store
+    // review on its own schedule and cannot. `UserTierLimits` below always
+    // supplies both — a caller reading them off that constant never sees the
+    // absence.
+    /** Per source-text document. */
+    maxSourceTextChars: Type.Optional(Type.Integer()),
+    /** Across all of one user's source-text documents. */
+    maxStoredSourceTextChars: Type.Optional(Type.Integer()),
 })
 export type TUserTierLimits = Static<typeof UserTierLimitsSchema>
 

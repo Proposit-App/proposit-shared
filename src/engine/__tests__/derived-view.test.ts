@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest"
+import { sliceByCodePoints } from "@proposit/proposit-core"
 import { buildTextTree } from "../text-tree.js"
 import {
     counterargumentPremiseIds,
@@ -21,6 +22,7 @@ import {
     getInlineSourceLabel,
     describeSource,
     parseByline,
+    originPassagesFor,
 } from "../render/index.js"
 import {
     mergeWithAddedModifiedReconciliation,
@@ -31,7 +33,14 @@ import {
     applySkeletonOverlay,
     nextSkeletonOperator,
 } from "../overlay/index.js"
-import { goldenSnapshot } from "./derived-view-goldens.js"
+import {
+    goldenSnapshot,
+    emptyOriginGoldenSnapshot,
+    originGoldenSnapshot,
+    unanchoredOriginGoldenSnapshot,
+    seedOriginGoldenSnapshot,
+    documentlessOriginGoldenSnapshot,
+} from "./derived-view-goldens.js"
 
 const snapshot = goldenSnapshot()
 const items = buildTextTree(snapshot)
@@ -183,6 +192,108 @@ describe("engine/render", () => {
           - Smith 2020 — cited by: Q follows
           "
         `)
+    })
+
+    test("serializeArgumentToMarkdown — an argument with no source text is unchanged", () => {
+        expect(serializeArgumentToMarkdown(emptyOriginGoldenSnapshot())).toBe(
+            serializeArgumentToMarkdown(snapshot)
+        )
+    })
+
+    test("serializeArgumentToMarkdown — anchored content quotes its passage", () => {
+        expect(serializeArgumentToMarkdown(originGoldenSnapshot()))
+            .toMatchInlineSnapshot(`
+              "# The golden argument
+
+              A worked example.
+
+              > Version 3 — Published on 2026-01-15
+              > Based on origin text "All men are mortal." — The Republic
+              > The author says this argument represents that text faithfully.
+
+              ## Logic
+
+              ### Conclusion
+
+              - Q follows
+                - Based on origin text "Socrates is a man. Therefore Socrates is mortal."
+              - *is true if*
+              - P is true
+
+              ### Supporting premise — Ground
+
+              Based on origin text "Socrates is a man."
+
+              - P is true
+
+              ### Supporting premise — Objection
+
+              - NOT R the rebutted
+
+              ## Claims
+              - **P is true** _(claim)_ — because reasons
+              - **Q follows** _(claim)_
+              - **R the rebutted** _(claim)_ — a countered claim
+
+              ## Sources
+              - Smith 2020 — cited by: Q follows
+              "
+            `)
+    })
+
+    test("serializeArgumentToMarkdown — passages quote text, never offsets", () => {
+        const originLines = serializeArgumentToMarkdown(originGoldenSnapshot())
+            .split("\n")
+            .filter((line) => line.includes("Based on origin text"))
+        expect(originLines).toHaveLength(3)
+        for (const line of originLines) expect(line).not.toMatch(/\d/)
+    })
+
+    test("serializeArgumentToMarkdown — a source with no whole-argument passage still names itself", () => {
+        const header = serializeArgumentToMarkdown(
+            unanchoredOriginGoldenSnapshot()
+        ).split("\n\n")[2]
+        expect(header).toBe(
+            "> Version 3 — Published on 2026-01-15\n> Based on origin text — The Republic\n> The author says this argument represents that text faithfully."
+        )
+    })
+
+    test("serializeArgumentToMarkdown — a seed source makes no fidelity claim", () => {
+        const seed = serializeArgumentToMarkdown(seedOriginGoldenSnapshot())
+        expect(seed).not.toContain("faithfully")
+        // The two fixtures differ only in the link's stance, so the whole
+        // contribution of `representation` is the one line removed here.
+        expect(seed).toBe(
+            serializeArgumentToMarkdown(originGoldenSnapshot()).replace(
+                "\n> The author says this argument represents that text faithfully.",
+                ""
+            )
+        )
+    })
+
+    test("serializeArgumentToMarkdown — a fidelity claim with no source text renders nothing", () => {
+        expect(
+            serializeArgumentToMarkdown(documentlessOriginGoldenSnapshot())
+        ).toBe(serializeArgumentToMarkdown(snapshot))
+    })
+
+    test("originPassagesFor — no origin data anywhere yields no passages", () => {
+        expect(originPassagesFor(undefined, "supp")).toEqual([])
+        expect(originPassagesFor(snapshot, "supp")).toEqual([])
+        expect(originPassagesFor(emptyOriginGoldenSnapshot(), "supp")).toEqual(
+            []
+        )
+        expect(originPassagesFor(originGoldenSnapshot(), "nosuch")).toEqual([])
+    })
+
+    test("originPassagesFor — quotes the passage, collapsing whitespace it spans", () => {
+        const origin = originGoldenSnapshot()
+        expect(originPassagesFor(origin, "supp")).toEqual([
+            'Based on origin text "Socrates is a man."',
+        ])
+        expect(originPassagesFor(origin, "concl#e2")).toEqual([
+            'Based on origin text "Socrates is a man. Therefore Socrates is mortal."',
+        ])
     })
 
     test("serializeArgumentText — plain-text export", () => {
@@ -366,5 +477,32 @@ describe("engine/overlay", () => {
         expect(nextSkeletonOperator("iff", true, false)).toBe("implies")
         expect(nextSkeletonOperator("iff", true, true)).toBe("and")
         expect(nextSkeletonOperator("and", false, false)).toBe("or")
+    })
+
+    test("every golden origin anchor slices back out to its own quote", () => {
+        // The same invariant core's OriginLibrary enforces on a real anchor.
+        // Without this, a fixture quote edited to something the document does
+        // not contain yields startCodePoint -1 and still renders fine.
+        for (const snapshot of [
+            originGoldenSnapshot(),
+            unanchoredOriginGoldenSnapshot(),
+        ]) {
+            const text = snapshot.origin?.document?.text
+            expect(text).toBeDefined()
+            for (const anchors of Object.values(
+                snapshot.origin?.anchors ?? {}
+            )) {
+                for (const anchor of anchors) {
+                    expect(anchor.startCodePoint).toBeGreaterThanOrEqual(0)
+                    expect(
+                        sliceByCodePoints(
+                            text!,
+                            anchor.startCodePoint,
+                            anchor.endCodePoint
+                        )
+                    ).toBe(anchor.exact)
+                }
+            }
+        }
     })
 })

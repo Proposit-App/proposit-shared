@@ -1,7 +1,0 @@
-slug: 2026-07-25-add-isplatformdisabled-tier-predicate-for-platform-disabled-user-tiers
-title: Add isPlatformDisabled(tier) predicate for platform-disabled user tiers
-phase: ''
-created: '2026-07-25'
-resolution: null
-tags:
-- tech-debt

@@ -1,0 +1,7 @@
+slug: 2026-07-28-introduce-accountstate-and-reduce-tier-to-entitlement
+title: Introduce accountState and reduce tier to entitlement
+created: '2026-07-28'
+resolution: done
+tags:
+- tech-debt
+initiative: 2026-07-28-account-state-lifecycle-deactivate-ban-and-delete
