@@ -2,6 +2,31 @@
 
 <changes starting-hash="877234b" ending-hash="HEAD">
 
+## Added
+
+- **Curated claims can declare axiomatic support** — `CuratedClaim` gains an
+  optional `axiom` field (`src/fixtures/curated-argument/index.ts`), mirrored as
+  `Type.Optional(AxiomKindSchema)` on the YAML contract
+  (`src/fixtures/argument-yaml/schema.ts`). The kind is declared on the supported
+  claim rather than as a second claim entry: an axiomatic claim carries no prose
+  of its own, and the `IMPLIES(axiom, Q)` derivation tree that attaches it is
+  synthesized by `populateDerivationFromAxiom`. A claim that declares nothing
+  emits no key at all, so its YAML is byte-identical to before.
+
+    `lowerArgumentToCurated` (`src/fixtures/argument-yaml/lower.ts`) no longer
+    discards the support on the way back out: an axiomatic claim sitting as a
+    derivation premise's antecedent has its kind carried onto the claim that
+    premise derives (`derivedClaimId`), while the axiomatic claim's own
+    claim-bound variable — like every derivation-only variable — still never
+    becomes a curated claim.
+
+    `curatedArgumentContentDigest` (`src/fixtures/argument-yaml/digest.ts`)
+    hashes the kind last in the per-claim projection. `JSON.stringify` omits the
+    key when it is `undefined`, so an argument with no declared support hashes
+    exactly as it did before the field existed (frozen in a test), while
+    changing a kind changes the digest and therefore registers as drift for a
+    consumer reconciling against a published copy.
+
 ## Changed
 
 - **All 28 premise titles in the four curated argument fixtures rewritten by
