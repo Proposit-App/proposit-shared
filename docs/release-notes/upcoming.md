@@ -1,3 +1,17 @@
 # Release notes — upcoming
 
-- Testing-and-QA sign-in now requires a password alongside the account identity.
+## Testing-and-QA sign-in now takes a password
+
+The testing-and-QA sign-in branch of the mobile session request carries a
+`password` alongside the account identity, and both are required. It is the one
+sign-in path that never involves an identity provider, so until now the identity
+alone was the whole credential.
+
+> **Breaking for the testing-and-QA branch.** A session request built without a
+> password no longer type-checks and is rejected by validation. Every other
+> provider is unchanged. Under the pre-1.0 minor policy (semver §4) this rides a
+> minor — pin with a caret knowing a `0.x+1.0` can move a contract.
+
+The reason is the App Store: Apple requires the demo credentials handed to a
+reviewer to be a username *and* a password, and a username-only test login
+cannot satisfy that.
