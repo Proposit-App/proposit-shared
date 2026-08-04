@@ -1,19 +1,1 @@
 # Changelog — upcoming
-
-<changes starting-hash="87003ed" ending-hash="f8ca563">
-
-## Changed
-
-- **`MobileSessionRequest` now requires `password` on its `testing-and-qa`
-  member** (`src/schemas/api/auth/index.ts`):
-  `Type.String({ minLength: 1, maxLength: 254 })`. `TMobileSessionRequest`
-  derives it, so a testing-and-qa session body built without a password no
-  longer type-checks, and a request without one fails validation. The other
-  members of the union are untouched.
-
-  Reverse-incompatible for callers of the testing-and-qa branch — acceptable
-  under the pre-1.0 minor policy (semver §4). The branch exists so an App Store
-  reviewer can be handed a username **and** a password, which Apple requires of
-  demo credentials; a username-only test login cannot satisfy that.
-
-</changes>
