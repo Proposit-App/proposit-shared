@@ -38,7 +38,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "self_interest_biases_judgment",
                     "title": "Self-interest biases judgment",
-                    "body": "A person cannot be a judge in his own cause because interest biases judgment and may corrupt integrity; the same problem applies even more strongly to legislative bodies deciding on classes that include their own members."
+                    "body": "A person cannot be a judge in his own cause because interest biases judgment and may corrupt integrity; the same problem applies even more strongly to legislative bodies deciding on classes that include their own members.",
+                    "axiom": "domain-rule"
                 },
                 {
                     "symbol": "union_checks_faction",
@@ -58,12 +59,14 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "liberty_cannot_be_abolished",
                     "title": "Liberty cannot be removed",
-                    "body": "Destroying liberty would be a worse remedy than the disease, because liberty is essential to political life even though it nourishes faction."
+                    "body": "Destroying liberty would be a worse remedy than the disease, because liberty is essential to political life even though it nourishes faction.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "pure_democracy_unfits_faction",
                     "title": "Pure democracy cannot cure faction",
-                    "body": "A pure democracy, with citizens assembling and governing in person, can admit no cure for faction and is prone to turbulence, contention, insecurity, and property violations."
+                    "body": "A pure democracy, with citizens assembling and governing in person, can admit no cure for faction and is prone to turbulence, contention, insecurity, and property violations.",
+                    "axiom": "definition"
                 },
                 {
                     "symbol": "majority_faction_can_oppress",
@@ -88,7 +91,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "opinion_and_interest_diversity",
                     "title": "Uniform opinion is impossible",
-                    "body": "It is impracticable to make every citizen hold the same opinions, passions, and interests, because human reason is fallible and unequal property interests arise naturally."
+                    "body": "It is impracticable to make every citizen hold the same opinions, passions, and interests, because human reason is fallible and unequal property interests arise naturally.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "union_superior_to_states",
@@ -103,7 +107,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "faction_definition",
                     "title": "Faction serves adverse interests",
-                    "body": "A faction is a group of citizens, majorities or minorities, united by passion or interest adverse to the rights of others or the community’s permanent aggregate interests."
+                    "body": "A faction is a group of citizens, majorities or minorities, united by passion or interest adverse to the rights of others or the community’s permanent aggregate interests.",
+                    "axiom": "definition"
                 },
                 {
                     "symbol": "federal_compound_structure",
@@ -420,7 +425,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "FallibleTruthNeedsTesting",
                     "title": "Truth needs open testing",
-                    "body": "The beliefs with the strongest warrant are those that remain open to the whole world’s challenge; if challenge fails, they attain the best certainty fallible beings can have."
+                    "body": "The beliefs with the strongest warrant are those that remain open to the whole world’s challenge; if challenge fails, they attain the best certainty fallible beings can have.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "SilencingStealsTruth",
@@ -440,7 +446,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "UtilityDependsOnTruth",
                     "title": "Utility depends on truth",
-                    "body": "The usefulness of an opinion is itself disputable, and truth is part of utility; therefore discussion cannot fairly protect utility while barring debate over truth."
+                    "body": "The usefulness of an opinion is itself disputable, and truth is part of utility; therefore discussion cannot fairly protect utility while barring debate over truth.",
+                    "axiom": "stipulation"
                 },
                 {
                     "symbol": "ChristianMoralityIsIncomplete",
@@ -450,12 +457,14 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "MajorityMayNotSilenceMinority",
                     "title": "Majority may not silence one",
-                    "body": "Mankind is not justified in silencing a lone dissenter even if all others share the opposite opinion; the power to silence opinion is illegitimate."
+                    "body": "Mankind is not justified in silencing a lone dissenter even if all others share the opposite opinion; the power to silence opinion is illegitimate.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "JudgmentNeedsDiscussion",
                     "title": "Judgment needs criticism",
-                    "body": "Human judgment becomes trustworthy through open criticism, discussion, and experience; without free contradiction and refutation, no rational assurance of being right is possible."
+                    "body": "Human judgment becomes trustworthy through open criticism, discussion, and experience; without free contradiction and refutation, no rational assurance of being right is possible.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "p1",
@@ -490,7 +499,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "SuppressionAssumesInfallibility",
                     "title": "Suppression assumes infallibility",
-                    "body": "All silencing of discussion presumes infallibility, because no person or authority can claim certainty enough to exclude others from judging an opinion."
+                    "body": "All silencing of discussion presumes infallibility, because no person or authority can claim certainty enough to exclude others from judging an opinion.",
+                    "axiom": "logical-principle"
                 },
                 {
                     "symbol": "SocratesChristAureliusExamples",
@@ -725,7 +735,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "DoraOrgansChildAnalogy",
                     "title": "Dora case parallels luxury spending",
-                    "body": "Selling a child to organ traffickers is morally comparable to spending money on a luxury upgrade when that money could instead save a child's life, because both acts sacrifice a child’s life for nonessential comfort."
+                    "body": "Selling a child to organ traffickers is morally comparable to spending money on a luxury upgrade when that money could instead save a child's life, because both acts sacrifice a child’s life for nonessential comfort.",
+                    "axiom": "stipulation"
                 },
                 {
                     "symbol": "NoClearMoralDifference",
@@ -740,7 +751,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "BobBugattiAnalogy",
                     "title": "Bob's inaction is gravely wrong",
-                    "body": "Bob acts gravely wrongly when he refuses to divert the train to save the child, even though the sacrifice would destroy his Bugatti and its financial value."
+                    "body": "Bob acts gravely wrongly when he refuses to divert the train to save the child, even though the sacrifice would destroy his Bugatti and its financial value.",
+                    "axiom": "stipulation"
                 },
                 {
                     "symbol": "CrowdDoesNotExcuse",
@@ -992,12 +1004,14 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "no_willful_wrongdoing",
                     "title": "Wrongdoing is never right",
-                    "body": "Socrates maintains that one must never intentionally do wrong, and that injustice is always evil and dishonorable."
+                    "body": "Socrates maintains that one must never intentionally do wrong, and that injustice is always evil and dishonorable.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "laws_must_be_obeyed_or_persuaded",
                     "title": "Laws require obedience or persuasion",
-                    "body": "The laws assert that a citizen must obey them or persuade them they are wrong; otherwise he must endure their punishments without resistance."
+                    "body": "The laws assert that a citizen must obey them or persuade them they are wrong; otherwise he must endure their punishments without resistance.",
+                    "axiom": "domain-rule"
                 },
                 {
                     "symbol": "socrates_obeys_reason",
@@ -1007,7 +1021,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "many_lack_moral_power",
                     "title": "The many cannot do greatest evil",
-                    "body": "Socrates argues that the many cannot make a person wise or foolish, so they can do neither the greatest good nor the greatest evil."
+                    "body": "Socrates argues that the many cannot make a person wise or foolish, so they can do neither the greatest good nor the greatest evil.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "wealth_can_fund_escape",
@@ -1022,7 +1037,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "no_retaliation_rule",
                     "title": "Retaliation is unjust",
-                    "body": "Socrates holds that one must not injure in return or repay evil with evil, because doing evil to another is itself wrong."
+                    "body": "Socrates holds that one must not injure in return or repay evil with evil, because doing evil to another is itself wrong.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "escape_protects_friends",
@@ -1032,7 +1048,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "do_what_one_deems_right",
                     "title": "One must do the right",
-                    "body": "A person ought to do what he judges right and must not betray the right once he recognizes it."
+                    "body": "A person ought to do what he judges right and must not betray the right once he recognizes it.",
+                    "axiom": "background-assumption"
                 },
                 {
                     "symbol": "escape_injures_laws",
@@ -1052,7 +1069,8 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "citizen_contract_obedience",
                     "title": "Residence implies agreement",
-                    "body": "The laws claim that an adult who remains in the city after knowing its ways has implicitly agreed to obey its commands or persuade it otherwise."
+                    "body": "The laws claim that an adult who remains in the city after knowing its ways has implicitly agreed to obey its commands or persuade it otherwise.",
+                    "axiom": "domain-rule"
                 },
                 {
                     "symbol": "escape_preserves_children",
@@ -1092,12 +1110,14 @@ export const argumentsByFigureCurationId: Record<
                 {
                     "symbol": "laws_bring_citizen_up",
                     "title": "The laws formed Socrates",
-                    "body": "The laws claim they brought Socrates into existence, regulated his upbringing and education, and gave him the benefits of civic order."
+                    "body": "The laws claim they brought Socrates into existence, regulated his upbringing and education, and gave him the benefits of civic order.",
+                    "axiom": "domain-rule"
                 },
                 {
                     "symbol": "public_opinion_unworthy",
                     "title": "The many are not authoritative",
-                    "body": "Socrates holds that the opinion of the many should not guide action; only the judgment of good and wise people deserves regard."
+                    "body": "Socrates holds that the opinion of the many should not guide action; only the judgment of good and wise people deserves regard.",
+                    "axiom": "background-assumption"
                 }
             ],
             "premises": [

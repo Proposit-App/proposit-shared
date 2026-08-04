@@ -8,6 +8,7 @@ claims:
           money on a luxury upgrade when that money could instead save a child's
           life, because both acts sacrifice a child’s life for nonessential
           comfort.
+      axiom: stipulation
     - symbol: NoClearMoralDifference
       title: No clear moral distinction exists
       body:
@@ -26,6 +27,7 @@ claims:
           Bob acts gravely wrongly when he refuses to divert the train to save the
           child, even though the sacrifice would destroy his Bugatti and its
           financial value.
+      axiom: stipulation
     - symbol: CrowdDoesNotExcuse
       title: Others' inaction gives no excuse
       body:

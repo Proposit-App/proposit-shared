@@ -7,6 +7,7 @@ claims:
           judgment and may corrupt integrity; the same problem applies even more
           strongly to legislative bodies deciding on classes that include their
           own members.
+      axiom: domain-rule
     - symbol: union_checks_faction
       title: The Union checks faction
       body: A well-constructed Union tends to break and control the violence of
@@ -27,12 +28,14 @@ claims:
       body: Destroying liberty would be a worse remedy than the disease, because
           liberty is essential to political life even though it nourishes
           faction.
+      axiom: background-assumption
     - symbol: pure_democracy_unfits_faction
       title: Pure democracy cannot cure faction
       body:
           A pure democracy, with citizens assembling and governing in person, can
           admit no cure for faction and is prone to turbulence, contention,
           insecurity, and property violations.
+      axiom: definition
     - symbol: majority_faction_can_oppress
       title: Majority factions can oppress
       body: When a faction includes a majority, popular government can let it
@@ -59,6 +62,7 @@ claims:
       body: It is impracticable to make every citizen hold the same opinions,
           passions, and interests, because human reason is fallible and unequal
           property interests arise naturally.
+      axiom: background-assumption
     - symbol: union_superior_to_states
       title: The Union outcontrols state factions
       body:
@@ -77,6 +81,7 @@ claims:
           A faction is a group of citizens, majorities or minorities, united by
           passion or interest adverse to the rights of others or the community’s
           permanent aggregate interests.
+      axiom: definition
     - symbol: federal_compound_structure
       title: The federal Constitution balances scale
       body:

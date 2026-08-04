@@ -13,6 +13,7 @@ claims:
           The beliefs with the strongest warrant are those that remain open to the
           whole world’s challenge; if challenge fails, they attain the best
           certainty fallible beings can have.
+      axiom: background-assumption
     - symbol: SilencingStealsTruth
       title: Silencing robs mankind
       body:
@@ -35,6 +36,7 @@ claims:
           The usefulness of an opinion is itself disputable, and truth is part of
           utility; therefore discussion cannot fairly protect utility while barring
           debate over truth.
+      axiom: stipulation
     - symbol: ChristianMoralityIsIncomplete
       title: Christian morality is incomplete
       body:
@@ -46,12 +48,14 @@ claims:
       body:
           Mankind is not justified in silencing a lone dissenter even if all others
           share the opposite opinion; the power to silence opinion is illegitimate.
+      axiom: background-assumption
     - symbol: JudgmentNeedsDiscussion
       title: Judgment needs criticism
       body:
           Human judgment becomes trustworthy through open criticism, discussion, and
           experience; without free contradiction and refutation, no rational
           assurance of being right is possible.
+      axiom: background-assumption
     - symbol: p1
       title: Press liberty resists tyranny
       body:
@@ -93,6 +97,7 @@ claims:
           All silencing of discussion presumes infallibility, because no person or
           authority can claim certainty enough to exclude others from judging an
           opinion.
+      axiom: logical-principle
     - symbol: SocratesChristAureliusExamples
       title: History condemns persecution
       body:

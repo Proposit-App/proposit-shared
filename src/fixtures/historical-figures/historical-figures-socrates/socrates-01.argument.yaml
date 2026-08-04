@@ -21,11 +21,13 @@ claims:
       body:
           Socrates maintains that one must never intentionally do wrong, and that
           injustice is always evil and dishonorable.
+      axiom: background-assumption
     - symbol: laws_must_be_obeyed_or_persuaded
       title: Laws require obedience or persuasion
       body:
           The laws assert that a citizen must obey them or persuade them they are
           wrong; otherwise he must endure their punishments without resistance.
+      axiom: domain-rule
     - symbol: socrates_obeys_reason
       title: Reason governs Socrates
       body:
@@ -36,6 +38,7 @@ claims:
       body:
           Socrates argues that the many cannot make a person wise or foolish, so
           they can do neither the greatest good nor the greatest evil.
+      axiom: background-assumption
     - symbol: wealth_can_fund_escape
       title: Escape is affordable
       body:
@@ -52,6 +55,7 @@ claims:
       body:
           Socrates holds that one must not injure in return or repay evil with evil,
           because doing evil to another is itself wrong.
+      axiom: background-assumption
     - symbol: escape_protects_friends
       title: Escape could harm friends
       body:
@@ -62,6 +66,7 @@ claims:
       body:
           A person ought to do what he judges right and must not betray the right
           once he recognizes it.
+      axiom: background-assumption
     - symbol: escape_injures_laws
       title: Escape would wrong the laws
       body:
@@ -83,6 +88,7 @@ claims:
       body:
           The laws claim that an adult who remains in the city after knowing its
           ways has implicitly agreed to obey its commands or persuade it otherwise.
+      axiom: domain-rule
     - symbol: escape_preserves_children
       title: Escape would aid his children
       body:
@@ -123,11 +129,13 @@ claims:
       title: The laws formed Socrates
       body: The laws claim they brought Socrates into existence, regulated his
           upbringing and education, and gave him the benefits of civic order.
+      axiom: domain-rule
     - symbol: public_opinion_unworthy
       title: The many are not authoritative
       body:
           Socrates holds that the opinion of the many should not guide action; only
           the judgment of good and wise people deserves regard.
+      axiom: background-assumption
 premises:
     - title: Limits of the crowd’s power
       role: supporting
