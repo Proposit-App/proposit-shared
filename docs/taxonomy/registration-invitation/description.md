@@ -1,1 +1,1 @@
-An invitation or promo code that authorizes account registration, carrying a preset access tier and role.
+An invitation or promo code that presets the access tier and role an account starts on, redeemable at registration or afterwards from the account itself.

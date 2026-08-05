@@ -1,1 +1,1 @@
-A shareable code that authorizes registration under preset limits.
+A shareable code that presets an account's access tier under preset limits.

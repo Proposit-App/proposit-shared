@@ -1,1 +1,1 @@
-Registering an account by redeeming an invitation or promo code, with the preset tier and role it carries.
+Registering an account and choosing the username it is known by. An invitation or promo code is optional: presenting one presets the tier and role the account starts on, in place of the standard defaults.
