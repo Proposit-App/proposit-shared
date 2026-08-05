@@ -1,1 +1,1 @@
-Activate a pending invitation or promo code from your account to move it out of an unverified state.
+Redeem an invitation or promo code from your account after registering, upgrading it to the tier the code carries.

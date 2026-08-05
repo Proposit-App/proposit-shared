@@ -1,1 +1,1 @@
-Activate your account by entering an invitation code you received.
+Enter an invitation code you received while registering, and start on the tier it carries in place of the standard free tier.
