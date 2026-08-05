@@ -1,0 +1,4 @@
+changed:
+    - auth/activate-an-invitation
+    - auth/activate-via-a-promo-code
+    - profile/activate-an-invitation-or-promo-code
