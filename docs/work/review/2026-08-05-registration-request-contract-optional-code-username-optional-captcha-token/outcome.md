@@ -126,9 +126,16 @@ terms beneath it asserted the same removed premise ("authorizes account
 registration" / "authorizes registration"). Rewording the Feature alone would
 have left the taxonomy self-contradicting. Widened in `spec.md` and shipped.
 
-**AC6 (cut a minor) was retracted.** The orchestrator sequences the cut against
-consumer validation of the tarball, so this slice stops at ready-for-minor. The
-tarball carries `0.58.1`.
+**AC6 (cut a minor) was retracted — and then reinstated by the orchestrator.**
+*(Updated 2026-08-05, after this outcome was first written.)* The slice originally
+stopped at ready-for-minor. The epic then cut the minor here rather than in a
+separate item, because two of its corrections landed in this repo: **C16** (a
+minor is the right bump — widening `code` to optional is breaking for a consumer
+that dereferences it unguarded, and this repo's pre-1.0 policy admits that in a
+minor) and **C18** (the `prepack` fix below). `package.json` is now `0.59.0`,
+`docs/release-notes/v0.59.0.md` and `docs/changelogs/v0.59.0.md` are rotated, both
+`upcoming.md` files are back to a bare heading, and `v0.59.0` is tagged locally on
+the prepack commit. Nothing is pushed and nothing is published.
 
 **This repo has no `## Documentation Sync` section** in `CLAUDE.md`/`AGENTS.md`,
 though it keeps the full `docs/release-notes/` + `docs/changelogs/` structure the
@@ -150,16 +157,37 @@ previous output so no stray `*.tgz` accumulates. Used that instead.
 
 ## Handoff to the epic
 
-**Tarball:**
-`/Users/brian/Projects/Proposit-App/proposit-shared/.worktrees/registration-request-contract/proposit-shared-0.58.1-registration-request-contract.tgz`
+**Tarball — the branch-suffixed `0.58.1` artifact this section originally named is
+superseded and has been deleted.** *(Corrected 2026-08-05.)* The current handoff
+artifact is:
 
-Verified by extraction: `dist/schemas/model/users.d.ts` declares
-`code: TOptional<TString>`, `username: TOptional<TString>`,
-`captchaToken: TOptional<TString>`. The primary package root holds no `*.tgz`.
-When a consumer validates it, read the resolved version out of `node_modules` —
-pnpm 10 silently ignores `package.json` `overrides`.
+`/Users/brian/Projects/Proposit-App/.tarballs/proposit-shared-0.59.0.tgz`
 
-**Ready for a minor bump.** Additive-only; `0.59.0`.
+**Why the old path was dangerous enough to correct rather than just update.** A
+later repack from the primary checkout produced a tarball stamped `0.59.0` over
+`dist/` compiled from roughly `v0.58.0` — no `username`, no `captchaToken`, `code`
+still required. Cause: `dist/` is gitignored, this repo rebuilt it only in
+`prepublishOnly`, and **`pnpm pack` runs `prepack`, not `prepublishOnly`**, so the
+pack shipped whatever was on disk. The build here happened inside the worktree, so
+the primary checkout's `dist/` was never refreshed.
+
+Fixed at the root cause: `"prepack": "pnpm run build"` was added to
+`package.json`, so no future pack can ship stale bytes. Verified live — `dist/` is
+rebuilt during `pnpm pack`, and the packed tarball is byte-identical to the
+handoff artifact.
+
+**The verification instruction below was wrong, and this is the durable lesson.**
+Reading the resolved version out of `node_modules` is sound against pnpm 10's
+silent `overrides` no-op, and it **passed on the stale artifact**. A version
+string proves which `package.json` you installed, never which bytes came with it.
+Assert on the contract body instead:
+
+```
+grep -A 8 "RegistrationInviteActivationRequestSchema = Type.Object" \
+  node_modules/@proposit/shared/dist/schemas/model/users.js
+```
+
+Recorded as epic correction **C18**.
 
 **The tier-0 coded-error question: answered no.** `ErrorResponseSchema` already
 carries `errorCode?: string` (`src/schemas/common.ts:92-100`, shipped in
