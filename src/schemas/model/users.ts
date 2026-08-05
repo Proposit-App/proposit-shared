@@ -243,9 +243,29 @@ export type TRegistrationInvitationCreate = Static<
     typeof RegistrationInvitationCreateSchema
 >
 
+/**
+ * Body for `POST /api/v1/user/register`. One endpoint serves two callers:
+ * someone registering for the first time, and an already-registered account
+ * redeeming a code from their profile. That is why so little is required here.
+ *
+ * `code` is optional — a code presets the account's tier rather than granting
+ * access, so registering without one is a normal path. `isPromoCode`
+ * distinguishes the two code namespaces and is only meaningful alongside a
+ * `code`.
+ *
+ * `username` is optional *at the wire* because the profile-side redemption
+ * caller already has one. The server requires it on the code-free registration
+ * path, where it also owns uniqueness and format — none of which a schema can
+ * express.
+ *
+ * `captchaToken` is a bot-protection token from whichever challenge the caller's
+ * platform runs; a platform that runs none omits it.
+ */
 export const RegistrationInviteActivationRequestSchema = Type.Object({
-    code: Type.String(),
+    code: Type.Optional(Type.String()),
     isPromoCode: Type.Boolean(),
+    username: Type.Optional(Type.String()),
+    captchaToken: Type.Optional(Type.String()),
     agreedToTerms: Type.Boolean(),
     agreedToPrivacyPolicy: Type.Boolean(),
     agreedToCommunityGuidelines: Type.Boolean(),
