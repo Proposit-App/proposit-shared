@@ -1,8 +1,3 @@
----
-from: proposit-app
-initiative: 2026-08-04-open-registration-to-the-general-public
----
-
 # Registration request contract: optional code, username, optional CAPTCHA token
 
 Epic: [Open registration to the general public](tcw://W/proposit-app/2026-08-04-open-registration-to-the-general-public)
