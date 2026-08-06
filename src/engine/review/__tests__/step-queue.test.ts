@@ -44,6 +44,42 @@ describe("step-queue", () => {
         expect(queue).toEqual(["sA", "cA", "cB"])
     })
 
+    it("buildClaimQueue excludes a citation claim bound by a derivation antecedent", () => {
+        // A claim carrying ≥1 citation mints implies(citation_var, Q), so the
+        // source claim is claim-bound and would otherwise be queued as its own
+        // step. It has no title and no body — the reviewer would be asked to
+        // judge an empty card.
+        const engine = buildEngineWithCitationBackedDerivationPremise()
+        expect(engine.getProjectClaim("cSource")?.type).toBe("citation")
+        expect(buildClaimQueue(engine)).not.toContain("cSource")
+    })
+
+    it("buildClaimQueue excludes an axiomatic claim bound by a derivation antecedent", () => {
+        // Axioms are titleless for the same reason and are already forced true
+        // by the engine before evaluation, so a reviewer's answer would be
+        // discarded even if they gave one.
+        const engine = buildEngineWithCitationBackedDerivationPremise()
+        expect(engine.getProjectClaim("cAxiom")?.type).toBe("axiomatic")
+        expect(buildClaimQueue(engine)).not.toContain("cAxiom")
+    })
+
+    it("buildClaimQueue keeps only the user-authored claims", () => {
+        // Order is core's premise-listing order, which the two derivation
+        // premises participate in even though their antecedent claims are
+        // dropped — the narrowing removes entries, it does not resequence
+        // what remains.
+        const engine = buildEngineWithCitationBackedDerivationPremise()
+        expect(buildClaimQueue(engine)).toEqual(["cB", "cA", "cQ"])
+    })
+
+    it("buildClaimQueue leaves an argument with no sources or axioms unchanged", () => {
+        const engine = buildEngineWithTwoPremises()
+        for (const id of ["sA", "cA", "cB"]) {
+            expect(engine.getProjectClaim(id)?.type).toBe("normal")
+        }
+        expect(buildClaimQueue(engine)).toEqual(["sA", "cA", "cB"])
+    })
+
     it("buildOperatorQueue returns premises that have at least one decidable operator", () => {
         const engine = buildEngineWithTwoPremises()
         const queue = buildOperatorQueue(engine)

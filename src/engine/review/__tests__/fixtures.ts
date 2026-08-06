@@ -8,9 +8,14 @@ import { CHECKSUM_CONFIG } from "../../../checksum.js"
 import { createClaimLookup } from "../../library-adapters.js"
 import {
     mutateCreateDerivationPremise,
+    populateDerivationFromAxiom,
     populateDerivationFromCitations,
 } from "../../mutations/premises.js"
-import type { TClaim, TAxiomaticClaim } from "../../../schemas/model/claims.js"
+import type {
+    TClaim,
+    TAxiomaticClaim,
+    TCitationClaim,
+} from "../../../schemas/model/claims.js"
 import type { TArgument } from "../../../schemas/model/arguments.js"
 import type { TClaimBoundVariable } from "../../../schemas/logic.js"
 
@@ -523,6 +528,40 @@ function makeAxiomaticClaim(id: string, title: string): TAxiomaticClaim {
 }
 
 /**
+ * A citation claim — the shape a source takes once it is bound to a variable.
+ * `title` / `body` are null on `CitationClaimSchema`; identity lives in
+ * `citation`. Anything that renders a queued claim's title renders nothing for
+ * one of these, which is why they must never reach a review step.
+ */
+function makeCitationClaim(id: string, text: string): TCitationClaim {
+    return {
+        id,
+        originArgumentId: ARGUMENT_ID,
+        version: ARGUMENT_VERSION,
+        published: false,
+        publishedOn: null,
+        creatorId: CREATOR_ID,
+        createdOn: NOW,
+        digest: `digest-${id}`,
+        type: "citation",
+        kind: null,
+        title: null,
+        body: null,
+        titleContentHash: null,
+        url: null,
+        citation: {
+            type: "unparsed",
+            text,
+            citationTypeGuess: "unknown",
+        },
+        citationContentHash: `citation-hash-${id}`,
+        parentId: null,
+        claimForkId: null,
+        axiom: null,
+    }
+}
+
+/**
  * Builds a minimal engine whose conclusion premise's root expression is a
  * single variable expression bound to an axiomatic claim. With no user
  * assignments, the only way the review evaluation can return a definite
@@ -665,14 +704,23 @@ export function buildEngineWithNakedQSupportingPremise(): PropositArgumentEngine
  *   - `pDerivation` — the hidden derivation premise for `cA`, populated from a
  *     citation so its tree is `implies(citation_var, A)`. Engine-managed
  *     wiring, never user-authored.
+ *   - `pAxiomDerivation` — the hidden derivation premise for `cB`, populated
+ *     from an axiomatic claim so its tree is `implies(axiom_var, B)`. Same
+ *     story as the citation, via the other derivation-only claim type.
+ *
+ * `cSource` and `cAxiom` are the two claim types that carry no prose. Both are
+ * claim-bound here, so the claim queue has to exclude them by type rather than
+ * by any property of the variable that binds them.
  */
 export function buildEngineWithCitationBackedDerivationPremise(): PropositArgumentEngine {
+    const axiomClaim = makeAxiomaticClaim("cAxiom", "Backing axiom")
     const claims = [
         makeClaim("cA", "Claim cA"),
         makeClaim("cB", "Claim cB"),
         makeClaim("cQ", "Conclusion claim cQ"),
-        makeClaim("cSource", "Citing source claim"),
-    ]
+        makeCitationClaim("cSource", "Citing source claim"),
+        axiomClaim,
+    ] as TClaim[]
     const claimLookup = createClaimLookup(claims)
 
     const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
@@ -763,14 +811,160 @@ export function buildEngineWithCitationBackedDerivationPremise(): PropositArgume
     engine.setConclusionPremise(conclusionId)
 
     // Hidden derivation premise for cA, backed by one citation →
-    // implies(cSource_var, A_derivation_var).
+    // implies(cSource_var, A). Adopt rather than mint: cA already has a
+    // claim-bound variable (`vA`, in pSupport), and the mint path removes the
+    // claim's existing variable — which cascades away pSupport's child
+    // expression and leaves its IMPLIES root childless.
     mutateCreateDerivationPremise(engine, "pDerivation", {
         argumentId: ARGUMENT_ID,
         argumentVersion: ARGUMENT_VERSION,
         creatorId: CREATOR_ID,
         createdOn: NOW,
         derivedClaimId: "cA",
-        consequentVariableId: "vADerivation",
+        existingConsequentVariableId: "vA",
+        consequentExpressionId: "eDerivationConsequent",
+    })
+    populateDerivationFromCitations(engine, "pDerivation", ["cSource"])
+
+    // Hidden derivation premise for cB, backed by an axiom →
+    // implies(cAxiom_var, B).
+    mutateCreateDerivationPremise(engine, "pAxiomDerivation", {
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        creatorId: CREATOR_ID,
+        createdOn: NOW,
+        derivedClaimId: "cB",
+        existingConsequentVariableId: "vB",
+        consequentExpressionId: "eAxiomDerivationConsequent",
+    })
+    populateDerivationFromAxiom(engine, "pAxiomDerivation", axiomClaim)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * Builds the shape where the conclusion is reachable *only* through a cited
+ * claim:
+ *
+ *   - `pSupport` — `implies(Cited, Q)`, the single path to the conclusion.
+ *   - `pConclusion` — the bare conclusion variable for `cQ`.
+ *   - `pDerivation` — the derivation premise for `cCited`, populated from a
+ *     citation → `implies(source_var, Cited)`.
+ *
+ * Nothing reaches `cQ` except through `cCited`, and `cCited` is backed by a
+ * source. If leaving a source variable unassigned could stall evaluation, this
+ * is the shape where it would show.
+ */
+export function buildEngineWithConclusionThroughCitedClaim(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cCited", "Cited claim"),
+        makeClaim("cQ", "Conclusion claim cQ"),
+        makeCitationClaim("cSource", "The source backing cCited"),
+    ] as TClaim[]
+    const claimLookup = createClaimLookup(claims)
+
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vCited", "C", "cCited"))
+    // One variable per premise, both bound to cQ — the same pattern
+    // `buildEngineWithClaimSharedAcrossPremises` uses. Reusing a single
+    // variable expression across two premises drops a child from whichever
+    // premise wired it second.
+    engine.addVariable(makeVariable("vQSupport", "Q1", "cQ"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+
+    // Supporting inference: implies(Cited, Q).
+    const supportId = "pSupport"
+    const { result: pSupport } = engine.createPremiseWithId(supportId, {
+        type: "freeform",
+        extras: {
+            title: "Supporting — Cited implies Q",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    pSupport.addExpression({
+        id: "eSupportRoot",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: null,
+        premiseId: supportId,
+        position: 0,
+        type: "operator",
+        variableId: null,
+        operator: "implies",
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    pSupport.addExpression({
+        id: "eSupportLeft",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: "eSupportRoot",
+        premiseId: supportId,
+        position: 0,
+        type: "variable",
+        variableId: "vCited",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    pSupport.addExpression({
+        id: "eSupportRight",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: "eSupportRoot",
+        premiseId: supportId,
+        position: 1,
+        type: "variable",
+        variableId: "vQSupport",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+
+    // Conclusion premise: bare variable bound to cQ.
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    pConclusion.addExpression({
+        id: "eConclusionRoot",
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: null,
+        premiseId: conclusionId,
+        position: 0,
+        type: "variable",
+        variableId: "vQ",
+        operator: null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    // Adopt `vCited` as the consequent — see the note on the citation-backed
+    // fixture above for why minting a second variable for an already-bound
+    // claim tears down the premise that references it.
+    mutateCreateDerivationPremise(engine, "pDerivation", {
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        creatorId: CREATOR_ID,
+        createdOn: NOW,
+        derivedClaimId: "cCited",
+        existingConsequentVariableId: "vCited",
         consequentExpressionId: "eDerivationConsequent",
     })
     populateDerivationFromCitations(engine, "pDerivation", ["cSource"])

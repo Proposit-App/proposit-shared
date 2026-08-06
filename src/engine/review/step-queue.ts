@@ -11,9 +11,46 @@ export type TStepQueue =
     | { kind: "claim"; items: UUID[] }
     | { kind: "operator"; items: TOperatorQueueEntry[] }
 
+/**
+ * The claims a reviewer is asked to render a True/False/Unknown verdict on, in
+ * the order their premises are listed (supporting first, conclusion last), each
+ * claim appearing once at its first reference.
+ *
+ * One gate, and it is narrowing: only claims whose bound claim is
+ * `type === "normal"` survive. Citation and axiomatic claims are claim-bound
+ * like any other — a claim carrying at least one citation mints a derivation
+ * premise shaped `implies(citation_var, Q)`, and an axiom-backed claim mints
+ * `implies(axiom_var, Q)` — so both antecedents would otherwise be collected
+ * and offered as their own steps. Neither is a proposition the reviewer
+ * authored or can judge:
+ *
+ *   - Both are titleless by schema (`CitationClaimSchema` and
+ *     `AxiomaticClaimSchema` declare `title: null` / `body: null`; identity
+ *     lives in `citation` / `axiom`), so any consumer rendering a queued
+ *     claim's title renders an empty card.
+ *   - An axiom's answer is discarded regardless: the engine forces
+ *     axiom-bound variables to `true` before evaluating, and
+ *     `buildExpressionAssignment` keeps them out of the assignment map because
+ *     `evaluate()` rejects any caller-supplied key for one.
+ *
+ * This is the claim-side half of the gate `buildOperatorQueue` applies to
+ * premises below, and it is narrowing for the same reason: engine-generated
+ * wiring is not something a reviewer can meaningfully accept or reject.
+ *
+ * Consequence for callers: the length of this queue is **not** the argument's
+ * claim count and must not be labelled as one. Every source and every axiom the
+ * argument cites is missing from it.
+ */
 export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
     const ctx = toEvaluationContext(argEngine)
-    return collectArgumentReferencedClaims(ctx).claimIds
+    const { claimIds, byId } = collectArgumentReferencedClaims(ctx)
+    return claimIds.filter((claimId) => {
+        const boundClaim = argEngine.getClaim(
+            claimId,
+            byId[claimId].claimVersion
+        )
+        return boundClaim?.type === "normal"
+    })
 }
 
 /**
