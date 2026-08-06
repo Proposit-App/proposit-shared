@@ -11,3 +11,10 @@ dist
 .claude/
 .worktrees/
 .superpowers/
+
+# Completed/discarded work items: kept on disk locally, untracked in git.
+# History has them if an old planning doc is ever needed again.
+docs/work/completed/*
+docs/work/discarded/*
+!docs/work/completed/.gitkeep
+!docs/work/discarded/.gitkeep
