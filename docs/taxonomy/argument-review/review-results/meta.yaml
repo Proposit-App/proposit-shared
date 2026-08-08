@@ -1,0 +1,7 @@
+name: Review Results
+kind: Feature
+relatesTo: []
+vocabulary:
+- review
+- review/claim-assignment
+- review/operator-assignment
