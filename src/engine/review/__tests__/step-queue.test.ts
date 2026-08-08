@@ -94,6 +94,18 @@ describe("step-queue", () => {
         expect(queue.every((e) => e.scope === "premise")).toBe(true)
     })
 
+    it("buildOperatorQueue marks the conclusion premise as accept-only", () => {
+        // Core exempts the conclusion premise from striking, so a rejection
+        // recorded against it is ignored — offering the control would record a
+        // decision that changes nothing the reader was told it changes.
+        // Accepting it still grants the inference for propagation.
+        const engine = buildEngineWithTwoPremises()
+        const queue = buildOperatorQueue(engine)
+        const byId = Object.fromEntries(queue.map((e) => [e.premiseId, e]))
+        expect(byId.pConclusion.rejectable).toBe(false)
+        expect(byId.pSupport.rejectable).toBe(true)
+    })
+
     it("buildOperatorQueue excludes a citation-backed derivation premise", () => {
         // A claim with ≥1 citation gets a derivation premise shaped
         // implies(citation_var, Q). It is an inference with a decidable

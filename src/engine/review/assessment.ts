@@ -58,7 +58,13 @@ export const CONCLUSION_ONLY_ASSERTED_STATEMENT =
 export interface TConclusionAssessment {
     value: TConclusionValue
     label: string
-    /** The reader supplied `true` or `false`. An explicit unknown is a decision, not an assertion. */
+    /**
+     * The reader supplied `true` or `false` for **at least one claim the
+     * conclusion premise references** — not necessarily the conclusion itself.
+     * The two coincide only where the conclusion is a bare variable; where it
+     * is an operator over two claims, answering either sets this. An explicit
+     * unknown is a decision, not an assertion.
+     */
     assertedByReader: boolean
     /** The value still holds once the reader's own assertion is withheld and closure is recomputed. */
     reachedWithoutAssertion: boolean

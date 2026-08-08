@@ -4,6 +4,7 @@ import type { TReviewStore } from "../review-store.js"
 import { isReviewComplete } from "../wire.js"
 import {
     buildEngineWithRestrictionConflict,
+    buildEngineWithTwoPremises,
     buildEngineWithUnsatisfiablePremises,
 } from "./fixtures.js"
 
@@ -176,5 +177,54 @@ describe("the blocked gate across a reload", () => {
         await re.clear()
         re.jumpToResults()
         expect(re.getSnapshot().draft.phase).toBe("done")
+    })
+})
+
+describe("the blocked gate against a stale finding", () => {
+    it("does not report done off a coherence finding for a different draft", async () => {
+        // Evaluate clean, then edit and step forward without re-evaluating.
+        // The finding on hand describes the draft before the edit, and a
+        // finding that no longer applies is not evidence about this one.
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store: memoryStore(),
+        })
+        re.start()
+        re.jumpToResults()
+        await re.runEvaluation()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+
+        re.setClaimValue("cA", true)
+        re.jumpToResults()
+        const snap = re.getSnapshot()
+        expect(snap.draft.phase).toBe("blocked")
+        expect(isReviewComplete(snap.draft)).toBe(false)
+
+        // …and back to done once a finding describes this draft again.
+        await re.runEvaluation()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+    })
+
+    it("holds a review whose edit introduced a collision", async () => {
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store: memoryStore(),
+        })
+        re.start()
+        re.jumpToResults()
+        await re.runEvaluation()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+
+        re.setOperatorAssignment({
+            premiseId: "pConclusion",
+            scope: "premise",
+            decision: "accepted",
+        })
+        re.setClaimValue("cA", true)
+        re.setClaimValue("cB", false)
+        await re.runEvaluation()
+        const snap = re.getSnapshot()
+        expect(snap.draft.phase).toBe("blocked")
+        expect(snap.coherence?.contestedVariableIds.length).toBeGreaterThan(0)
     })
 })

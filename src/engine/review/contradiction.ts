@@ -52,9 +52,13 @@ export interface TContradictionValue {
 }
 
 /**
- * A way out. Both are always offered: the reader may have meant a
- * case-level objection the encoding cannot hold, or may simply not have
+ * A way out. Both kinds are offered wherever both are real: the reader may have
+ * meant a case-level objection the encoding cannot hold, or may simply not have
  * noticed what accepting the premise committed them to.
+ *
+ * `reject-premise` is absent on the conclusion premise, which core does not
+ * strike — see `buildExits`. `change-assignment` is always present, and is the
+ * exit that resolves rather than merely withdraws.
  */
 export interface TContradictionExit {
     kind: "reject-premise" | "change-assignment"
@@ -303,25 +307,34 @@ function buildExits(
     premiseKind: TPremiseKind,
     values: TContradictionValue[]
 ): TContradictionExit[] {
-    const exits: TContradictionExit[] =
-        premiseKind === "restriction"
-            ? [
-                  {
-                      kind: "reject-premise",
-                      premiseId,
-                      label: "Decline this constraint",
-                      detail: "Withholds the constraint for this review. Nothing is claimed false, so the values you assigned stay exactly as they are.",
-                  },
-              ]
-            : [
-                  {
-                      kind: "reject-premise",
-                      premiseId,
-                      reasonCode: "counterexamples-exist",
-                      label: "Reject this premise — counterexamples exist",
-                      detail: "Use this when the step generally holds but not in this case. It records your case-level judgment and takes the premise out of the reckoning, without claiming anything is false.",
-                  },
-              ]
+    // No rejection exit on the conclusion premise. Core exempts it from
+    // striking, so the promise this exit makes — "takes the premise out of the
+    // reckoning" — is one it cannot keep: the premise is still evaluated and
+    // still derives the conclusion's value, `struckPremiseIds` stays empty so
+    // no badge is shown, and the collision merely leaves the accepted set
+    // instead of being resolved. The change-assignment exits below are the
+    // honest resolutions and are always produced for a contradiction.
+    const rejectable = premiseId !== argEngine.getConclusionPremise()?.getId()
+    const exits: TContradictionExit[] = !rejectable
+        ? []
+        : premiseKind === "restriction"
+          ? [
+                {
+                    kind: "reject-premise",
+                    premiseId,
+                    label: "Decline this constraint",
+                    detail: "Withholds the constraint for this review. Nothing is claimed false, so the values you assigned stay exactly as they are.",
+                },
+            ]
+          : [
+                {
+                    kind: "reject-premise",
+                    premiseId,
+                    reasonCode: "counterexamples-exist",
+                    label: "Reject this premise — counterexamples exist",
+                    detail: "Use this when the step generally holds but not in this case. It records your case-level judgment and takes the premise out of the reckoning, without claiming anything is false.",
+                },
+            ]
 
     // Only the reader's own assertions are directly changeable. A derived value
     // is changed by changing what produced it, so offer those instead of the

@@ -123,3 +123,79 @@ describe("evaluation result mirror", () => {
         ).toBe(false)
     })
 })
+
+describe("evaluation result mirror — nothing is dropped on the way out", () => {
+    // TypeBox strips undeclared properties on Encode, so a core field the
+    // mirror forgot vanishes silently between save and load. Anything a
+    // consumer reads off a rehydrated result has to appear here.
+    const evaluation = {
+        ok: true,
+        conclusionTrue: true,
+        isAdmissibleAssignment: true,
+        survivingSupportingPremisesTrue: true,
+        premisesHoldConclusionFalse: false,
+        premiseSetSatisfiable: true,
+        survivingSupportingPremiseCount: 1,
+        struckPremiseIds: ["p2"],
+        referencedVariableIds: ["vP", "vQ"],
+        contestedVariableIds: ["vP"],
+        propagatedVariableValues: { vP: CONTESTED, vQ: true },
+        conclusionAttribution: {
+            assertedByReader: true,
+            reachedWithoutAssertion: false,
+        },
+        claimAttribution: {
+            vP: { assertedByReader: true, reachedWithoutAssertion: false },
+        },
+        assignment: {
+            variables: { vP: CONTESTED, vQ: true },
+            operatorAssignments: { e1: "accepted" as const },
+        },
+        variableProvenance: {
+            vP: {
+                value: CONTESTED,
+                origin: "contested" as const,
+                contestedBy: [
+                    {
+                        expressionId: "e1",
+                        premiseId: "p1",
+                        fromVariableIds: ["vQ"],
+                    },
+                ],
+            },
+        },
+    }
+
+    function roundTrip(): Record<string, unknown> {
+        const result = {
+            schemaVersion: 1 as const,
+            createdAt: new Date("2026-04-14T00:00:00Z"),
+            evaluatedAt: new Date("2026-04-14T00:00:00Z"),
+            evaluatedFingerprint: "fp",
+            evaluation,
+        }
+        const parsed: unknown = JSON.parse(
+            JSON.stringify(Value.Encode(ReviewResultSchema, result))
+        )
+        return Value.Decode(ReviewResultSchema, parsed).evaluation as Record<
+            string,
+            unknown
+        >
+    }
+
+    it("survives Encode → JSON → Decode field for field", () => {
+        const back = roundTrip()
+        for (const field of Object.keys(evaluation)) {
+            expect({ field, value: back[field] }).toEqual({
+                field,
+                value: evaluation[field as keyof typeof evaluation],
+            })
+        }
+    })
+
+    it("keeps the contested-variable list, which is the whole gate on reload", () => {
+        // Every aggregate can read clean while a variable is held both ways,
+        // so this list is the only thing left to reconstruct the block from.
+        expect(roundTrip().contestedVariableIds).toEqual(["vP"])
+    })
+})

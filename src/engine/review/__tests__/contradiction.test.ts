@@ -351,7 +351,38 @@ describe("reviewCoherence — a collision inside the conclusion premise", () => 
         expect(found.exits.some((e) => e.kind === "change-assignment")).toBe(
             true
         )
-        expect(found.exits.some((e) => e.kind === "reject-premise")).toBe(true)
+    })
+
+    it("offers no rejection, because core does not strike the conclusion", () => {
+        // Core exempts the conclusion premise from striking, so a rejection
+        // recorded against it changes nothing it claims to change: the premise
+        // is still evaluated, `struckPremiseIds` stays empty so no badge is
+        // shown, and the argument reason falls through to "not enough settled"
+        // for a reader who settled everything and rejected a step. It also
+        // takes the premise out of the accepted set, which hides the collision
+        // instead of resolving it. Changing an answer is the honest exit.
+        const argEngine = buildEngineWithTwoPremises()
+        const found = coherenceOf(argEngine, d).contradictions.find(
+            (c) => c.premiseId === "pConclusion"
+        )!
+        expect(found.exits.some((e) => e.kind === "reject-premise")).toBe(false)
+        expect(found.exits.length).toBeGreaterThan(0)
+    })
+
+    it("still offers rejection on a premise core does strike", () => {
+        const argEngine = buildEngineWithDerivationChain()
+        const chain = draft(
+            { cP: true, cR: false, cQ: null },
+            { pFirstStep: "accepted", pSecondStep: "accepted" }
+        )
+        const found = detectContradictions({
+            evaluation: evaluateArgumentForReview(chain, argEngine),
+            argEngine,
+            draft: chain,
+        })
+        expect(
+            found.every((c) => c.exits.some((e) => e.kind === "reject-premise"))
+        ).toBe(true)
     })
 })
 

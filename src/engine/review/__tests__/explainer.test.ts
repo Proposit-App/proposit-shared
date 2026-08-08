@@ -201,6 +201,23 @@ describe("ARGUMENT_EXPLAINERS content", () => {
         )
     })
 
+    it("keeps an operator-free example well-formed for a renderer", () => {
+        // One entry deliberately has no operator item, so a client cannot
+        // assume claims alternate with operators or that any claim has a
+        // neighbour to connect to. Every item still stands on its own.
+        const items =
+            ARGUMENT_EXPLAINERS[
+                "does-not-reach:premises-hold-conclusion-does-not-follow"
+            ].example.items
+        expect(items.every((item) => item.kind === "claim")).toBe(true)
+        for (const item of items) {
+            expect(item.depth).toBeGreaterThanOrEqual(0)
+            if (item.kind === "claim") {
+                expect(item.title.trim().length).toBeGreaterThan(0)
+            }
+        }
+    })
+
     it("does not accuse an argument of asserting its conclusion", () => {
         const entry =
             ARGUMENT_EXPLAINERS["does-not-reach:conclusion-came-from-you"]

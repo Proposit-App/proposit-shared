@@ -338,6 +338,12 @@ export const TCoreArgumentEvaluationResultSchema = Type.Object({
     variableProvenance: Type.Optional(
         Type.Record(Type.String(), VariableProvenanceSchema)
     ),
+    // Every variable held both true and false. Declared here because TypeBox
+    // strips what it does not declare: without it the list is silently dropped
+    // on `Encode`, and a client reconstructing coherence from a stored result
+    // sees no conflict in exactly the case this field exists to catch — the one
+    // where every aggregate reads clean.
+    contestedVariableIds: Type.Optional(Type.Array(Type.String())),
 })
 
 export const TCoreCounterexampleSchema = Type.Object({

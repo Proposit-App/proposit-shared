@@ -16,6 +16,16 @@ export interface TOperatorQueueEntry {
      * strikes the whole premise, never a subtree.
      */
     expressionId: UUID
+    /**
+     * Whether a *reject* verdict may be offered on this entry. False for the
+     * conclusion premise: core exempts it from striking, so a rejection
+     * recorded against it is ignored — the premise is still evaluated, still
+     * derives the conclusion's value, and never appears in `struckPremiseIds`.
+     * Offering the control would record a decision that changes nothing the
+     * reader was told it changes. Accepting is unaffected and still meaningful:
+     * it grants the inference for propagation.
+     */
+    rejectable: boolean
 }
 export type TStepQueue =
     | { kind: "claim"; items: UUID[] }
@@ -103,6 +113,9 @@ export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
  *    whose whole content is a negated atom (`¬Q`), which has no decidable
  *    operator at any depth.
  *
+ * The conclusion premise, when it does carry an operator, is offered
+ * **accept-only** — see `rejectable` on {@link TOperatorQueueEntry}.
+ *
  * Consequence for callers: the length of this queue is **not** the argument's
  * premise count and must not be labelled as one. It is a subset of the
  * user-authored premises in both directions relative to any "N premises"
@@ -112,6 +125,7 @@ export function buildOperatorQueue(
     argEngine: ProjectEngine
 ): TOperatorQueueEntry[] {
     const out: TOperatorQueueEntry[] = []
+    const conclusionPremiseId = argEngine.getConclusionPremise()?.getId()
     const premises = [
         ...argEngine.listSupportingPremises(),
         ...(argEngine.getConclusionPremise()
@@ -126,6 +140,7 @@ export function buildOperatorQueue(
                 premiseId: p.getId(),
                 scope: "premise",
                 expressionId: target.id,
+                rejectable: p.getId() !== conclusionPremiseId,
             })
         }
     }

@@ -166,10 +166,24 @@ export class ReviewEngine {
                 dropped++
             }
         }
+        const conclusionPremiseId = this.argEngine
+            .getConclusionPremise()
+            ?.getId()
         this.draft.operatorAssignments = this.draft.operatorAssignments.filter(
             (o) => {
                 const premise = this.argEngine.getPremise(o.premiseId)
                 if (!premise) {
+                    dropped++
+                    return false
+                }
+                // Core ignores a rejection of the conclusion premise, so one
+                // recorded by an older build is a decision that never took
+                // effect — and leaving it in place keeps the collision out of
+                // the accepted set, which reads as a resolution it is not.
+                if (
+                    o.decision === "rejected" &&
+                    o.premiseId === conclusionPremiseId
+                ) {
                     dropped++
                     return false
                 }
@@ -458,19 +472,26 @@ export class ReviewEngine {
     }
 
     /**
-     * The phase the results step takes: `blocked` while the last evaluation
-     * found a contradiction the reader has a resolution for, `done` otherwise.
-     * Every route to the results step goes through this, so a reader cannot
-     * step past the coherence gate — and `runEvaluation` re-checks it after
-     * every change, since resolving one collision can expose another.
+     * The phase the results step takes. Every route to the results step goes
+     * through this, so it is the whole of the coherence gate.
+     *
+     * `done` is only ever reached from a coherence finding that describes *this
+     * draft*. A finding is evidence about the draft it was computed from and no
+     * other, so two things disqualify one: the reader has changed something
+     * since (the fingerprints diverge), or there is none in this session at all
+     * (the review was rehydrated). Neither is evidence of coherence, and
+     * treating either as such is how a reader walks past the gate — by
+     * reloading the page, or by editing a clean review into a collision and
+     * stepping forward before anything re-checks it.
      */
     private resultsPhase(): TReviewDraft["phase"] {
         if (this.lastCoherence) {
+            const describesThisDraft =
+                this.lastResult?.evaluatedFingerprint ===
+                materialFingerprint(this.draft)
+            if (!describesThisDraft) return "blocked"
             return this.lastCoherence.blocksCompletion ? "blocked" : "done"
         }
-        // Nothing evaluated in this session. Fail closed: a review restored at
-        // `blocked` stays there until an evaluation clears it, so a page reload
-        // cannot walk a reader past the gate.
         return this.blockedBeforeThisSession ? "blocked" : "done"
     }
 

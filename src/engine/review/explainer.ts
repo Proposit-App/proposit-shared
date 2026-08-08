@@ -42,7 +42,7 @@ export type TExampleValue =
     | "inferred-false"
     | "contested"
 
-/** One line of a worked example: a claim card, or the operator label between claims. `depth` is the nesting level, as in the text tree. */
+/** One line of a worked example: a claim card, or an operator label. `depth` is the nesting level, as in the text tree. */
 export type TExampleItem =
     | {
           kind: "claim"
@@ -62,7 +62,16 @@ export type TExampleItem =
 export interface TWorkedExample {
     /** One sentence of ordinary-life setup, read before the items. */
     scenario: string
-    /** Flat, depth-tagged. The conclusion is the first item. */
+    /**
+     * Flat, depth-tagged. The conclusion is the first item.
+     *
+     * **An example may contain no operator item at all**, and one does: the
+     * outcome where surviving premises hold true beside a false conclusion is
+     * defined by there being no granted step between them, so drawing one would
+     * make it a different finding. Render each item on its own terms — a client
+     * that pairs `items[i]` with `items[i + 1]`, or draws a connector between
+     * adjacent claims, breaks on that entry.
+     */
     items: TExampleItem[]
     /** The assessment label this example comes out to. */
     result: string
@@ -551,7 +560,7 @@ export function argumentExplainerKey(
  */
 export const CONCLUSION_ATTRIBUTION_EXPLANATIONS: Record<string, string> = {
     [CONCLUSION_ASSERTED_STATEMENT]:
-        "This value is yours — set during the walkthrough, or by reacting to the claim. It is recorded separately so you can tell your own input from what the argument worked out.",
+        "Your own answers are part of what produced this — set during the walkthrough, or by reacting to a claim. Where the conclusion is built from more than one claim, answering any of them counts. It is recorded separately so you can tell your own input from what the argument worked out.",
     [CONCLUSION_REACHED_STATEMENT]:
         "Withhold your own assignment of the conclusion and it still comes out this way, from the premises you accepted. The argument does not depend on your having granted it.",
     [CONCLUSION_ONLY_ASSERTED_STATEMENT]:

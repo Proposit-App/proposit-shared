@@ -169,3 +169,46 @@ root (the 0.62.0 tarball was removed). The core devDependency is a relative
 tarball path again rather than an absolute one under a developer's home
 directory. Still riding the unpublished core-4.0.0 window; nothing published,
 nothing pushed.
+
+## Follow-up: v0.64.0 — the second review pass
+
+Two defects, both in controls rather than in copy.
+
+The first is the worse one. Rejecting the conclusion premise was offered in two
+places — as a walkthrough step and as the *first* exit out of a contradiction —
+and core exempts that premise from striking, so the verdict was recorded and
+then ignored. Three user-visible consequences fell out of the one cause: the
+exit's copy promised to take the premise "out of the reckoning" when the premise
+kept deriving the conclusion's value; `struckPremiseIds` stayed empty so no
+badge appeared where rejecting any other premise gives one; and the struck
+branch of `reasonFor` could not fire, so the argument line read "not enough was
+settled" to a reader who had settled everything. Worse than a dead control, it
+*unblocked* the review — a rejected premise leaves `detectContradictions`'
+accepted-set filter, so the collision vanished from the report while remaining
+in the argument. The exit is gone, `TOperatorQueueEntry.rejectable` carries the
+constraint to both clients, and `dropStaleAssignments` prunes any rejection an
+older build already persisted against it.
+
+The second is a one-line omission with the same shape as the schema work in
+v0.62.0: `contestedVariableIds` was added to the engine and to `TReviewCoherence`
+but not to the persisted mirror, and TypeBox drops what it does not declare. The
+gate added last release therefore evaporated on reload — in precisely the case
+it exists for, where every aggregate reads clean and the list is the only
+evidence left. The fix is one field; the test is the whole result mirror
+compared field by field through `Encode` → `JSON` → `Decode`, because the
+omission was not visible by reading either file alone.
+
+The moderate is the reverse direction of v0.63.0's reload fix: a coherence
+finding could outlive the draft it described, so a clean review edited into a
+collision kept reporting itself finished. `done` now requires a finding whose
+fingerprint matches the current draft. The prescribed fix was to clear
+`lastCoherence` on divergence; that would have left the reported scenario
+landing on `done` anyway, since the fallback treats absence as coherent for a
+never-blocked review. Testing freshness at the point of use achieves the stated
+goal and actually closes the case.
+
+## Publish state
+
+`proposit-shared-0.64.0-explain-review-result-explainer.tgz` built in the package
+root (the 0.63.0 tarball was removed). Still riding the unpublished core-4.0.0
+window; nothing published, nothing pushed.
