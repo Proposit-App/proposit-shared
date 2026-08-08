@@ -142,3 +142,73 @@ The composed strings were read end to end in second person before the version
 cut. Vocabulary is machine-checked for banned words (proof language in the
 assessment tables, refusal language in the contradiction strings), but tone is
 not. Consumer gates were not run — they are expected red.
+
+---
+
+# Follow-up — v0.60.1: the reject-this-premise exit dropped its reason
+
+Found after this item entered review, by driving the web app in a browser. Not a
+regression this item introduced, but this item is what made it reachable: once
+the decision target became the outermost decidable operator, the exit began
+storing a real `expressionId` on a premise-scope decision.
+
+## The defect
+
+`ReviewEngine` held one identity rule for an operator decision, written twice,
+and the two copies disagreed.
+
+- `opKey` — the rule `setOperatorAssignment` deduped with and
+  `operatorDecidedKeys` published — keyed a `scope: "premise"` decision by the
+  bare `premiseId`. One decision per premise; the operator's `expressionId` is
+  provenance for the objection, never a second scope.
+- `setOperatorReason(key, code)` re-derived its own rule:
+  `key.split(":")` and then a match on `o.premiseId === premiseId &&
+  (o.expressionId ?? "") === expressionId`. A bare `premiseId` yields an empty
+  `expressionId`, so a stored row carrying a real one never matched, and the
+  method threw `setOperatorReason: no op for <premiseId>`.
+
+Consequence in the app: taking the contradiction alert's "Reject this premise —
+counterexamples exist" exit applied the rejection, dropped the reason code, and
+aborted the `jumpToResults()` on the next line, leaving the reader stranded and
+the exit's own label unfulfilled. Reproduced in the browser twice.
+
+The suite could not see it: `proposit-server`'s `contradiction-alert.test.tsx`
+mocks the engine (`setOperatorReason = vi.fn()`), so it asserts the call was made
+and never that the real engine accepts the key. No test in this repo drove the
+real `ReviewEngine` with a premise decision carrying an `expressionId`.
+
+## The fix
+
+`src/engine/review/operator-key.ts` — `operatorAssignmentKey`, the rule stated
+once, with the reasoning for excluding `expressionId` from premise identity in
+its doc. `setOperatorAssignment`, `setOperatorReason`, `operatorDecidedKeys`, and
+`LocalStorageReviewStore.upsertOperatorAssignment` (which held a third,
+non-divergent copy) now all resolve through it. Regression test in
+`__tests__/review-engine.test.ts`.
+
+`skipOperator` was checked and is not divergent: its key space is the operator
+queue's, which is the bare `premiseId` for every entry — the same string
+`operatorAssignmentKey` produces. Documented rather than changed.
+
+The throw is kept. A reason has nothing to attach to without a decision, every
+caller records the decision first, and `setClaimReason` fails the same way; with
+identity fixed, a miss is a caller bug worth surfacing.
+
+## Standing defects this exposed, not fixed here
+
+1. **`computeSnapshot` drops the decision target.** The operator step it emits
+   carries `premiseId` and `scope` but never `expressionId`, though
+   `TReviewStep` declares the field and `buildOperatorQueue` computes it. So
+   every decision made through the wizard stores `expressionId: undefined` and
+   the provenance this item introduced is never recorded on the main path —
+   which is also why the same mismatch in `premise-step.tsx` never threw. Not
+   fixed here because of (2).
+2. **The server's uniqueness key disagrees with this one.** `reviewOperator-
+   Assignments` upserts on `["reviewId","premiseId","scope","expressionId"]`,
+   so the same premise decision saved once without an operator id and once with
+   becomes two rows. Today the contradiction-alert exit populates the id while
+   the wizard leaves it null, so the two paths can already double-write one
+   premise. Evaluation re-derives the target from the premise and ignores the
+   stored id, so the verdict is unaffected, but the UI's
+   `find(o => o.scope === "premise" && o.premiseId === x)` can read the stale
+   row. Aligning the DB key with `operatorAssignmentKey` is server-side work.
