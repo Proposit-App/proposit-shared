@@ -11,6 +11,7 @@ import {
     ReviewStateSchema,
 } from "../../schemas/review.js"
 import { Value } from "typebox/value"
+import { operatorAssignmentKey } from "./operator-key.js"
 
 // Browser-global access via `globalThis`. `lib: ["ES2022"]` (enforced by the
 // shared package) does not include DOM types, but this file needs to call
@@ -160,12 +161,6 @@ export class LocalStorageReviewStore implements TReviewStore {
         }
     }
 
-    private opKey(a: TOperatorAssignment): string {
-        return a.scope === "premise"
-            ? a.premiseId
-            : `${a.premiseId}:${a.expressionId ?? ""}`
-    }
-
     async upsertClaimAssignment(
         key: TReviewKey,
         a: TClaimAssignment
@@ -190,7 +185,7 @@ export class LocalStorageReviewStore implements TReviewStore {
                 "upsertOperatorAssignment: no existing state"
             )
         const idx = state.draft.operatorAssignments.findIndex(
-            (x) => this.opKey(x) === this.opKey(a)
+            (x) => operatorAssignmentKey(x) === operatorAssignmentKey(a)
         )
         if (idx >= 0) state.draft.operatorAssignments[idx] = a
         else state.draft.operatorAssignments.push(a)

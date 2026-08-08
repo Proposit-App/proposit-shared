@@ -272,6 +272,31 @@ describe("ReviewEngine — operator phase", () => {
         expect(ops.length).toBe(1)
         expect(ops[0].decision).toBe("rejected")
     })
+
+    it("setOperatorReason records the reason on a premise decision that carries its operator id", async () => {
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store: new LocalStorageReviewStore(),
+        })
+        re.start()
+        await completeClaimPhase(re)
+        // A premise decision is keyed by its premiseId alone; the operator id
+        // rides along as provenance for the objection, so the reason must
+        // still land when the caller keys by the premise.
+        re.setOperatorAssignment({
+            premiseId: "pConclusion",
+            scope: "premise",
+            expressionId: "eImpliesRoot",
+            decision: "rejected",
+        })
+        re.setOperatorReason("pConclusion", "counterexamples-exist")
+        const op = re
+            .getSnapshot()
+            .draft.operatorAssignments.find(
+                (o) => o.premiseId === "pConclusion"
+            )
+        expect(op?.reasonCode).toBe("counterexamples-exist")
+    })
 })
 
 describe("ReviewEngine — evaluation + edit", () => {

@@ -28,6 +28,7 @@ import { composeAssessment, type TReviewAssessment } from "./assessment.js"
 import { reviewCoherence, type TReviewCoherence } from "./contradiction.js"
 import { materialFingerprint } from "./fingerprint.js"
 import { getClaimReasonsForValue } from "./reasons.js"
+import { operatorAssignmentKey } from "./operator-key.js"
 import type { TCoreValidityCheckResult } from "@proposit/proposit-core"
 
 const COUNTEREXAMPLE_CAP = 50
@@ -375,9 +376,7 @@ export class ReviewEngine {
             decision: input.decision,
             decidedAt: new Date(),
         }
-        const idx = this.draft.operatorAssignments.findIndex(
-            (o) => opKey(o) === opKey(target)
-        )
+        const idx = this.findOperatorIndex(operatorAssignmentKey(target))
         if (idx >= 0) {
             this.draft.operatorAssignments[idx] = {
                 ...target,
@@ -390,14 +389,16 @@ export class ReviewEngine {
         this.notify()
     }
 
+    /**
+     * Annotate an existing decision. `key` is an {@link operatorAssignmentKey}
+     * — for a premise decision, the bare `premiseId`.
+     */
     setOperatorReason(key: string, code: TOperatorReasonCode): void {
         if (this.mode === "readonly") return
-        const [premiseId, expressionId = ""] = key.split(":")
-        const idx = this.draft.operatorAssignments.findIndex(
-            (o) =>
-                o.premiseId === premiseId &&
-                (o.expressionId ?? "") === expressionId
-        )
+        const idx = this.findOperatorIndex(key)
+        // A reason has nothing to attach to without a decision, and every
+        // caller records the decision first, so a miss is a caller bug worth
+        // surfacing rather than swallowing — as it is in setClaimReason.
         if (idx < 0) throw new Error(`setOperatorReason: no op for ${key}`)
         this.draft.operatorAssignments[idx] = {
             ...this.draft.operatorAssignments[idx],
@@ -407,7 +408,12 @@ export class ReviewEngine {
         this.notify()
     }
 
-    /** Session-only: operator skips don't persist across reload. */
+    /**
+     * Session-only: operator skips don't persist across reload. `key` is an
+     * {@link operatorAssignmentKey}, the same identity `operatorDecidedKeys`
+     * and the queue's entries use — so a skip is cleared by the decision that
+     * answers it.
+     */
     skipOperator(key: string): void {
         if (this.mode === "readonly") return
         this.skippedOperatorKeys.add(key)
@@ -726,16 +732,16 @@ export class ReviewEngine {
     }
     private operatorDecidedKeys(): Set<string> {
         const s = new Set<string>()
-        for (const o of this.draft.operatorAssignments) s.add(opKey(o))
+        for (const o of this.draft.operatorAssignments)
+            s.add(operatorAssignmentKey(o))
         return s
+    }
+    private findOperatorIndex(key: string): number {
+        return this.draft.operatorAssignments.findIndex(
+            (o) => operatorAssignmentKey(o) === key
+        )
     }
     private operatorSkippedRemain(): boolean {
         return this.skippedOperatorKeys.size > 0
     }
-}
-
-function opKey(o: TOperatorAssignment): string {
-    return o.scope === "premise"
-        ? o.premiseId
-        : `${o.premiseId}:${o.expressionId ?? ""}`
 }
