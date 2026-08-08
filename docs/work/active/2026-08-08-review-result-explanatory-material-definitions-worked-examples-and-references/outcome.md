@@ -248,3 +248,36 @@ nobody assigned.
 `proposit-shared-0.65.0-explain-review-result-explainer.tgz` built in the package
 root (the 0.64.0 tarball was removed). Still riding the unpublished core-4.0.0
 window; nothing published, nothing pushed.
+
+## Follow-up: v0.65.1 — the coded envelope, for the third time
+
+Mobile found that a signed-in reader cannot start their first review: the
+server's typed 404 for "you have no review yet" matched neither the success
+schema nor the standard error shape, so `parseResponse` threw, `getMyReview`
+rejected, and `loadReview` never settled.
+
+This is the same defect shape the workspace has already hit twice — a coded 4xx
+envelope that the response normalizer does not recognise — and the fix is the
+one that shape has: a detection branch in `parseResponse`, never a `try`/`catch`
+or a widened schema at the call site. The two earlier instances left two
+near-identical ten-line blocks in the normalizer, which is part of why the third
+was easy to miss; they are now one `??` chain over a `coded(status, envelope)`
+helper, so the branch for the next one is a single line.
+
+Auditing the rest of `src/api-client/**` for the same shape found two more,
+both latent: `{ error: "already_exists", reviewId }` at 409 from review
+creation, and `{ code: "TOKEN_BUDGET_EXCEEDED", … }` at 402 from every
+LLM-bearing entry route. Both had correct schemas in this package and neither
+was detected, which is exactly why a schema-level test proves nothing here — the
+regression tests drive real `Response` objects through the real client calls.
+
+Whether the 404 should exist at all is a separate question, raised and not
+acted on: a reader with no review is an empty state, and `200 { review: null }`
+would model it without every client having to know that one 404 is not a
+failure. The contract belongs to the server and the web app depends on it.
+
+## Publish state
+
+`proposit-shared-0.65.1-explain-review-result-explainer.tgz` built in the package
+root (the 0.65.0 tarball was removed). Still riding the unpublished core-4.0.0
+window; nothing published, nothing pushed.

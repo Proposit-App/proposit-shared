@@ -4,8 +4,13 @@ import {
     type ParsedSuccess,
 } from "../schemas/common.js"
 import type { JsonObject, JsonValue } from "../schemas/common.js"
+import { BudgetExceededErrorBodySchema } from "../schemas/api/errors.js"
 import { GrammarViolationsResponseSchema } from "../schemas/api/grammar-violations.js"
 import { MutationConflictResponseSchema } from "../schemas/api/mutation-conflict.js"
+import {
+    ReviewCreateConflictResponse,
+    ReviewGetNotFoundResponse,
+} from "../schemas/api/review/index.js"
 import type { Static, TSchema } from "typebox"
 import { Value } from "typebox/value"
 
@@ -133,6 +138,9 @@ export async function parseResponse<T extends TSchema>(
     | ParsedError<typeof ErrorResponseSchema>
     | ParsedError<typeof GrammarViolationsResponseSchema>
     | ParsedError<typeof MutationConflictResponseSchema>
+    | ParsedError<typeof ReviewGetNotFoundResponse>
+    | ParsedError<typeof ReviewCreateConflictResponse>
+    | ParsedError<typeof BudgetExceededErrorBodySchema>
 >
 // Explicit-error-schema (3-arg) form: caller supplies the error schema. This
 // overload is unchanged from 0.10 — callers that opt in to a specific error
@@ -153,39 +161,45 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     | ParsedError<E | typeof ErrorResponseSchema>
     | ParsedError<typeof GrammarViolationsResponseSchema>
     | ParsedError<typeof MutationConflictResponseSchema>
+    | ParsedError<typeof ReviewGetNotFoundResponse>
+    | ParsedError<typeof ReviewCreateConflictResponse>
+    | ParsedError<typeof BudgetExceededErrorBodySchema>
 > {
     const data = (await response.json()) as JsonValue
 
     if (!response.ok) {
-        // Auto-detect the GRAMMAR_VIOLATIONS 422 envelope only when the caller
-        // omitted an explicit error schema (default form). Callers that passed
-        // their own error schema keep the pre-0.11 single-schema behavior.
-        if (
+        // Auto-detect a coded envelope only when the caller omitted an explicit
+        // error schema (default form). Callers that passed their own error
+        // schema keep the pre-0.11 single-schema behavior.
+        //
+        // Every coded envelope goes through here rather than through a
+        // `try`/`catch` or a widened schema at each call site. A call site that
+        // has to catch to learn "no review yet" is one the next coded envelope
+        // will break again; this is the one place that has to know.
+        const coded = <S extends TSchema>(status: number, envelope: S) =>
             errorSchema === undefined &&
-            response.status === 422 &&
-            Value.Check(GrammarViolationsResponseSchema, data)
-        ) {
-            const parsedViolations = Value.Parse(
-                GrammarViolationsResponseSchema,
-                data
-            )
-            return { error: parsedViolations, ok: false }
-        }
+            response.status === status &&
+            Value.Check(envelope, data)
+                ? { error: Value.Parse(envelope, data), ok: false as const }
+                : undefined
 
-        // Auto-detect the MUTATION_CONFLICT 409 envelope (publish/archive
-        // state conflicts). Same default-form-only gate as grammar-violations:
-        // callers with an explicit error schema keep the single-schema behavior.
-        if (
-            errorSchema === undefined &&
-            response.status === 409 &&
-            Value.Check(MutationConflictResponseSchema, data)
-        ) {
-            const parsedConflict = Value.Parse(
-                MutationConflictResponseSchema,
-                data
-            )
-            return { error: parsedConflict, ok: false }
-        }
+        const detected =
+            // Grammar-tier gate on submit/save/publish.
+            coded(422, GrammarViolationsResponseSchema) ??
+            // Publish/archive state conflicts.
+            coded(409, MutationConflictResponseSchema) ??
+            // The reader has no review of this argument yet. An ordinary empty
+            // state the server spells as a 404, so it must not read as a
+            // transport failure.
+            coded(404, ReviewGetNotFoundResponse) ??
+            // A review already exists — a second tab, or a retry after a
+            // partial failure.
+            coded(409, ReviewCreateConflictResponse) ??
+            // The caller's monthly token budget is exhausted, on any
+            // LLM-bearing entry route (import, build). Carries the usage
+            // figures the client shows the user.
+            coded(402, BudgetExceededErrorBodySchema)
+        if (detected) return detected
 
         const errSchema = errorSchema ?? ErrorResponseSchema
         const parsedError = Value.Parse(errSchema, data)
