@@ -1,4 +1,8 @@
-import type { TCoreArgumentEvaluationResult } from "@proposit/proposit-core"
+import {
+    isContested,
+    type TCoreArgumentEvaluationResult,
+    type TCoreQuadrivalentValue,
+} from "@proposit/proposit-core"
 
 /**
  * The two axes a review reports, and the words every client renders them with.
@@ -23,13 +27,21 @@ import type { TCoreArgumentEvaluationResult } from "@proposit/proposit-core"
  * app and anything later render one vocabulary.
  */
 
-/** The conclusion's truth value under the reader's assignment. */
-export type TConclusionValue = "true" | "false" | "unknown"
+/**
+ * The conclusion's truth value under the reader's assignment.
+ *
+ * `"contested"` and `"unknown"` are opposite findings, not neighbours:
+ * unknown is the absence of information, contested is information pointing
+ * both ways at once. Collapsing the second into the first would report a
+ * value the reader settled twice as one they never settled.
+ */
+export type TConclusionValue = "true" | "false" | "unknown" | "contested"
 
 export const CONCLUSION_VALUE_LABELS: Record<TConclusionValue, string> = {
     true: "True",
     false: "False",
     unknown: "Unknown",
+    contested: "Contested",
 }
 
 /**
@@ -146,18 +158,26 @@ function buildStruckBadges(
     }
 }
 
-function conclusionValueOf(
-    evaluation: TCoreArgumentEvaluationResult
+/**
+ * The reported value for any truth value evaluation produced. Every place that
+ * renders one goes through here, so a value can never be labelled two ways.
+ */
+export function conclusionValueFor(
+    value: TCoreQuadrivalentValue | undefined
 ): TConclusionValue {
-    if (evaluation.conclusionTrue === true) return "true"
-    if (evaluation.conclusionTrue === false) return "false"
+    // The contested test comes first: it is the one value that would otherwise
+    // fall through to `unknown` and be reported as a gap the reader never
+    // filled, when it is the opposite — one they filled twice, incompatibly.
+    if (isContested(value)) return "contested"
+    if (value === true) return "true"
+    if (value === false) return "false"
     return "unknown"
 }
 
 function composeConclusion(
     evaluation: TCoreArgumentEvaluationResult
 ): TConclusionAssessment {
-    const value = conclusionValueOf(evaluation)
+    const value = conclusionValueFor(evaluation.conclusionTrue)
     const assertedByReader =
         evaluation.conclusionAttribution?.assertedByReader ?? false
     const reachedWithoutAssertion =
@@ -209,6 +229,13 @@ function composeArgument(
         struck,
     })
 
+    // A contested conclusion adds no outcome here, deliberately. This axis is
+    // about the premise set and what the author built from it;
+    // `premiseSetSatisfiable` is asked of that set alone, ignoring the reader's
+    // assignment. A conclusion settled both ways is a collision between the
+    // reader's own inputs and the steps they granted, so it belongs to the
+    // conclusion axis — an argument whose premises are perfectly consistent can
+    // produce one, and saying its premises contradict would be false.
     if (evaluation.premiseSetSatisfiable === false) {
         return {
             outcome: "premises-contradict",

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest"
-import type { TCoreArgumentEvaluationResult } from "@proposit/proposit-core"
+import {
+    CONTESTED,
+    type TCoreArgumentEvaluationResult,
+} from "@proposit/proposit-core"
 import {
     ARGUMENT_OUTCOME_LABELS,
     ARGUMENT_REASON_TEXT,
@@ -35,17 +38,29 @@ function evaluation(
 }
 
 describe("composeAssessment — conclusion axis", () => {
-    it("maps the trivalent conclusion onto its label", () => {
+    it("maps every conclusion value onto its label", () => {
         const cases = [
             [true, "true"],
             [false, "false"],
             [null, "unknown"],
+            [CONTESTED, "contested"],
         ] as const
         for (const [conclusionTrue, value] of cases) {
             const a = composeAssessment(evaluation({ conclusionTrue }))!
             expect(a.conclusion.value).toBe(value)
             expect(a.conclusion.label).toBe(CONCLUSION_VALUE_LABELS[value])
         }
+    })
+
+    it("keeps a value settled both ways distinct from one nobody settled", () => {
+        const contested = composeAssessment(
+            evaluation({ conclusionTrue: CONTESTED })
+        )!
+        const unsettled = composeAssessment(
+            evaluation({ conclusionTrue: null })
+        )!
+        expect(contested.conclusion.value).not.toBe(unsettled.conclusion.value)
+        expect(contested.conclusion.label).not.toBe(unsettled.conclusion.label)
     })
 
     it("keeps the two attribution facts as separate statements", () => {

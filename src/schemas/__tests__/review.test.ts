@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest"
 import { Value } from "typebox/value"
+import { CONTESTED } from "@proposit/proposit-core"
 import {
     ReviewDraftSchema,
+    ReviewResultSchema,
     ClaimAssignmentSchema,
     OperatorAssignmentSchema,
+    TCoreExpressionAssignmentSchema,
 } from "../review.js"
 
 describe("review schemas", () => {
@@ -65,5 +68,58 @@ describe("review schemas", () => {
             decidedAt: new Date(),
         }
         expect(Value.Check(OperatorAssignmentSchema, op)).toBe(true)
+    })
+})
+
+describe("evaluation result mirror", () => {
+    // A stored review whose evaluation the schema rejects is dropped whole by
+    // the review store, so the mirror has to admit every value core produces.
+    it("round-trips a result carrying a value settled both ways", () => {
+        const result = {
+            schemaVersion: 1 as const,
+            createdAt: new Date("2026-04-14T00:00:00Z"),
+            evaluatedAt: new Date("2026-04-14T00:00:00Z"),
+            evaluatedFingerprint: "fp",
+            evaluation: {
+                ok: true,
+                conclusionTrue: CONTESTED,
+                assignment: {
+                    variables: { vQ: CONTESTED },
+                    operatorAssignments: {},
+                },
+                propagatedVariableValues: { vQ: CONTESTED },
+                variableProvenance: {
+                    vQ: {
+                        value: CONTESTED,
+                        origin: "contested" as const,
+                        contestedBy: [
+                            {
+                                expressionId: "e1",
+                                premiseId: "p1",
+                                fromVariableIds: ["vP"],
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        const parsed: unknown = JSON.parse(
+            JSON.stringify(Value.Encode(ReviewResultSchema, result))
+        )
+        const back = Value.Decode(ReviewResultSchema, parsed)
+        expect(back.evaluation.conclusionTrue).toBe(CONTESTED)
+        expect(back.evaluation.variableProvenance!.vQ.origin).toBe("contested")
+        expect(back.evaluation.variableProvenance!.vQ.contestedBy).toHaveLength(
+            1
+        )
+    })
+
+    it("keeps a reader's own assignment three-valued", () => {
+        expect(
+            Value.Check(TCoreExpressionAssignmentSchema, {
+                variables: { vQ: CONTESTED },
+                operatorAssignments: {},
+            })
+        ).toBe(false)
     })
 })

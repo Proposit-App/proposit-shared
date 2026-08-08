@@ -71,3 +71,47 @@ reader's own work.
 package root (the 0.61.0 tarball was removed — a stray `.tgz` makes a later
 `pnpm publish` fail with EUSAGE). Rides the existing unpublished core-4.0.0 / shared-0.60.x window
 per the epic spec — nothing published, nothing pushed.
+
+## Follow-up: v0.62.0 — the tenth entry, and one concept instead of two
+
+Core gained a fourth truth value. Its constraint closure was nondeterministic
+when two accepted steps drove one variable to opposite values, and the product
+decision was explicitly *not* to resolve that to unknown — "it's not that the
+value is unknown, it's that the user is saying it is both true and false" — so
+core now implements Belnap's four-valued logic, with `CONTESTED` reachable only
+by evaluation and never by assignment.
+
+This module had already invented the same concept, in `resolveClaimValue`, for a
+different cause: two variables bound to one claim carrying opposite values. It
+resolved to unknown and reported the fact on `conflictedClaimIds` — the
+resolution the product owner rejected, arrived at independently. The two are now
+one value. `conflictedClaimIds` is deleted rather than kept as a derived
+convenience: it is a one-line filter over `claimPropagatedValues`, and its
+existence *was* the second vocabulary.
+
+The tenth `CONCLUSION_EXPLAINERS` entry follows the nine in voice and structure.
+Its definition carries the two loads the value exists for: contested is the
+opposite of unknown rather than a shade of it, and it is always the reader's to
+resolve, because both halves came from them. Further reading points at
+four-valued logic, paraconsistent logic and the bilattice — a curious reader now
+has somewhere real to go.
+
+The dangerous edits were the ones the compiler could not flag:
+`conclusionValueOf`'s fall-through to `"unknown"` (the exact outcome the product
+decision rejected), `detectContradictions`' `rootValue !== false` (which would
+have silently stopped blocking reviews it used to block, because a colliding
+chain now comes out contested rather than false), `describeCounterexample`'s
+truthiness test (contested is a truthy string), `provenanceSentences`' `origin
+!== "derived"` skip, and the evaluation-result schema mirror — where a rejected
+decode makes the review store drop the whole stored review as corrupt.
+
+The argument axis is unchanged, deliberately and on the record: `premises-
+contradict` is about the premise set alone and a contested conclusion can arise
+over a perfectly consistent one.
+
+## Publish state
+
+`proposit-shared-0.62.0-explain-review-result-explainer.tgz` built in the package
+root (the 0.61.2 tarball was removed — a stray `.tgz` makes a later
+`pnpm publish` fail with EUSAGE). Still riding the unpublished core-4.0.0 window;
+nothing published, nothing pushed.

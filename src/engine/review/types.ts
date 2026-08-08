@@ -1,7 +1,15 @@
-import type { TCoreTrivalentValue } from "@proposit/proposit-core"
+import type {
+    TCoreQuadrivalentValue,
+    TCoreResolvedVariableValues,
+} from "@proposit/proposit-core"
 import type { TReviewAssessment } from "./assessment.js"
 
-/** Three-valued assignment pill, surfaced on claim nodes. */
+/**
+ * Three-valued assignment pill, surfaced on claim nodes. This is what a reader
+ * can set, so it stays three-valued: a claim held both ways is a resolved
+ * value, never an assignment, and shows up on
+ * {@link TReviewOverlay.claimPropagatedValues}.
+ */
 export type TAssignmentPill = "true" | "false" | "unknown" | "skipped"
 
 /**
@@ -16,7 +24,7 @@ export interface TReviewOverlay {
     /** User's assignment per claimId. */
     claimValues: Record<string, TAssignmentPill>
     /** Evaluator-propagated value per variableId. */
-    propagatedValues: Record<string, boolean | null>
+    propagatedValues: TCoreResolvedVariableValues
     /** Operator accept/reject decision per expressionId. */
     operatorDecisions: Record<string, "accepted" | "rejected">
     /**
@@ -30,15 +38,13 @@ export interface TReviewOverlay {
      * the inline chip renders after transitive grounding. Populated by
      * `buildInlineReviewOverlay`. Keyed by `claimId` (unlike the variable-keyed
      * {@link propagatedValues}).
+     *
+     * `"contested"` here means the claim is held both true and false — whether
+     * because two granted steps drive it apart or because two of its bound
+     * variables disagree. There is no separate list of such claims to consult:
+     * filter this map when a client wants them.
      */
-    claimPropagatedValues?: Record<string, TCoreTrivalentValue>
-    /**
-     * Claims whose bound variables carry settled values that disagree — the
-     * argument holds one proposition both true and false. Their displayed value
-     * resolves to unknown rather than to whichever side an enumeration order
-     * happened to favour. Empty in every consistent argument.
-     */
-    conflictedClaimIds?: string[]
+    claimPropagatedValues?: Record<string, TCoreQuadrivalentValue>
     /**
      * The two axes composed from the evaluation, shown at the conclusion
      * premise. Absent when there is nothing evaluated yet.

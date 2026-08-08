@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest"
+import { CONTESTED } from "@proposit/proposit-core"
 import {
     buildExpressionAssignment,
     toEvaluationContext,
@@ -122,7 +123,9 @@ describe("evaluation", () => {
         )
         const result = evaluateArgumentForReview(draft, engine)
         expect(result.ok).toBe(true)
-        expect(typeof result.conclusionTrue === "boolean").toBe(true)
+        // A settled value of some kind, never an absent one. The fixture's
+        // reader values and granted steps drive the conclusion both ways.
+        expect(result.conclusionTrue).toBe(CONTESTED)
         // 0.9.0+: argument-wide propagated map is populated with includeDiagnostics: true
         expect(result.propagatedVariableValues).toBeDefined()
     })

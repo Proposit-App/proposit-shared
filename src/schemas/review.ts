@@ -1,9 +1,24 @@
 import { Type, type Static } from "typebox"
 import { UUID, EncodableDate } from "./common.js"
 
-// Kleene value (mirrors proposit-core's TCoreTrivalentValue)
+// Kleene value (mirrors proposit-core's TCoreTrivalentValue). This is what a
+// reader may assign, and it stays three-valued.
 export const TrivalentValueSchema = Type.Union([Type.Boolean(), Type.Null()])
 export type TTrivalentValue = Static<typeof TrivalentValueSchema>
+
+/**
+ * What evaluation may *produce* (mirrors proposit-core's
+ * `TCoreQuadrivalentValue`): the three above plus `"contested"`, which a value
+ * takes when the reader's inputs and the steps they granted force it both true
+ * and false. Only evaluation reaches it, so it appears in the result mirror
+ * below and never in an assignment a reader writes.
+ */
+export const QuadrivalentValueSchema = Type.Union([
+    Type.Boolean(),
+    Type.Null(),
+    Type.Literal("contested"),
+])
+export type TQuadrivalentValue = Static<typeof QuadrivalentValueSchema>
 
 // Claim → true (7 codes)
 export const ClaimTrueReasonCodeSchema = Type.Union([
@@ -185,11 +200,11 @@ export const TCoreValidationResultSchema = Type.Object({
 })
 
 export const TCoreDirectionalVacuitySchema = Type.Object({
-    antecedentTrue: TrivalentValueSchema,
-    consequentTrue: TrivalentValueSchema,
-    implicationValue: TrivalentValueSchema,
-    isVacuouslyTrue: TrivalentValueSchema,
-    fired: TrivalentValueSchema,
+    antecedentTrue: QuadrivalentValueSchema,
+    consequentTrue: QuadrivalentValueSchema,
+    implicationValue: QuadrivalentValueSchema,
+    isVacuouslyTrue: QuadrivalentValueSchema,
+    fired: QuadrivalentValueSchema,
 })
 
 export const TCorePremiseInferenceDiagnosticSchema = Type.Union([
@@ -197,26 +212,26 @@ export const TCorePremiseInferenceDiagnosticSchema = Type.Union([
         kind: Type.Literal("implies"),
         premiseId: Type.String(),
         rootExpressionId: Type.String(),
-        leftValue: TrivalentValueSchema,
-        rightValue: TrivalentValueSchema,
-        rootValue: TrivalentValueSchema,
-        antecedentTrue: TrivalentValueSchema,
-        consequentTrue: TrivalentValueSchema,
-        isVacuouslyTrue: TrivalentValueSchema,
-        fired: TrivalentValueSchema,
-        firedAndHeld: TrivalentValueSchema,
+        leftValue: QuadrivalentValueSchema,
+        rightValue: QuadrivalentValueSchema,
+        rootValue: QuadrivalentValueSchema,
+        antecedentTrue: QuadrivalentValueSchema,
+        consequentTrue: QuadrivalentValueSchema,
+        isVacuouslyTrue: QuadrivalentValueSchema,
+        fired: QuadrivalentValueSchema,
+        firedAndHeld: QuadrivalentValueSchema,
     }),
     Type.Object({
         kind: Type.Literal("iff"),
         premiseId: Type.String(),
         rootExpressionId: Type.String(),
-        leftValue: TrivalentValueSchema,
-        rightValue: TrivalentValueSchema,
-        rootValue: TrivalentValueSchema,
+        leftValue: QuadrivalentValueSchema,
+        rightValue: QuadrivalentValueSchema,
+        rootValue: QuadrivalentValueSchema,
         leftToRight: TCoreDirectionalVacuitySchema,
         rightToLeft: TCoreDirectionalVacuitySchema,
-        bothSidesTrue: TrivalentValueSchema,
-        bothSidesFalse: TrivalentValueSchema,
+        bothSidesTrue: QuadrivalentValueSchema,
+        bothSidesFalse: QuadrivalentValueSchema,
     }),
 ])
 
@@ -227,14 +242,28 @@ export const TCorePremiseEvaluationResultSchema = Type.Object({
         Type.Literal("constraint"),
     ]),
     rootExpressionId: Type.Optional(Type.String()),
-    rootValue: Type.Optional(TrivalentValueSchema),
-    expressionValues: Type.Record(Type.String(), TrivalentValueSchema),
-    variableValues: Type.Record(Type.String(), TrivalentValueSchema),
+    rootValue: Type.Optional(QuadrivalentValueSchema),
+    expressionValues: Type.Record(Type.String(), QuadrivalentValueSchema),
+    variableValues: Type.Record(Type.String(), QuadrivalentValueSchema),
     inferenceDiagnostic: Type.Optional(TCorePremiseInferenceDiagnosticSchema),
 })
 
+/** An assignment as a reader writes it: three-valued throughout. */
 export const TCoreExpressionAssignmentSchema = Type.Object({
     variables: Type.Record(Type.String(), TrivalentValueSchema),
+    operatorAssignments: Type.Record(
+        Type.String(),
+        Type.Union([Type.Literal("accepted"), Type.Literal("rejected")])
+    ),
+})
+
+/**
+ * An assignment as evaluation hands it back, with closure applied — the same
+ * shape with four-valued variables. Every assignment a reader writes is a valid
+ * one of these; the reverse does not hold.
+ */
+export const TCoreResolvedAssignmentSchema = Type.Object({
+    variables: Type.Record(Type.String(), QuadrivalentValueSchema),
     operatorAssignments: Type.Record(
         Type.String(),
         Type.Union([Type.Literal("accepted"), Type.Literal("rejected")])
@@ -250,6 +279,7 @@ export const ValueAttributionSchema = Type.Object({
 export const ValueOriginSchema = Type.Union([
     Type.Literal("asserted"),
     Type.Literal("derived"),
+    Type.Literal("contested"),
     Type.Literal("unassigned"),
 ])
 
@@ -260,15 +290,18 @@ export const DerivationStepSchema = Type.Object({
 })
 
 export const VariableProvenanceSchema = Type.Object({
-    value: TrivalentValueSchema,
+    value: QuadrivalentValueSchema,
     origin: ValueOriginSchema,
+    /** Present iff `origin === "derived"` — one step cannot be named once two disagree. */
     derivedBy: Type.Optional(DerivationStepSchema),
+    /** Present iff `origin === "contested"`: every granted step that contributed a truth component. */
+    contestedBy: Type.Optional(Type.Array(DerivationStepSchema)),
 })
 
 export const TCoreArgumentEvaluationResultSchema = Type.Object({
     ok: Type.Boolean(),
     validation: Type.Optional(TCoreValidationResultSchema),
-    assignment: Type.Optional(TCoreExpressionAssignmentSchema),
+    assignment: Type.Optional(TCoreResolvedAssignmentSchema),
     referencedVariableIds: Type.Optional(Type.Array(Type.String())),
     conclusion: Type.Optional(TCorePremiseEvaluationResultSchema),
     supportingPremises: Type.Optional(
@@ -277,7 +310,7 @@ export const TCoreArgumentEvaluationResultSchema = Type.Object({
     constraintPremises: Type.Optional(
         Type.Array(TCorePremiseEvaluationResultSchema)
     ),
-    isAdmissibleAssignment: Type.Optional(TrivalentValueSchema),
+    isAdmissibleAssignment: Type.Optional(QuadrivalentValueSchema),
     // Premises the reader struck by rejecting an operator inside them. They
     // stay in `supportingPremises` / `constraintPremises` so a consumer can
     // render them crossed out; they are excluded from every aggregate.
@@ -285,9 +318,9 @@ export const TCoreArgumentEvaluationResultSchema = Type.Object({
     survivingSupportingPremiseCount: Type.Optional(Type.Number()),
     // Vacuously true when every supporting premise is struck — read together
     // with `survivingSupportingPremiseCount`, never as "the argument worked".
-    survivingSupportingPremisesTrue: Type.Optional(TrivalentValueSchema),
-    conclusionTrue: Type.Optional(TrivalentValueSchema),
-    premisesHoldConclusionFalse: Type.Optional(TrivalentValueSchema),
+    survivingSupportingPremisesTrue: Type.Optional(QuadrivalentValueSchema),
+    conclusionTrue: Type.Optional(QuadrivalentValueSchema),
+    premisesHoldConclusionFalse: Type.Optional(QuadrivalentValueSchema),
     conclusionAttribution: Type.Optional(ValueAttributionSchema),
     claimAttribution: Type.Optional(
         Type.Record(Type.String(), ValueAttributionSchema)
@@ -300,7 +333,7 @@ export const TCoreArgumentEvaluationResultSchema = Type.Object({
     // Populated when evaluateArgument is called with includeDiagnostics: true.
     // Key set = referencedVariableIds (claim-bound and externally-bound).
     propagatedVariableValues: Type.Optional(
-        Type.Record(Type.String(), TrivalentValueSchema)
+        Type.Record(Type.String(), QuadrivalentValueSchema)
     ),
     variableProvenance: Type.Optional(
         Type.Record(Type.String(), VariableProvenanceSchema)
@@ -308,7 +341,7 @@ export const TCoreArgumentEvaluationResultSchema = Type.Object({
 })
 
 export const TCoreCounterexampleSchema = Type.Object({
-    assignment: TCoreExpressionAssignmentSchema,
+    assignment: TCoreResolvedAssignmentSchema,
     result: TCoreArgumentEvaluationResultSchema,
 })
 export const TCoreValidityCheckResultSchema = Type.Object({

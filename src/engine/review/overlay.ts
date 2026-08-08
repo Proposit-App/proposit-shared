@@ -1,7 +1,10 @@
-import type {
-    TCoreOperatorAssignment,
-    TCoreTrivalentValue,
-    TCoreVariableAssignment,
+import {
+    CONTESTED,
+    isContested,
+    type TCoreOperatorAssignment,
+    type TCoreQuadrivalentValue,
+    type TCoreResolvedVariableValues,
+    type TCoreTrivalentValue,
 } from "@proposit/proposit-core"
 import type { PropositArgumentEngine } from "../engine.js"
 import type {
@@ -62,7 +65,7 @@ export function buildReviewOverlay(params: {
         }
     }
 
-    const propagatedValues: Record<string, boolean | null> = result
+    const propagatedValues: TCoreResolvedVariableValues = result
         ? { ...computePropagatedVariableValues(result.evaluation) }
         : {}
 
@@ -103,27 +106,26 @@ export function buildReviewOverlay(params: {
  * whose variable happens to sort first renders unknown while the value sits on
  * its sibling.
  *
- * `conflicted` is true when two of a claim's variables are settled and
- * disagree. Nothing in core forbids it — the variables are independent as far
- * as it is concerned — so it means the argument holds a proposition both true
- * and false. That is a finding, not a tie to break: the value resolves to
- * unknown and the claim is reported on the overlay rather than silently taking
- * whichever side an ordering favours.
+ * When two of a claim's variables are settled and disagree, the claim is held
+ * both true and false, and that resolves to `contested` — the same value core's
+ * closure produces when two granted steps drive one variable apart. The cause
+ * differs, the finding is identical, and it is reported as one thing so no
+ * client has to learn two vocabularies for it. It is never resolved to unknown:
+ * unknown says nobody settled the claim, which is the opposite of what happened.
  */
 function resolveClaimValue(
     variableIds: string[] | undefined,
-    values: Record<string, TCoreTrivalentValue>
-): { value: TCoreTrivalentValue; conflicted: boolean } {
-    let resolved: TCoreTrivalentValue = null
+    values: Record<string, TCoreQuadrivalentValue>
+): TCoreQuadrivalentValue {
+    let resolved: TCoreQuadrivalentValue = null
     for (const variableId of variableIds ?? []) {
         const value = values[variableId]
         if (value == null) continue
-        if (resolved != null && resolved !== value) {
-            return { value: null, conflicted: true }
-        }
+        if (isContested(value)) return CONTESTED
+        if (resolved != null && resolved !== value) return CONTESTED
         resolved = value
     }
-    return { value: resolved, conflicted: false }
+    return resolved
 }
 
 /**
@@ -177,28 +179,37 @@ export function buildInlineReviewOverlay(params: {
         if (bound) bound.push(v.id)
         else variableIdsByClaimId.set(claimId, [v.id])
     }
-    const conflictedClaimIds: string[] = []
-
     const defaults = argEngine.deriveDefaultAssignment() // variable-keyed
     const claims = argEngine.getClaims() // claimId → TClaim
 
     const claimValues: Record<string, TAssignmentPill> = {}
     const claimProvenance: Record<string, TAssignmentProvenance> = {}
+    /**
+     * Each claim's effective value before propagation, kept four-valued. A pill
+     * is something the reader can set and `contested` is not assignable, so a
+     * contested default would be lost on the way into {@link claimValues};
+     * holding it here keeps it available to the displayed value below.
+     */
+    const effectiveValues: Record<string, TCoreQuadrivalentValue> = {}
 
     for (const claimId of Object.keys(claims)) {
         const hasOverride = claimId in overrides
         const hasReaction = claimId in reactions
         if (hasOverride) {
             claimValues[claimId] = overrides[claimId]
+            effectiveValues[claimId] = trivalentForPill(overrides[claimId])
         } else if (hasReaction) {
             claimValues[claimId] = pillForTrivalent(reactions[claimId])
+            effectiveValues[claimId] = reactions[claimId]
         } else {
             const resolved = resolveClaimValue(
                 variableIdsByClaimId.get(claimId),
                 defaults
             )
-            if (resolved.conflicted) conflictedClaimIds.push(claimId)
-            claimValues[claimId] = pillForTrivalent(resolved.value)
+            effectiveValues[claimId] = resolved
+            claimValues[claimId] = pillForTrivalent(
+                isContested(resolved) ? null : resolved
+            )
         }
         claimProvenance[claimId] =
             hasOverride || hasReaction ? "user" : "default"
@@ -255,22 +266,19 @@ export function buildInlineReviewOverlay(params: {
         }
     )
 
-    const propagatedValues: TCoreVariableAssignment =
+    const propagatedValues: TCoreResolvedVariableValues =
         computePropagatedVariableValues(result)
-    const claimPropagatedValues: Record<string, TCoreTrivalentValue> = {}
+    const claimPropagatedValues: Record<string, TCoreQuadrivalentValue> = {}
     for (const claimId of Object.keys(claims)) {
-        const resolved = resolveClaimValue(
-            variableIdsByClaimId.get(claimId),
-            propagatedValues
-        )
-        if (resolved.conflicted && !conflictedClaimIds.includes(claimId)) {
-            conflictedClaimIds.push(claimId)
-        }
         // Nothing propagated onto any of the claim's variables — fall back to
         // the reader's own effective value rather than reporting unknown.
         claimPropagatedValues[claimId] =
-            resolved.value ??
-            trivalentForPill(claimValues[claimId] ?? "unknown")
+            resolveClaimValue(
+                variableIdsByClaimId.get(claimId),
+                propagatedValues
+            ) ??
+            effectiveValues[claimId] ??
+            null
     }
 
     return {
@@ -279,7 +287,6 @@ export function buildInlineReviewOverlay(params: {
         operatorDecisions: operatorAssignments,
         claimProvenance,
         claimPropagatedValues,
-        conflictedClaimIds,
         assessment: composeAssessment(result),
     }
 }

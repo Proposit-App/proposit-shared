@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest"
+import { CONTESTED } from "@proposit/proposit-core"
 import { buildInlineReviewOverlay } from "../../review/overlay.js"
 import {
     buildEngineWithTwoPremises,
@@ -186,10 +187,9 @@ describe("buildInlineReviewOverlay", () => {
         expect(overlay.assessment!.conclusion.value).toBe("true")
         expect(overlay.claimValues.cQ).toBe("unknown")
         expect(overlay.claimPropagatedValues!.cQ).toBe(true)
-        expect(overlay.conflictedClaimIds ?? []).toEqual([])
     })
 
-    it("reports a claim whose bound variables disagree instead of tie-breaking", () => {
+    it("resolves a claim whose bound variables disagree to contested, not to unknown", () => {
         const engine = buildEngineWithContradictorilyBoundClaim()
         const overlay = buildInlineReviewOverlay({
             argEngine: engine,
@@ -198,10 +198,10 @@ describe("buildInlineReviewOverlay", () => {
         })
         expect(overlay.propagatedValues.vQ1).toBe(false)
         expect(overlay.propagatedValues.vQ2).toBe(true)
-        // Neither side wins on ordering: the claim resolves to unknown and is
-        // named, so the inconsistency can be shown rather than hidden.
-        expect(overlay.claimPropagatedValues!.cQ).toBe(null)
-        expect(overlay.conflictedClaimIds).toEqual(["cQ"])
+        // Neither side wins on ordering, and neither is the claim reported as
+        // one nobody settled: it is settled both ways, and says so.
+        expect(overlay.claimPropagatedValues!.cQ).toBe(CONTESTED)
+        expect(overlay.claimPropagatedValues!.cQ).not.toBe(null)
     })
 
     it("strips axiom-bound keys before evaluating (no AXIOM_VARIABLE_ASSIGNMENT_FORBIDDEN throw)", () => {

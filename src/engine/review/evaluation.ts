@@ -6,7 +6,7 @@ import {
     type TCoreExpressionAssignment,
     type TCoreValidityCheckResult,
     type TCoreTrivalentValue,
-    type TCoreVariableAssignment,
+    type TCoreResolvedVariableValues,
     type TCoreOperatorAssignment,
 } from "@proposit/proposit-core"
 import type { ProjectEngine } from "../mutations/types.js"
@@ -172,6 +172,6 @@ export function checkValidityForReview(
  */
 export function computePropagatedVariableValues(
     result: TCoreArgumentEvaluationResult | undefined
-): TCoreVariableAssignment {
+): TCoreResolvedVariableValues {
     return result?.propagatedVariableValues ?? {}
 }

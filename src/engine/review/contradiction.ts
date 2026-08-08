@@ -1,9 +1,12 @@
-import type {
-    TCorePremiseEvaluationResult,
-    TCoreArgumentEvaluationResult,
-    TCoreTrivalentValue,
-    TCoreValueOrigin,
+import {
+    isContested,
+    type TCorePremiseEvaluationResult,
+    type TCoreArgumentEvaluationResult,
+    type TCoreDerivationStep,
+    type TCoreQuadrivalentValue,
+    type TCoreValueOrigin,
 } from "@proposit/proposit-core"
+import { CONCLUSION_VALUE_LABELS, conclusionValueFor } from "./assessment.js"
 import type { PropositArgumentEngine } from "../engine.js"
 import type { TReviewDraft } from "../../schemas/review.js"
 import { outermostDecidableOperator } from "./decision-target.js"
@@ -25,8 +28,9 @@ import { outermostDecidableOperator } from "./decision-target.js"
  * Only `true` and `false` collide. An explicit *unknown* is a decision but not
  * an assertion of a value, and an inference the reader granted overriding it is
  * the review teaching them something rather than a collision. Nothing extra
- * enforces that: an unknown propagates as `null` under strong Kleene, so a
- * premise carrying one cannot come out `false`.
+ * enforces that: an unknown propagates as `null`, so a premise carrying one
+ * cannot come out `false`. A value the reader's inputs and granted steps force
+ * *both* ways is the collision in its purest form, and counts here too.
  *
  * Everything here is a pure function of the latest evaluation, so "re-check
  * after each change" is simply the caller re-evaluating — there is no cached
@@ -43,7 +47,7 @@ export interface TContradictionValue {
     claimId?: string
     /** The claim's title. Falls back to the variable's symbol only when there is no claim behind it. */
     title: string
-    value: TCoreTrivalentValue
+    value: TCoreQuadrivalentValue
     origin: TCoreValueOrigin
 }
 
@@ -115,10 +119,9 @@ const GRANTED_COMMITMENTS: Record<string, string> = {
 const FALLBACK_COMMITMENT =
     "By granting this premise you are committing to it holding, however you have assigned values that make it false."
 
-function valueLabel(value: TCoreTrivalentValue): string {
-    if (value === true) return "True"
-    if (value === false) return "False"
-    return "Unknown"
+/** One vocabulary for values, shared with the assessment the reader sees beside this. */
+function valueLabel(value: TCoreQuadrivalentValue): string {
+    return CONCLUSION_VALUE_LABELS[conclusionValueFor(value)]
 }
 
 function titleForVariable(
@@ -182,6 +185,21 @@ function buildNotation(
 }
 
 /**
+ * Whether the reader supplied this variable's value themselves.
+ *
+ * Read from `claimAttribution` rather than from `assignment.variables`: the
+ * assignment on a result is the one closure produced, so a value the reader set
+ * and a granted step then contested reads back as `contested` there, losing the
+ * very fact this asks about.
+ */
+function assertedByReader(
+    evaluation: TCoreArgumentEvaluationResult,
+    variableId: string
+): boolean {
+    return evaluation.claimAttribution?.[variableId]?.assertedByReader === true
+}
+
+/**
  * Walk a derived value back to the reader's own assertions, so the exits offer
  * the values they can actually change rather than the ones they merely see.
  */
@@ -195,9 +213,57 @@ function assertedSources(
     const provenance = evaluation.variableProvenance?.[variableId]
     if (!provenance) return []
     if (provenance.origin === "asserted") return [variableId]
-    return (provenance.derivedBy?.fromVariableIds ?? []).flatMap((from) =>
-        assertedSources(evaluation, from, seen)
-    )
+    // A value held both ways has no single producing step, so walk every step
+    // that contributed one of its components. The reader's own assignment is
+    // not a step and never appears among them, so add it back when they made
+    // one — it is the half of the collision they can change most directly.
+    const contested = provenance.origin === "contested"
+    const steps: TCoreDerivationStep[] = contested
+        ? (provenance.contestedBy ?? [])
+        : provenance.derivedBy
+          ? [provenance.derivedBy]
+          : []
+    const readerAssigned = contested && assertedByReader(evaluation, variableId)
+    return [
+        ...(readerAssigned ? [variableId] : []),
+        ...steps
+            .flatMap((step) => step.fromVariableIds)
+            .flatMap((from) => assertedSources(evaluation, from, seen)),
+    ]
+}
+
+/**
+ * Why a value came out both ways, in the reader's own terms: the steps that
+ * contributed a component, and their own assignment when it is the other one.
+ * Without this the alert states a collision and names nothing to change.
+ */
+function contestedSentence(
+    argEngine: PropositArgumentEngine,
+    evaluation: TCoreArgumentEvaluationResult,
+    value: TContradictionValue
+): string {
+    const titles = [
+        ...new Set(
+            (
+                evaluation.variableProvenance?.[value.variableId]
+                    ?.contestedBy ?? []
+            )
+                .map(
+                    (step) =>
+                        argEngine.getPremise(step.premiseId)?.toPremiseData()
+                            .title
+                )
+                .filter((title): title is string => (title ?? "").length > 0)
+        ),
+    ]
+    const steps =
+        titles.length > 0
+            ? titles.map((title) => `“${title}”`).join(" and ")
+            : "a premise you accepted"
+    const halves = assertedByReader(evaluation, value.variableId)
+        ? `You assigned it one way, and ${steps}, which you accepted, settles it the other.`
+        : `Both values come from steps you accepted: ${steps}.`
+    return `“${value.title}” comes out both true and false. ${halves} Changing either side resolves it.`
 }
 
 function provenanceSentences(
@@ -207,6 +273,10 @@ function provenanceSentences(
 ): string[] {
     const out: string[] = []
     for (const value of values) {
+        if (isContested(value.value)) {
+            out.push(contestedSentence(argEngine, evaluation, value))
+            continue
+        }
         if (value.origin !== "derived") continue
         const step =
             evaluation.variableProvenance?.[value.variableId]?.derivedBy
@@ -272,7 +342,12 @@ function buildExits(
         exits.push({
             kind: "change-assignment",
             label: `Change your answer for “${title}”`,
-            detail: `You assigned ${valueLabel(value)}.`,
+            // A value that came out both ways has no single label to report
+            // back: naming one of the two as "what you assigned" would be
+            // false half the time.
+            detail: isContested(value)
+                ? "Your answer here is one of the two values in collision."
+                : `You assigned ${valueLabel(value)}.`,
             claimId: claimIdForVariable(argEngine, variableId),
             variableId,
         })
@@ -354,7 +429,12 @@ export function detectContradictions(params: {
     for (const premiseResult of candidates) {
         if (struck.has(premiseResult.premiseId)) continue
         if (!accepted.has(premiseResult.premiseId)) continue
-        if (premiseResult.rootValue !== false) continue
+        // "Evaluates false" means *carries a false component*, which a
+        // contested value does. Testing `=== false` alone would drop the
+        // collision the moment closure starts recording both sides of it
+        // instead of keeping whichever side it reached first.
+        const rootValue = premiseResult.rootValue
+        if (rootValue !== false && !isContested(rootValue)) continue
         const contradiction = buildContradiction(
             argEngine,
             evaluation,

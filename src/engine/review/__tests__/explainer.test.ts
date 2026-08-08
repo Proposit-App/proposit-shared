@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest"
+import { CONTESTED } from "@proposit/proposit-core"
 import {
     ARGUMENT_OUTCOME_LABELS,
     ARGUMENT_REASON_TEXT,
     CONCLUSION_ASSERTED_STATEMENT,
     CONCLUSION_ONLY_ASSERTED_STATEMENT,
     CONCLUSION_REACHED_STATEMENT,
+    CONCLUSION_VALUE_LABELS,
     type TArgumentAssessment,
     type TArgumentOutcome,
     type TArgumentReason,
+    type TConclusionValue,
 } from "../assessment.js"
 import {
     ARGUMENT_EXPLAINERS,
@@ -122,6 +125,47 @@ describe("explainer content", () => {
     )
 })
 
+describe("CONCLUSION_EXPLAINERS", () => {
+    it("explains every value the conclusion axis can report", () => {
+        for (const value of Object.keys(
+            CONCLUSION_VALUE_LABELS
+        ) as TConclusionValue[]) {
+            expect(CONCLUSION_EXPLAINERS[value]).toBeDefined()
+        }
+    })
+
+    it("separates a value settled both ways from one nobody settled", () => {
+        const { definition, example } = CONCLUSION_EXPLAINERS.contested
+        // The distinction the value exists for: not a shade of unknown.
+        expect(definition).toMatch(/opposite of Unknown/i)
+        expect(definition).toMatch(/nobody settled/i)
+        expect(definition).toMatch(/settled it twice/i)
+        // It arises from the reader's own inputs, so they can always undo it.
+        expect(definition).toMatch(/you can always resolve/i)
+        expect(definition).toMatch(/withdraw one of the steps you accepted/i)
+        expect(example.items[0]).toMatchObject({ value: "contested" })
+    })
+
+    it("points a curious reader at the formalism behind the fourth value", () => {
+        const urls = CONCLUSION_EXPLAINERS.contested.furtherReading.map(
+            (reference) => reference.url
+        )
+        expect(urls).toContain(
+            "https://en.wikipedia.org/wiki/Four-valued_logic"
+        )
+        expect(urls).toContain(
+            "https://plato.stanford.edu/entries/logic-paraconsistent/"
+        )
+        expect(urls).toContain("https://en.wikipedia.org/wiki/Bilattice")
+    })
+
+    it("does not blame the reader or the author for the collision", () => {
+        expect(CONCLUSION_EXPLAINERS.contested.definition).not.toMatch(
+            /\b(mistake|error|wrong|you erred|bad argument|fault)\b/i
+        )
+    })
+})
+
 describe("worked-example framing", () => {
     it.each([
         ["heading", WORKED_EXAMPLE_HEADING],
@@ -178,6 +222,18 @@ describe("describeCounterexample", () => {
             { title: "Moths are nocturnal", value: "unknown" },
             { title: "Zebras are striped", value: "true" },
         ])
+    })
+
+    it("reports a value settled both ways as itself, not as true", () => {
+        expect(
+            describeCounterexample(
+                {
+                    variables: { vA: CONTESTED },
+                    operatorAssignments: {},
+                },
+                { vA: "Zebras are striped" }
+            )
+        ).toEqual([{ title: "Zebras are striped", value: "contested" }])
     })
 
     it("returns nothing when no variable has a title", () => {

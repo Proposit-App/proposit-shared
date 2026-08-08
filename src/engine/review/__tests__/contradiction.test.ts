@@ -118,72 +118,65 @@ describe("detectContradictions — one-sidedness", () => {
 })
 
 describe("detectContradictions — localization and prose", () => {
-    // P true, R false, both steps accepted: Q is derived true by the first
-    // step and the collision lands on the second.
+    // P true, R false, both steps accepted. Every value along the chain comes
+    // out both ways, and either accepted step is a way out of it.
     const chainDraft = draft(
         { cP: true, cR: false, cQ: null },
         { pFirstStep: "accepted", pSecondStep: "accepted" }
     )
 
-    it("localizes to the single premise where the collision lands", () => {
+    function chainContradictions() {
         const argEngine = buildEngineWithDerivationChain()
-        const found = detectContradictions({
+        return detectContradictions({
             evaluation: evaluateArgumentForReview(chainDraft, argEngine),
             argEngine,
             draft: chainDraft,
         })
-        expect(found).toHaveLength(1)
-        expect(found[0].premiseId).toBe("pSecondStep")
-        expect(found[0].premiseTitle).toBe("If Q then R")
+    }
+
+    function secondStep() {
+        return chainContradictions().find((c) => c.premiseId === "pSecondStep")!
+    }
+
+    it("reports every accepted step the collision runs through", () => {
+        const found = chainContradictions()
+        expect(found.map((c) => c.premiseId).sort()).toEqual([
+            "pFirstStep",
+            "pSecondStep",
+        ])
+        expect(secondStep().premiseTitle).toBe("If Q then R")
     })
 
     it("names the commitment the premise's operator implies", () => {
-        const argEngine = buildEngineWithDerivationChain()
-        const [found] = detectContradictions({
-            evaluation: evaluateArgumentForReview(chainDraft, argEngine),
-            argEngine,
-            draft: chainDraft,
-        })
-        expect(found.commitment).toBe(
+        expect(secondStep().commitment).toBe(
             "By accepting this premise you are saying there is no circumstance where Q holds is true and R holds is false, however you have assigned values that contradict this."
         )
     })
 
-    it("says where a derived value came from, and that the reader did not assign it", () => {
-        const argEngine = buildEngineWithDerivationChain()
-        const [found] = detectContradictions({
-            evaluation: evaluateArgumentForReview(chainDraft, argEngine),
-            argEngine,
-            draft: chainDraft,
-        })
-        expect(found.provenance).toHaveLength(1)
-        expect(found.provenance[0]).toContain("“Q holds” became True")
-        expect(found.provenance[0]).toContain("“If P then Q”")
-        expect(found.provenance[0]).toContain("P holds")
-        expect(found.provenance[0]).toContain("You did not assign it.")
+    it("says what settled a value both ways, and names what to change", () => {
+        const found = secondStep()
+        const forQ = found.provenance.find((p) => p.includes("“Q holds”"))!
+        expect(forQ).toContain("comes out both true and false")
+        expect(forQ).toContain("“If P then Q”")
+        expect(forQ).toContain("“If Q then R”")
+        expect(forQ).toContain("Changing either side resolves it.")
+        // R is the reader's own value, so it is named as one half rather than
+        // reported as something they never touched.
+        const forR = found.provenance.find((p) => p.includes("“R holds”"))!
+        expect(forR).toContain("You assigned it one way")
     })
 
     it("renders claim titles rather than variable letters", () => {
-        const argEngine = buildEngineWithDerivationChain()
-        const [found] = detectContradictions({
-            evaluation: evaluateArgumentForReview(chainDraft, argEngine),
-            argEngine,
-            draft: chainDraft,
-        })
-        expect(found.values.map((v) => v.title).sort()).toEqual([
-            "Q holds",
-            "R holds",
-        ])
+        expect(
+            secondStep()
+                .values.map((v) => v.title)
+                .sort()
+        ).toEqual(["Q holds", "R holds"])
     })
 
     it("draws the premise's own operator over its operand values", () => {
-        const argEngine = buildEngineWithDerivationChain()
-        const [found] = detectContradictions({
-            evaluation: evaluateArgumentForReview(chainDraft, argEngine),
-            argEngine,
-            draft: chainDraft,
-        })
-        expect(found.notation).toBe("True → False")
+        const found = secondStep()
+        expect(found.notation).toBe("Contested → Contested")
         // Derivation is never a second arrow: the alert would then read as a
         // nested implication.
         expect(found.provenance.join(" ")).not.toContain("→")
@@ -198,7 +191,7 @@ describe("detectContradictions — exits", () => {
 
     it("offers both ways out", () => {
         const argEngine = buildEngineWithDerivationChain()
-        const [found] = detectContradictions({
+        const [, found] = detectContradictions({
             evaluation: evaluateArgumentForReview(chainDraft, argEngine),
             argEngine,
             draft: chainDraft,
@@ -225,7 +218,7 @@ describe("detectContradictions — exits", () => {
         // The collision shows `Q holds` true, but the reader never assigned it.
         // Offering to change Q would send them after a value they did not set.
         const argEngine = buildEngineWithDerivationChain()
-        const [found] = detectContradictions({
+        const [, found] = detectContradictions({
             evaluation: evaluateArgumentForReview(chainDraft, argEngine),
             argEngine,
             draft: chainDraft,

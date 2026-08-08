@@ -1,8 +1,9 @@
-import type { TCoreExpressionAssignment } from "@proposit/proposit-core"
+import type { TCoreResolvedAssignment } from "@proposit/proposit-core"
 import {
     CONCLUSION_ASSERTED_STATEMENT,
     CONCLUSION_ONLY_ASSERTED_STATEMENT,
     CONCLUSION_REACHED_STATEMENT,
+    conclusionValueFor,
     type TArgumentAssessment,
     type TArgumentReason,
     type TConclusionValue,
@@ -27,13 +28,19 @@ import {
  *   is bad.
  */
 
-/** A pill in a worked example. The `inferred-*` forms are values the example's argument worked out, not ones its reader supplied. */
+/**
+ * A pill in a worked example. The `inferred-*` forms are values the example's
+ * argument worked out, not ones its reader supplied; `"contested"` is a value
+ * its reader's own inputs and granted steps force both ways at once, which no
+ * reader can supply directly.
+ */
 export type TExampleValue =
     | true
     | false
     | null
     | "inferred-true"
     | "inferred-false"
+    | "contested"
 
 /** One line of a worked example: a claim card, or the operator label between claims. `depth` is the nesting level, as in the text tree. */
 export type TExampleItem =
@@ -217,6 +224,50 @@ export const CONCLUSION_EXPLAINERS: Record<TConclusionValue, TExplainer> = {
         furtherReading: [
             THREE_VALUED_LOGIC_REFERENCE,
             MANY_VALUED_LOGIC_REFERENCE,
+        ],
+    },
+    contested: {
+        definition:
+            "Your own answers, run through the steps you accepted, make the conclusion true and false at the same time. This is the opposite of Unknown, not a shade of it: unknown means nobody settled the conclusion, contested means you settled it twice, in opposite directions. Nothing about the argument's quality follows from it — a carefully built argument produces this the moment a reader assigns a value and then grants a step that concludes against it. It is also the one result here you can always resolve, because both halves are yours: change one of the values you assigned, or withdraw one of the steps you accepted, and the collision goes.",
+        example: {
+            scenario:
+                "You said the shop is not shut today. The argument's one step runs from today being a public holiday to the shop being shut — you accepted that step, and you had already said today is a public holiday.",
+            items: [
+                {
+                    kind: "claim",
+                    depth: 0,
+                    isConclusion: true,
+                    title: "The shop is shut today",
+                    value: "contested",
+                },
+                {
+                    kind: "operator",
+                    depth: 0,
+                    label: "is true if",
+                    decision: "accepted",
+                },
+                {
+                    kind: "claim",
+                    depth: 1,
+                    title: "Today is a public holiday",
+                    value: true,
+                },
+            ],
+            result: "Contested",
+        },
+        furtherReading: [
+            {
+                label: "Four-Valued Logic — Wikipedia",
+                url: "https://en.wikipedia.org/wiki/Four-valued_logic",
+            },
+            {
+                label: "Paraconsistent Logic (SEP)",
+                url: "https://plato.stanford.edu/entries/logic-paraconsistent/",
+            },
+            {
+                label: "Bilattice — Wikipedia",
+                url: "https://en.wikipedia.org/wiki/Bilattice",
+            },
         ],
     },
 }
@@ -548,16 +599,14 @@ export interface TCounterexampleRow {
  * of the same check read the same way.
  */
 export function describeCounterexample(
-    assignment: TCoreExpressionAssignment,
+    assignment: TCoreResolvedAssignment,
     titleByVariableId: Record<string, string>
 ): TCounterexampleRow[] {
     return Object.entries(assignment.variables)
         .flatMap<TCounterexampleRow>(([variableId, value]) => {
             const title = titleByVariableId[variableId]
             if (!title) return []
-            const rowValue: TConclusionValue =
-                value === null ? "unknown" : value ? "true" : "false"
-            return [{ title, value: rowValue }]
+            return [{ title, value: conclusionValueFor(value) }]
         })
         .sort((a, b) => a.title.localeCompare(b.title))
 }
