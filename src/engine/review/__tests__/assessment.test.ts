@@ -11,6 +11,9 @@ import {
     composeAssessment,
     conclusionAssessmentLine,
 } from "../assessment.js"
+import { evaluateArgumentForReview } from "../evaluation.js"
+import { buildEngineWithRedundantSupport } from "./fixtures.js"
+import type { TReviewDraft } from "../../../schemas/review.js"
 
 function evaluation(
     over: Partial<TCoreArgumentEvaluationResult> = {}
@@ -286,5 +289,76 @@ describe("assessment lines", () => {
         expect(argumentAssessmentLine(a.argument)).toBe(
             "Doesn't reach its conclusion — the conclusion came from you · 1 premise rejected"
         )
+    })
+})
+
+describe("composeAssessment — against real evaluations", () => {
+    const NOW = new Date("2026-04-14T00:00:00Z")
+
+    function draft(
+        claims: Record<string, boolean | null>,
+        operators: Record<string, "accepted" | "rejected">
+    ): TReviewDraft {
+        return {
+            schemaVersion: 1,
+            reviewId: "r",
+            argumentId: "a",
+            argumentVersion: 1,
+            createdAt: NOW,
+            updatedAt: NOW,
+            phase: "done",
+            currentStepIndex: 0,
+            claimAssignments: Object.fromEntries(
+                Object.entries(claims).map(([claimId, value]) => [
+                    claimId,
+                    {
+                        assignmentId: claimId,
+                        claimId,
+                        value,
+                        skipped: false,
+                        decidedAt: NOW,
+                    },
+                ])
+            ),
+            operatorAssignments: Object.entries(operators).map(
+                ([premiseId, decision]) => ({
+                    assignmentId: premiseId,
+                    premiseId,
+                    scope: "premise" as const,
+                    decision,
+                    decidedAt: NOW,
+                })
+            ),
+        }
+    }
+
+    it("reports the conclusion established and one premise rejected", () => {
+        const argEngine = buildEngineWithRedundantSupport()
+        const d = draft(
+            { cA: true, cB: true, cC: null },
+            { pFirstPath: "rejected", pSecondPath: "accepted" }
+        )
+        const a = composeAssessment(evaluateArgumentForReview(d, argEngine))!
+        expect(a.conclusion.value).toBe("true")
+        expect(a.argument.outcome).toBe("reaches-conclusion")
+        expect(a.argument.struck.labels).toEqual(["1 premise rejected"])
+    })
+
+    it("reports a conclusion the reader supplied to an argument that did nothing", () => {
+        // The water-and-mammals shape: the reader holds the conclusion and the
+        // argument contributes nothing to it.
+        const argEngine = buildEngineWithRedundantSupport()
+        const d = draft(
+            { cA: null, cB: null, cC: true },
+            { pFirstPath: "accepted", pSecondPath: "accepted" }
+        )
+        const a = composeAssessment(evaluateArgumentForReview(d, argEngine))!
+        expect(a.conclusion.value).toBe("true")
+        expect(a.conclusion.statements).toEqual([
+            CONCLUSION_ASSERTED_STATEMENT,
+            CONCLUSION_ONLY_ASSERTED_STATEMENT,
+        ])
+        expect(a.argument.outcome).toBe("does-not-reach")
+        expect(a.argument.reason).toBe("conclusion-came-from-you")
     })
 })

@@ -1167,3 +1167,434 @@ export function buildEngineWithNegatedPremises(): PropositArgumentEngine {
     engine.setBehavior("assistive")
     return engine
 }
+
+/** Adds one expression to a premise with the fixture's fixed argument identity. */
+function addExpr(
+    premise: { addExpression: (e: never) => unknown },
+    premiseId: string,
+    expr: {
+        id: string
+        parentId: string | null
+        position: number
+        type: "operator" | "variable"
+        operator?: "not" | "and" | "or" | "implies" | "iff"
+        variableId?: string
+    }
+): void {
+    premise.addExpression({
+        id: expr.id,
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        parentId: expr.parentId,
+        premiseId,
+        position: expr.position,
+        type: expr.type,
+        variableId: expr.variableId ?? null,
+        operator: expr.operator ?? null,
+        createdOn: NOW,
+        creatorId: CREATOR_ID,
+    } as never)
+}
+
+/**
+ * Builds the chain `P → Q`, `Q → R` with conclusion `R`.
+ *
+ * With `P` true, `R` false and both steps accepted, `Q` is *derived* true and
+ * the collision surfaces at the second premise while its cause spans the first
+ * plus two assignments — the shape that makes provenance load-bearing.
+ */
+export function buildEngineWithDerivationChain(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cP", "P holds"),
+        makeClaim("cQ", "Q holds"),
+        makeClaim("cR", "R holds"),
+    ]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    // One variable per claim, referenced by expressions in several premises.
+    // Propagation moves values along variables, so a second variable for the
+    // same claim would break the chain: the first step would fill its own `Q`
+    // and the second step would still read an unassigned one.
+    engine.addVariable(makeVariable("vP", "P", "cP"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+    engine.addVariable(makeVariable("vR", "R", "cR"))
+
+    const conditional = (
+        premiseId: string,
+        title: string,
+        role: "supporting" | "conclusion",
+        leftVariableId: string,
+        rightVariableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: { title, role, createdOn: NOW, creatorId: CREATOR_ID },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "operator",
+            operator: "implies",
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Left`,
+            parentId: `${premiseId}Root`,
+            position: 0,
+            type: "variable",
+            variableId: leftVariableId,
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Right`,
+            parentId: `${premiseId}Root`,
+            position: 1,
+            type: "variable",
+            variableId: rightVariableId,
+        })
+    }
+
+    conditional("pFirstStep", "If P then Q", "supporting", "vP", "vQ")
+    conditional("pSecondStep", "If Q then R", "supporting", "vQ", "vR")
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — R",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vR",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * The design's worked case for a restriction colliding with an inference:
+ * `P → A`, `P → B` and the constraint `¬(A ∧ B)`, conclusion `A`.
+ *
+ * The premise set is satisfiable — take `P` false — so a reader who assigns `P`
+ * true and grants both inferences hits a collision they have a resolution for.
+ */
+export function buildEngineWithRestrictionConflict(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cP", "P holds"),
+        makeClaim("cA", "A holds"),
+        makeClaim("cB", "B holds"),
+    ]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vP", "P", "cP"))
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+
+    const conditional = (
+        premiseId: string,
+        title: string,
+        leftVariableId: string,
+        rightVariableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: {
+                title,
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "operator",
+            operator: "implies",
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Left`,
+            parentId: `${premiseId}Root`,
+            position: 0,
+            type: "variable",
+            variableId: leftVariableId,
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Right`,
+            parentId: `${premiseId}Root`,
+            position: 1,
+            type: "variable",
+            variableId: rightVariableId,
+        })
+    }
+    conditional("pToA", "If P then A", "vP", "vA")
+    conditional("pToB", "If P then B", "vP", "vB")
+
+    const restrictionId = "pRestriction"
+    const { result: pRestriction } = engine.createPremiseWithId(restrictionId, {
+        type: "freeform",
+        extras: {
+            title: "A and B cannot both hold",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eNot",
+        parentId: null,
+        position: 0,
+        type: "operator",
+        operator: "not",
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eAnd",
+        parentId: "eNot",
+        position: 0,
+        type: "operator",
+        operator: "and",
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eAndLeft",
+        parentId: "eAnd",
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eAndRight",
+        parentId: "eAnd",
+        position: 1,
+        type: "variable",
+        variableId: "vB",
+    })
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — A",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * The author-caused side of the same worked case: premises `A`, `B` and the
+ * constraint `¬(A ∧ B)`. No assignment satisfies the set, so no reader input
+ * can change the outcome and none may be blocked over it.
+ */
+export function buildEngineWithUnsatisfiablePremises(): PropositArgumentEngine {
+    const claims = [makeClaim("cA", "A holds"), makeClaim("cB", "B holds")]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+
+    const assertion = (
+        premiseId: string,
+        title: string,
+        variableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: {
+                title,
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "variable",
+            variableId,
+        })
+    }
+    assertion("pAssertA", "A holds", "vA")
+    assertion("pAssertB", "B holds", "vB")
+
+    const restrictionId = "pRestriction"
+    const { result: pRestriction } = engine.createPremiseWithId(restrictionId, {
+        type: "freeform",
+        extras: {
+            title: "A and B cannot both hold",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eNot",
+        parentId: null,
+        position: 0,
+        type: "operator",
+        operator: "not",
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eAnd",
+        parentId: "eNot",
+        position: 0,
+        type: "operator",
+        operator: "and",
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eAndLeft",
+        parentId: "eAnd",
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+    })
+    addExpr(pRestriction, restrictionId, {
+        id: "eAndRight",
+        parentId: "eAnd",
+        position: 1,
+        type: "variable",
+        variableId: "vB",
+    })
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — A",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * Two independent paths to one conclusion: `A → C`, `B → C`, conclusion `C`.
+ *
+ * Refusing one path and granting the other still establishes `C`, which is the
+ * case that forces the struck-premise badge to be separate from the outcome.
+ */
+export function buildEngineWithRedundantSupport(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "A holds"),
+        makeClaim("cB", "B holds"),
+        makeClaim("cC", "C holds"),
+    ]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+    engine.addVariable(makeVariable("vC", "C", "cC"))
+
+    const conditional = (
+        premiseId: string,
+        title: string,
+        leftVariableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: {
+                title,
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "operator",
+            operator: "implies",
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Left`,
+            parentId: `${premiseId}Root`,
+            position: 0,
+            type: "variable",
+            variableId: leftVariableId,
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Right`,
+            parentId: `${premiseId}Root`,
+            position: 1,
+            type: "variable",
+            variableId: "vC",
+        })
+    }
+    conditional("pFirstPath", "If A then C", "vA")
+    conditional("pSecondPath", "If B then C", "vB")
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — C",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vC",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
