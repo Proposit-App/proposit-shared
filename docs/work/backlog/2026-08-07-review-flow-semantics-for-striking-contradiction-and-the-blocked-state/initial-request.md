@@ -1,8 +1,3 @@
----
-from: proposit-app
-initiative: 2026-08-07-review-verdicts-as-two-axes-with-rejection-striking-premises-from-the-record
----
-
 # Review-flow semantics for striking, contradiction and the blocked state
 
 Epic: [Review verdicts as two axes with rejection striking premises from the record](tcw://W/proposit-app/2026-08-07-review-verdicts-as-two-axes-with-rejection-striking-premises-from-the-record)
@@ -10,10 +5,6 @@ Epic: [Review verdicts as two axes with rejection striking premises from the rec
 **Slice B of five.** Blocked by slice A in `proposit-core` — `tcw work start` will
 refuse until A resolves. Slices C (`proposit-server`) and E (`proposit-mobile`)
 are both blocked on this one.
-
-Adopt with `tcw work new --initiative 2026-08-07-review-verdicts-as-two-axes-with-rejection-striking-premises-from-the-record`,
-**not** `tcw work inbox accept` — accept double-dates the slug and drops the
-initiative link on a delegated slice. Then `git rm` this file.
 
 ## Design of record
 
