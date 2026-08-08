@@ -4,6 +4,8 @@ import {
     buildEngineWithTwoPremises,
     buildEngineWithAxiomaticConclusion,
     buildEngineWithConjunctiveAntecedent,
+    buildEngineWithConclusionBoundToTwoVariables,
+    buildEngineWithContradictorilyBoundClaim,
 } from "./fixtures.js"
 import type { TAssignmentPill } from "../../review/types.js"
 import type { TTrivalentValue } from "../../../schemas/review.js"
@@ -166,6 +168,40 @@ describe("buildInlineReviewOverlay", () => {
         // accepted, so the accepted implication carries it to Q.
         expect(overlay.claimValues.cQ).toBe("unknown")
         expect(overlay.claimPropagatedValues!.cQ).toBe(true)
+    })
+
+    it("shows a claim's propagated value when a later-ordered bound variable is the one that carries it", () => {
+        const engine = buildEngineWithConclusionBoundToTwoVariables()
+        const overlay = buildInlineReviewOverlay({
+            argEngine: engine,
+            reactions: { cA: true },
+            overrides: {},
+        })
+        // The two variables bound to cQ disagree only in what reached them:
+        // vQ1 (first by id) stays null, vQ2 carries the propagated true.
+        expect(overlay.propagatedValues.vQ1).toBe(null)
+        expect(overlay.propagatedValues.vQ2).toBe(true)
+        // The assessment says the conclusion is true, so a chip reading
+        // "Unknown" on that same claim contradicts the header beside it.
+        expect(overlay.assessment!.conclusion.value).toBe("true")
+        expect(overlay.claimValues.cQ).toBe("unknown")
+        expect(overlay.claimPropagatedValues!.cQ).toBe(true)
+        expect(overlay.conflictedClaimIds ?? []).toEqual([])
+    })
+
+    it("reports a claim whose bound variables disagree instead of tie-breaking", () => {
+        const engine = buildEngineWithContradictorilyBoundClaim()
+        const overlay = buildInlineReviewOverlay({
+            argEngine: engine,
+            reactions: { cA: true, cB: false },
+            overrides: {},
+        })
+        expect(overlay.propagatedValues.vQ1).toBe(false)
+        expect(overlay.propagatedValues.vQ2).toBe(true)
+        // Neither side wins on ordering: the claim resolves to unknown and is
+        // named, so the inconsistency can be shown rather than hidden.
+        expect(overlay.claimPropagatedValues!.cQ).toBe(null)
+        expect(overlay.conflictedClaimIds).toEqual(["cQ"])
     })
 
     it("strips axiom-bound keys before evaluating (no AXIOM_VARIABLE_ASSIGNMENT_FORBIDDEN throw)", () => {

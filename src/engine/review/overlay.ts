@@ -94,6 +94,39 @@ export function buildReviewOverlay(params: {
 }
 
 /**
+ * The value a claim displays, resolved across **every** variable bound to it.
+ *
+ * A persisted claim binds more than one variable — an authored one plus the
+ * engine-synthesized derivation one — and they all denote the same proposition,
+ * so which of them a value lands on is an artifact of how the argument was
+ * built. Enumerating and taking the first is therefore a coin flip: the claim
+ * whose variable happens to sort first renders unknown while the value sits on
+ * its sibling.
+ *
+ * `conflicted` is true when two of a claim's variables are settled and
+ * disagree. Nothing in core forbids it — the variables are independent as far
+ * as it is concerned — so it means the argument holds a proposition both true
+ * and false. That is a finding, not a tie to break: the value resolves to
+ * unknown and the claim is reported on the overlay rather than silently taking
+ * whichever side an ordering favours.
+ */
+function resolveClaimValue(
+    variableIds: string[] | undefined,
+    values: Record<string, TCoreTrivalentValue>
+): { value: TCoreTrivalentValue; conflicted: boolean } {
+    let resolved: TCoreTrivalentValue = null
+    for (const variableId of variableIds ?? []) {
+        const value = values[variableId]
+        if (value == null) continue
+        if (resolved != null && resolved !== value) {
+            return { value: null, conflicted: true }
+        }
+        resolved = value
+    }
+    return { value: resolved, conflicted: false }
+}
+
+/**
  * Resolve the inline argument-text-view review overlay from three layered
  * sources, without any wizard draft. For each claim the effective assignment is
  *
@@ -133,16 +166,18 @@ export function buildInlineReviewOverlay(params: {
 }): TReviewOverlay {
     const { argEngine, reactions, overrides } = params
 
-    // One pass over the variables: hoist claimId → canonical variableId
-    // (first-wins, matching core's `getVariableIdForClaim`) so we never re-run
-    // that O(N) scan per claim on a per-render call.
-    const variableIdByClaimId = new Map<string, string>()
+    // One pass over the variables: hoist claimId → every variable bound to it,
+    // so we never re-run that O(N) scan per claim on a per-render call. All of
+    // them, not the first — see {@link resolveClaimValue}.
+    const variableIdsByClaimId = new Map<string, string[]>()
     for (const v of argEngine.getVariables()) {
         const claimId = "claimId" in v ? v.claimId : undefined
-        if (claimId != null && !variableIdByClaimId.has(claimId)) {
-            variableIdByClaimId.set(claimId, v.id)
-        }
+        if (claimId == null) continue
+        const bound = variableIdsByClaimId.get(claimId)
+        if (bound) bound.push(v.id)
+        else variableIdsByClaimId.set(claimId, [v.id])
     }
+    const conflictedClaimIds: string[] = []
 
     const defaults = argEngine.deriveDefaultAssignment() // variable-keyed
     const claims = argEngine.getClaims() // claimId → TClaim
@@ -158,10 +193,12 @@ export function buildInlineReviewOverlay(params: {
         } else if (hasReaction) {
             claimValues[claimId] = pillForTrivalent(reactions[claimId])
         } else {
-            const variableId = variableIdByClaimId.get(claimId)
-            const defaultValue =
-                variableId != null ? (defaults[variableId] ?? null) : null
-            claimValues[claimId] = pillForTrivalent(defaultValue)
+            const resolved = resolveClaimValue(
+                variableIdsByClaimId.get(claimId),
+                defaults
+            )
+            if (resolved.conflicted) conflictedClaimIds.push(claimId)
+            claimValues[claimId] = pillForTrivalent(resolved.value)
         }
         claimProvenance[claimId] =
             hasOverride || hasReaction ? "user" : "default"
@@ -222,14 +259,18 @@ export function buildInlineReviewOverlay(params: {
         computePropagatedVariableValues(result)
     const claimPropagatedValues: Record<string, TCoreTrivalentValue> = {}
     for (const claimId of Object.keys(claims)) {
-        // A claim bound to multiple variables renders its first-bound
-        // variable's propagated value (first-wins, matching core's
-        // `getVariableIdForClaim`).
-        const variableId = variableIdByClaimId.get(claimId)
+        const resolved = resolveClaimValue(
+            variableIdsByClaimId.get(claimId),
+            propagatedValues
+        )
+        if (resolved.conflicted && !conflictedClaimIds.includes(claimId)) {
+            conflictedClaimIds.push(claimId)
+        }
+        // Nothing propagated onto any of the claim's variables — fall back to
+        // the reader's own effective value rather than reporting unknown.
         claimPropagatedValues[claimId] =
-            variableId != null && variableId in propagatedValues
-                ? propagatedValues[variableId]
-                : trivalentForPill(claimValues[claimId] ?? "unknown")
+            resolved.value ??
+            trivalentForPill(claimValues[claimId] ?? "unknown")
     }
 
     return {
@@ -238,6 +279,7 @@ export function buildInlineReviewOverlay(params: {
         operatorDecisions: operatorAssignments,
         claimProvenance,
         claimPropagatedValues,
+        conflictedClaimIds,
         assessment: composeAssessment(result),
     }
 }

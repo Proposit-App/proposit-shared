@@ -33,6 +33,13 @@ export interface TReviewOverlay {
      */
     claimPropagatedValues?: Record<string, TCoreTrivalentValue>
     /**
+     * Claims whose bound variables carry settled values that disagree — the
+     * argument holds one proposition both true and false. Their displayed value
+     * resolves to unknown rather than to whichever side an enumeration order
+     * happened to favour. Empty in every consistent argument.
+     */
+    conflictedClaimIds?: string[]
+    /**
      * The two axes composed from the evaluation, shown at the conclusion
      * premise. Absent when there is nothing evaluated yet.
      */

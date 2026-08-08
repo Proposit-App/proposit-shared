@@ -1692,6 +1692,194 @@ export function buildEngineWithUnreferencedClaimVariable(
 }
 
 /**
+ * The conclusion claim `cQ` bound to **two** variables — the shape every
+ * persisted claim has, since a claim carries an authored variable alongside the
+ * engine-synthesized derivation one.
+ *
+ *   - `pSupport` — `implies(A, Q2)`, with `cA` settled true, so propagation
+ *     lands `true` on `vQ2`.
+ *   - `pIdle` — `implies(Idle, Q1)`, whose antecedent nothing settles, so `vQ1`
+ *     stays `null`.
+ *   - `pConclusion` — the bare `vQ2`, so the conclusion evaluates true.
+ *
+ * `getVariables()` returns variables ordered by id, so `vQ1` — the one that
+ * stays unknown — is the one an enumerate-and-take-the-first rule picks. Which
+ * of a claim's variables carries the value is not something the claim's display
+ * may depend on.
+ */
+export function buildEngineWithConclusionBoundToTwoVariables(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "A holds"),
+        makeClaim("cIdle", "Nothing settles this"),
+        makeClaim("cQ", "Q holds"),
+    ]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vIdle", "U", "cIdle"))
+    engine.addVariable(makeVariable("vQ1", "Q1", "cQ"))
+    engine.addVariable(makeVariable("vQ2", "Q2", "cQ"))
+
+    const conditional = (
+        premiseId: string,
+        title: string,
+        leftVariableId: string,
+        rightVariableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: {
+                title,
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "operator",
+            operator: "implies",
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Left`,
+            parentId: `${premiseId}Root`,
+            position: 0,
+            type: "variable",
+            variableId: leftVariableId,
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Right`,
+            parentId: `${premiseId}Root`,
+            position: 1,
+            type: "variable",
+            variableId: rightVariableId,
+        })
+    }
+    conditional("pSupport", "If A then Q", "vA", "vQ2")
+    conditional("pIdle", "If Idle then Q", "vIdle", "vQ1")
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vQ2",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * The same two-variables-per-claim shape, wired so the two variables end up
+ * *disagreeing*: `implies(A, Q2)` carries `true` onto `vQ2` while
+ * `implies(Q1, B)` with `B` false carries `false` onto `vQ1`.
+ *
+ * The argument is asserting one proposition both ways. Core cannot see it —
+ * `vQ1` and `vQ2` are independent variables as far as it is concerned — so it
+ * surfaces only where the two are recognised as one claim.
+ */
+export function buildEngineWithContradictorilyBoundClaim(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "A holds"),
+        makeClaim("cB", "B holds"),
+        makeClaim("cQ", "Q holds"),
+    ]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+    engine.addVariable(makeVariable("vQ1", "Q1", "cQ"))
+    engine.addVariable(makeVariable("vQ2", "Q2", "cQ"))
+
+    const conditional = (
+        premiseId: string,
+        title: string,
+        leftVariableId: string,
+        rightVariableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: {
+                title,
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "operator",
+            operator: "implies",
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Left`,
+            parentId: `${premiseId}Root`,
+            position: 0,
+            type: "variable",
+            variableId: leftVariableId,
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Right`,
+            parentId: `${premiseId}Root`,
+            position: 1,
+            type: "variable",
+            variableId: rightVariableId,
+        })
+    }
+    // Modus ponens onto vQ2, modus tollens onto vQ1.
+    conditional("pSupport", "If A then Q", "vA", "vQ2")
+    conditional("pDeny", "If Q then B", "vQ1", "vB")
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vQ2",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
  * `implies(A, Q)` with conclusion `Q`, plus `cCited` — a claim whose only
  * expression reference lives inside an engine-generated derivation premise
  * (`implies(source_var, Cited)`), because no authored premise mentions it.
