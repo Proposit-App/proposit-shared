@@ -13,6 +13,9 @@ import {
     ARGUMENT_EXPLAINERS,
     CONCLUSION_ATTRIBUTION_EXPLANATIONS,
     CONCLUSION_EXPLAINERS,
+    WORKED_EXAMPLE_DISCLAIMER,
+    WORKED_EXAMPLE_HEADING,
+    WORKED_EXAMPLE_RESULT_LABEL,
     argumentExplainerKey,
     describeCounterexample,
     type TExplainer,
@@ -117,6 +120,27 @@ describe("explainer content", () => {
             )
         }
     )
+})
+
+describe("worked-example framing", () => {
+    it.each([
+        ["heading", WORKED_EXAMPLE_HEADING],
+        ["disclaimer", WORKED_EXAMPLE_DISCLAIMER],
+        ["result label", WORKED_EXAMPLE_RESULT_LABEL],
+    ])("%s is non-empty", (_, text) => {
+        expect(text.trim().length).toBeGreaterThan(0)
+    })
+
+    it("says plainly that the example is not the reader's own work", () => {
+        expect(WORKED_EXAMPLE_DISCLAIMER).toContain(
+            "not part of the argument you reviewed"
+        )
+        expect(WORKED_EXAMPLE_DISCLAIMER).toContain("nothing in it is yours")
+    })
+
+    it("labels the result as the example's, not the reader's", () => {
+        expect(WORKED_EXAMPLE_RESULT_LABEL).toContain("this example")
+    })
 })
 
 describe("CONCLUSION_ATTRIBUTION_EXPLANATIONS", () => {

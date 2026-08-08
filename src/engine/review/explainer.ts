@@ -61,6 +61,24 @@ export interface TWorkedExample {
     result: string
 }
 
+/**
+ * The chrome a {@link TWorkedExample} is presented in — not part of the example,
+ * but not the client's to word either.
+ *
+ * An example is drawn with the same primitives as the argument under review, so
+ * the only thing separating the two is what is said around it. A reader who
+ * takes an illustration for their own argument has been told something false
+ * about their review, and a result line labelled "Result:" reads as *their*
+ * result — that is a correctness problem, not a styling one, and a correctness
+ * problem cannot be a per-client string. These three sit beside the definitions
+ * for the same reason the definitions are here: neither client can say
+ * something the other cannot.
+ */
+export const WORKED_EXAMPLE_HEADING = "Worked example"
+export const WORKED_EXAMPLE_DISCLAIMER =
+    "A made-up argument, shown here to illustrate the term. It is not part of the argument you reviewed, and nothing in it is yours."
+export const WORKED_EXAMPLE_RESULT_LABEL = "Result of this example:"
+
 export interface TReference {
     label: string
     url: string
