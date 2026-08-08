@@ -78,7 +78,11 @@ export interface TReviewEngineSnapshot {
     /**
      * Whether the review can be completed, the contradictions standing in the
      * way, and the start-of-review notice when the premises cannot all hold.
-     * Absent until an evaluation has run.
+     *
+     * Present only when it describes the draft beside it: absent until an
+     * evaluation has run, and absent again once the reader changes anything.
+     * So `phase: "blocked"` with no coherence means *not re-checked yet* — run
+     * an evaluation — and never an empty blocked screen with nothing to show.
      */
     coherence: TReviewCoherence | undefined
 }
@@ -151,6 +155,51 @@ export class ReviewEngine {
         }
     }
 
+    /**
+     * A decision core will not act on: a rejection of the conclusion premise,
+     * which core exempts from striking.
+     *
+     * Recording one is worse than a no-op. The premise goes on being evaluated
+     * and goes on deriving the conclusion's value, `struckPremiseIds` stays
+     * empty so nothing is badged, and — because a rejected premise leaves the
+     * accepted set and core never applies the forward rule through a rejected
+     * operator — both coherence gates go quiet at once. The review completes
+     * with the collision still in it.
+     *
+     * One rule, two callers: the write path refuses to record it, and hydration
+     * prunes any an older build persisted. Both go through here.
+     */
+    private isInertRejection(
+        o: Pick<TOperatorAssignment, "premiseId" | "decision">
+    ): boolean {
+        return (
+            o.decision === "rejected" &&
+            o.premiseId === this.argEngine.getConclusionPremise()?.getId()
+        )
+    }
+
+    /**
+     * Stamp an edit that changes what an evaluation would say, and re-derive
+     * the results phase if the reader is standing on it.
+     *
+     * Without the second half the gate fires only on *entry* to the results
+     * step, and an edit made while already there leaves `phase: "done"` for the
+     * debounced persist to write — a review that rehydrates as complete over a
+     * collision nothing ever evaluated. That is not a hypothetical path: a
+     * contradiction's `change-assignment` exits carry `claimId`/`variableId`
+     * precisely so a client can offer the edit inline, without a trip back
+     * through the wizard.
+     *
+     * Reason-only edits do not come through here — they are not material, and
+     * `materialFingerprint` excludes them for the same reason.
+     */
+    private recordMaterialEdit(): void {
+        this.draft.updatedAt = new Date()
+        if (this.draft.phase === "done") {
+            this.draft.phase = this.resultsPhase()
+        }
+    }
+
     private dropStaleAssignments(): void {
         let dropped = 0
         for (const id of Object.keys(this.draft.claimAssignments)) {
@@ -166,9 +215,6 @@ export class ReviewEngine {
                 dropped++
             }
         }
-        const conclusionPremiseId = this.argEngine
-            .getConclusionPremise()
-            ?.getId()
         this.draft.operatorAssignments = this.draft.operatorAssignments.filter(
             (o) => {
                 const premise = this.argEngine.getPremise(o.premiseId)
@@ -176,14 +222,7 @@ export class ReviewEngine {
                     dropped++
                     return false
                 }
-                // Core ignores a rejection of the conclusion premise, so one
-                // recorded by an older build is a decision that never took
-                // effect — and leaving it in place keeps the collision out of
-                // the accepted set, which reads as a resolution it is not.
-                if (
-                    o.decision === "rejected" &&
-                    o.premiseId === conclusionPremiseId
-                ) {
+                if (this.isInertRejection(o)) {
                     dropped++
                     return false
                 }
@@ -311,7 +350,7 @@ export class ReviewEngine {
             skipped: false,
             decidedAt: new Date(),
         }
-        this.draft.updatedAt = new Date()
+        this.recordMaterialEdit()
         this.notify()
     }
 
@@ -387,7 +426,7 @@ export class ReviewEngine {
             skipped: true,
             decidedAt: new Date(),
         }
-        this.draft.updatedAt = new Date()
+        this.recordMaterialEdit()
         this.notify()
     }
 
@@ -399,6 +438,10 @@ export class ReviewEngine {
         decision: "accepted" | "rejected"
     }): void {
         if (this.mode === "readonly") return
+        // Not a decision this argument can hold — see `isInertRejection`. The
+        // queue entry's `rejectable: false` is what stops it being offered;
+        // this is what stops it being recorded regardless of who asks.
+        if (this.isInertRejection(input)) return
         const target: TOperatorAssignment = {
             assignmentId: newId(),
             premiseId: input.premiseId,
@@ -416,7 +459,7 @@ export class ReviewEngine {
         } else {
             this.draft.operatorAssignments.push(target)
         }
-        this.draft.updatedAt = new Date()
+        this.recordMaterialEdit()
         this.notify()
     }
 
@@ -485,14 +528,38 @@ export class ReviewEngine {
      * stepping forward before anything re-checks it.
      */
     private resultsPhase(): TReviewDraft["phase"] {
-        if (this.lastCoherence) {
-            const describesThisDraft =
-                this.lastResult?.evaluatedFingerprint ===
-                materialFingerprint(this.draft)
-            if (!describesThisDraft) return "blocked"
+        const describesDraft = this.resultDescribesDraft()
+        if (describesDraft && this.lastCoherence) {
             return this.lastCoherence.blocksCompletion ? "blocked" : "done"
         }
+        // Something was evaluated and no longer describes this draft, so the
+        // reader has edited since. Unchecked is not the same as clear. The
+        // stored result counts here as well as this session's finding: a
+        // rehydrated review carries one but no finding, and without it an edit
+        // to a reopened `done` review would leave it `done`.
+        if (!describesDraft && (this.lastResult || this.lastCoherence)) {
+            return "blocked"
+        }
         return this.blockedBeforeThisSession ? "blocked" : "done"
+    }
+
+    /** Whether the evaluation on hand was run against the draft as it stands. */
+    private resultDescribesDraft(): boolean {
+        return (
+            this.lastResult?.evaluatedFingerprint ===
+            materialFingerprint(this.draft)
+        )
+    }
+
+    /**
+     * The coherence finding, but only while it still describes the draft. One
+     * predicate for the gate and for the snapshot, so the phase a reader is
+     * held at and the explanation they are shown can never disagree.
+     */
+    private freshCoherence(): TReviewCoherence | undefined {
+        return this.lastCoherence && this.resultDescribesDraft()
+            ? this.lastCoherence
+            : undefined
     }
 
     private transitionTo(phase: TReviewDraft["phase"]): void {
@@ -754,7 +821,7 @@ export class ReviewEngine {
                 this.draft.phase === "done" || this.draft.phase === "blocked",
             droppedStaleCount: this.droppedStaleCount,
             assessment: composeAssessment(this.lastResult?.evaluation),
-            coherence: this.lastCoherence,
+            coherence: this.freshCoherence(),
         }
     }
 

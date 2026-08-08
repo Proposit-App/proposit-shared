@@ -228,3 +228,172 @@ describe("the blocked gate against a stale finding", () => {
         expect(snap.coherence?.contestedVariableIds.length).toBeGreaterThan(0)
     })
 })
+
+describe("a rejection core ignores cannot be recorded", () => {
+    /** cA true, cB false, with the conclusion premise decided either way. */
+    async function conclusionDecidedAs(
+        decision: "accepted" | "rejected"
+    ): Promise<ReviewEngine> {
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store: memoryStore(),
+        })
+        re.start()
+        re.setClaimValue("cA", true)
+        re.setClaimValue("cB", false)
+        re.setOperatorAssignment({
+            premiseId: "pConclusion",
+            scope: "premise",
+            decision,
+        })
+        re.jumpToResults()
+        await re.runEvaluation()
+        return re
+    }
+
+    it("refuses a rejection of the conclusion premise at the write path", async () => {
+        const re = await conclusionDecidedAs("rejected")
+        expect(
+            re
+                .getSnapshot()
+                .draft.operatorAssignments.filter(
+                    (o) => o.premiseId === "pConclusion"
+                )
+        ).toEqual([])
+    })
+
+    it("cannot be used as a way past the collision", async () => {
+        // Recording the rejection took the premise out of the accepted set, so
+        // the contradiction vanished; and core never applies the forward rule
+        // through a rejected operator, so `contestedVariableIds` came back
+        // empty too. Neither gate saw anything, and the review completed with
+        // the collision still in it.
+        //
+        // Refused, the review is exactly where it would be had the reader not
+        // answered the step at all — the decision is still outstanding, and the
+        // only one this premise takes leads straight back to the gate.
+        const re = await conclusionDecidedAs("rejected")
+        expect(re.getSnapshot().draft.operatorAssignments).toEqual([])
+        re.setOperatorAssignment({
+            premiseId: "pConclusion",
+            scope: "premise",
+            decision: "accepted",
+        })
+        await re.runEvaluation()
+        const snap = re.getSnapshot()
+        expect(snap.draft.phase).toBe("blocked")
+        expect(isReviewComplete(snap.draft)).toBe(false)
+        expect(snap.coherence?.blocksCompletion).toBe(true)
+    })
+
+    it("still records an acceptance, which core does honour", async () => {
+        const re = await conclusionDecidedAs("accepted")
+        const snap = re.getSnapshot()
+        expect(snap.draft.operatorAssignments.map((o) => o.decision)).toContain(
+            "accepted"
+        )
+        expect(snap.draft.phase).toBe("blocked")
+    })
+})
+
+describe("the snapshot never contradicts itself", () => {
+    it("withholds a coherence finding that describes a different draft", async () => {
+        // `blocked` used to imply a finding that blocked. Now it can also mean
+        // "not re-checked yet", and a client drawing the blocked screen from
+        // `coherence.contradictions` would render an empty dead end.
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store: memoryStore(),
+        })
+        re.start()
+        re.jumpToResults()
+        await re.runEvaluation()
+        expect(re.getSnapshot().coherence?.state).toBe("coherent")
+
+        re.setClaimValue("cA", true)
+        re.jumpToResults()
+        const snap = re.getSnapshot()
+        expect(snap.draft.phase).toBe("blocked")
+        expect(snap.coherence).toBeUndefined()
+    })
+})
+
+describe("a material edit made at the results step re-opens the gate", () => {
+    it("leaves a done review no longer done", async () => {
+        // The change-assignment exits carry claimId/variableId and invite an
+        // inline edit rather than a trip back through the wizard, so the phase
+        // has to move with the edit — otherwise the debounced persist writes a
+        // completed review whose collision was never evaluated.
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store: memoryStore(),
+        })
+        re.start()
+        re.jumpToResults()
+        await re.runEvaluation()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+
+        re.setClaimValue("cA", true)
+        expect(re.getSnapshot().draft.phase).toBe("blocked")
+        expect(isReviewComplete(re.getSnapshot().draft)).toBe(false)
+    })
+
+    it("moves on an operator decision and on a skip too", async () => {
+        for (const edit of [
+            (re: ReviewEngine) =>
+                re.setOperatorAssignment({
+                    premiseId: "pSupport",
+                    scope: "premise",
+                    decision: "accepted",
+                }),
+            (re: ReviewEngine) => re.skipClaim("cA"),
+        ]) {
+            const re = new ReviewEngine({
+                argEngine: buildEngineWithTwoPremises(),
+                store: memoryStore(),
+            })
+            re.start()
+            re.jumpToResults()
+            await re.runEvaluation()
+            expect(re.getSnapshot().draft.phase).toBe("done")
+            edit(re)
+            expect(re.getSnapshot().draft.phase).toBe("blocked")
+        }
+    })
+})
+
+describe("a reopened review that is edited", () => {
+    it("stops reporting itself finished", async () => {
+        // The common shape: a finished review is reopened later — a stored
+        // result, no coherence finding in hand — and the reader changes an
+        // answer. Without the stored result counting as evidence that has gone
+        // stale, the phase gate has nothing to compare and leaves it `done`.
+        const store = memoryStore()
+        const first = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store,
+        })
+        first.start()
+        first.jumpToResults()
+        await first.runEvaluation()
+        expect(first.getSnapshot().draft.phase).toBe("done")
+
+        const stored = await store.load(
+            {} as Parameters<TReviewStore["load"]>[0]
+        )
+        const re = new ReviewEngine({
+            argEngine: buildEngineWithTwoPremises(),
+            store,
+            initialDraft: stored!.draft,
+            initialResult: stored!.lastResult,
+        })
+        re.start()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+
+        re.setClaimValue("cA", true)
+        const snap = re.getSnapshot()
+        expect(snap.draft.phase).toBe("blocked")
+        expect(isReviewComplete(snap.draft)).toBe(false)
+        expect(snap.coherence).toBeUndefined()
+    })
+})

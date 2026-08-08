@@ -49,7 +49,11 @@ export const CONCLUSION_VALUE_LABELS: Record<TConclusionValue, string> = {
  * statements. Fusing them into one label denies a good argument all credit
  * exactly when its reader happened to agree with it.
  */
-export const CONCLUSION_ASSERTED_STATEMENT = "You assigned this."
+// Not "You assigned this." Core sets the flag behind it when the reader
+// answered *any* claim the conclusion premise references, so on a conclusion
+// like `A → B` it fires having answered only `A` — and would then claim the
+// reader assigned a value nobody assigned.
+export const CONCLUSION_ASSERTED_STATEMENT = "Your answers contributed to this."
 export const CONCLUSION_REACHED_STATEMENT =
     "The argument reaches it on its own."
 export const CONCLUSION_ONLY_ASSERTED_STATEMENT =

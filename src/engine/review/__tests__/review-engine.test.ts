@@ -256,20 +256,22 @@ describe("ReviewEngine — operator phase", () => {
         })
         re.start()
         await completeClaimPhase(re)
+        // A supporting premise, because the conclusion premise takes no
+        // rejection — see `isInertRejection`.
         re.setOperatorAssignment({
-            premiseId: "pConclusion",
+            premiseId: "pSupport",
             scope: "premise",
             decision: "accepted",
         })
         re.setOperatorAssignment({
-            premiseId: "pConclusion",
+            premiseId: "pSupport",
             scope: "premise",
             decision: "rejected",
         })
         const ops = re
             .getSnapshot()
             .draft.operatorAssignments.filter(
-                (o) => o.scope === "premise" && o.premiseId === "pConclusion"
+                (o) => o.scope === "premise" && o.premiseId === "pSupport"
             )
         expect(ops.length).toBe(1)
         expect(ops[0].decision).toBe("rejected")
@@ -286,17 +288,15 @@ describe("ReviewEngine — operator phase", () => {
         // rides along as provenance for the objection, so the reason must
         // still land when the caller keys by the premise.
         re.setOperatorAssignment({
-            premiseId: "pConclusion",
+            premiseId: "pSupport",
             scope: "premise",
-            expressionId: "eImpliesRoot",
+            expressionId: "eSupportRoot",
             decision: "rejected",
         })
-        re.setOperatorReason("pConclusion", "counterexamples-exist")
+        re.setOperatorReason("pSupport", "counterexamples-exist")
         const op = re
             .getSnapshot()
-            .draft.operatorAssignments.find(
-                (o) => o.premiseId === "pConclusion"
-            )
+            .draft.operatorAssignments.find((o) => o.premiseId === "pSupport")
         expect(op?.reasonCode).toBe("counterexamples-exist")
     })
 

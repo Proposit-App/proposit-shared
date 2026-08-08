@@ -326,7 +326,7 @@ describe("assessment lines", () => {
             })
         )!
         expect(conclusionAssessmentLine(a.conclusion)).toBe(
-            "Conclusion: True You assigned this. It holds only because you assigned it."
+            "Conclusion: True Your answers contributed to this. It holds only because you assigned it."
         )
         expect(argumentAssessmentLine(a.argument)).toBe(
             "Doesn't reach its conclusion — the conclusion came from you · 1 premise rejected"

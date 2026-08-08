@@ -1,4 +1,5 @@
 import type { TReviewDraft } from "../../schemas/review.js"
+import { operatorAssignmentKey } from "./operator-key.js"
 
 /**
  * Hashes the material assignment fields (value, decision, scope, expressionId).
@@ -14,17 +15,13 @@ export function materialFingerprint(draft: TReviewDraft): string {
     for (const c of claims) {
         parts.push(`c:${c.claimId}:${String(c.value)}:${c.skipped ? 1 : 0}`)
     }
-    const ops = [...draft.operatorAssignments].sort((a, b) => {
-        const ak =
-            a.scope === "premise"
-                ? a.premiseId
-                : `${a.premiseId}:${a.expressionId ?? ""}`
-        const bk =
-            b.scope === "premise"
-                ? b.premiseId
-                : `${b.premiseId}:${b.expressionId ?? ""}`
-        return ak.localeCompare(bk)
-    })
+    // Ordered by the one identity rule for an operator decision, not a local
+    // copy of it: the completion gate now turns on whether two drafts hash the
+    // same, so a second definition drifting from the first would decide whether
+    // a reader is held at the gate.
+    const ops = [...draft.operatorAssignments].sort((a, b) =>
+        operatorAssignmentKey(a).localeCompare(operatorAssignmentKey(b))
+    )
     for (const o of ops) {
         parts.push(
             `o:${o.premiseId}:${o.expressionId ?? ""}:${o.scope}:${o.decision}`

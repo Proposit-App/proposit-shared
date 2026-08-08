@@ -380,6 +380,7 @@ describe("reviewCoherence — a collision inside the conclusion premise", () => 
             argEngine,
             draft: chain,
         })
+        expect(found.length).toBeGreaterThan(0)
         expect(
             found.every((c) => c.exits.some((e) => e.kind === "reject-premise"))
         ).toBe(true)

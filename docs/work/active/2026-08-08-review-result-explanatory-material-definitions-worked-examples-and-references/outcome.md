@@ -212,3 +212,39 @@ goal and actually closes the case.
 `proposit-shared-0.64.0-explain-review-result-explainer.tgz` built in the package
 root (the 0.63.0 tarball was removed). Still riding the unpublished core-4.0.0
 window; nothing published, nothing pushed.
+
+## Follow-up: v0.65.0 — the fourth path
+
+v0.64.0 closed three of the four routes to a rejection core ignores: the queue
+that offered it, the exit that offered it, and hydration of one an older build
+had persisted. It left the write path, which is reachable from shared's own
+public API and therefore from any caller at all — and taking it produced exactly
+the state v0.64.0 was cut to prevent: a completable review with the collision
+hidden from both gates at once, since a rejected premise leaves the accepted set
+*and* core never applies the forward rule through a rejected operator. The
+predicate now lives in one place, `isInertRejection`, called from the write path
+and from hydration. Writing that rule twice was how it came to be missing from
+one of them.
+
+The remaining three all trace back to the fingerprint gate added in v0.64.0.
+Making `blocked` mean "not re-checked" as well as "a finding blocked" gave the
+snapshot a way to contradict itself — `phase: "blocked"` beside a coherent
+finding with no contradictions, which a client would draw as an empty dead end.
+Withholding a stale finding from the snapshot removes the state rather than
+documenting it. The gate also fired only on *entry* to the results step, so an
+inline edit made from the results screen — which the change-assignment exits
+explicitly invite — left the review marked complete; the three material mutators
+now re-derive the phase. Extending that to count a *stored* stale result, not
+only this session's finding, was necessary rather than incidental: without it
+the mutator fix does nothing for a review reopened from storage, which is the
+commonest case there is.
+
+The `assertedByReader` copy was corrected in the explainer in v0.64.0 but not in
+the headline it explains, which still read "You assigned this." beside a value
+nobody assigned.
+
+## Publish state
+
+`proposit-shared-0.65.0-explain-review-result-explainer.tgz` built in the package
+root (the 0.64.0 tarball was removed). Still riding the unpublished core-4.0.0
+window; nothing published, nothing pushed.
