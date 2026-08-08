@@ -103,9 +103,21 @@ export const OperatorAssignmentSchema = Type.Object({
 })
 export type TOperatorAssignment = Static<typeof OperatorAssignmentSchema>
 
+/**
+ * `blocked` is the results step acting as the coherence gate: the reader
+ * reached it and the review contains a contradiction they have a resolution
+ * for. It is a state of the *review*, never a value in the assessment
+ * vocabulary — a blocked review simply has no assessment yet, exactly like an
+ * in-progress one, so no consumer has to interpret a reviewer's bookkeeping and
+ * an incoherent review can never masquerade as a legitimate negative verdict.
+ *
+ * `done` remains the persisted completion signal, so a blocked review can never
+ * be counted as finished.
+ */
 export const ReviewPhaseSchema = Type.Union([
     Type.Literal("claims"),
     Type.Literal("operators"),
+    Type.Literal("blocked"),
     Type.Literal("done"),
 ])
 export type TReviewPhase = Static<typeof ReviewPhaseSchema>

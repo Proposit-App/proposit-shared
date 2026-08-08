@@ -30,9 +30,11 @@ export const ServerOperatorAssignment = Type.Object({
 })
 export type TServerOperatorAssignment = Static<typeof ServerOperatorAssignment>
 
+/** Mirrors `ReviewPhaseSchema`; see the note there on what `blocked` means. */
 export const ServerReviewPhase = Type.Union([
     Type.Literal("claims"),
     Type.Literal("operators"),
+    Type.Literal("blocked"),
     Type.Literal("done"),
 ])
 export type TServerReviewPhase = Static<typeof ServerReviewPhase>

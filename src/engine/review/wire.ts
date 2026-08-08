@@ -101,6 +101,15 @@ export function hasAnyDecisions(draft: TReviewDraft): boolean {
     return false
 }
 
+/**
+ * Finished means *reached the results step and coherent*. `phase === "done"` is
+ * the persisted signal hydration reads, and a review the coherence gate
+ * stopped carries `blocked` instead — so it can never reach a tally.
+ */
+export function isReviewComplete(draft: TReviewDraft): boolean {
+    return draft.phase === "done"
+}
+
 export function isFullyDecided(draft: TReviewDraft): boolean {
     for (const a of Object.values(draft.claimAssignments)) {
         if (a.value === null && !a.skipped) return false

@@ -24,7 +24,7 @@ import type { TClaimBoundVariable } from "../../../schemas/logic.js"
 // fixture file free of circular imports and compiles without forward references.
 interface ReviewEngineLike {
     getSnapshot(): {
-        draft: { phase: "claims" | "operators" | "done" }
+        draft: { phase: "claims" | "operators" | "blocked" | "done" }
         currentStep:
             | { kind: "claim"; claimId: string }
             | {

@@ -24,6 +24,8 @@ import {
     evaluateArgumentForReview,
     checkValidityForReview,
 } from "./evaluation.js"
+import { composeAssessment, type TReviewAssessment } from "./assessment.js"
+import { reviewCoherence, type TReviewCoherence } from "./contradiction.js"
 import { materialFingerprint } from "./fingerprint.js"
 import { getClaimReasonsForValue } from "./reasons.js"
 import type { TCoreValidityCheckResult } from "@proposit/proposit-core"
@@ -70,6 +72,14 @@ export interface TReviewEngineSnapshot {
     progress: TReviewProgress
     canRunEvaluation: boolean
     droppedStaleCount: number
+    /** The two axes from the last evaluation. Absent until one has run. */
+    assessment: TReviewAssessment | undefined
+    /**
+     * Whether the review can be completed, the contradictions standing in the
+     * way, and the start-of-review notice when the premises cannot all hold.
+     * Absent until an evaluation has run.
+     */
+    coherence: TReviewCoherence | undefined
 }
 
 export class ReviewEngine {
@@ -86,6 +96,7 @@ export class ReviewEngine {
     private snapshotCache: TReviewEngineSnapshot | undefined
     private saveTimer: ReturnType<typeof setTimeout> | undefined
     private droppedStaleCount = 0
+    private lastCoherence: TReviewCoherence | undefined
     /** When true, the next advanceStep jumps straight to the results step and clears the flag. Set by goToClaimForEdit / goToPremiseForEdit. */
     private editingReturnToResults = false
     /** In readonly mode, all assignment-mutation methods no-op. Navigation and runEvaluation still work. */
@@ -418,9 +429,20 @@ export class ReviewEngine {
             this.transitionTo("operators")
         } else if (this.draft.phase === "operators") {
             this.skippedOperatorKeys.clear()
-            this.transitionTo("done")
+            this.transitionTo(this.resultsPhase())
         }
         this.notify()
+    }
+
+    /**
+     * The phase the results step takes: `blocked` while the last evaluation
+     * found a contradiction the reader has a resolution for, `done` otherwise.
+     * Every route to the results step goes through this, so a reader cannot
+     * step past the coherence gate — and `runEvaluation` re-checks it after
+     * every change, since resolving one collision can expose another.
+     */
+    private resultsPhase(): TReviewDraft["phase"] {
+        return this.lastCoherence?.blocksCompletion ? "blocked" : "done"
     }
 
     private transitionTo(phase: TReviewDraft["phase"]): void {
@@ -434,7 +456,7 @@ export class ReviewEngine {
         this.pushHistory()
         if (this.editingReturnToResults) {
             this.editingReturnToResults = false
-            this.draft.phase = "done"
+            this.draft.phase = this.resultsPhase()
             this.draft.currentStepIndex = 0
             this.draft.updatedAt = new Date()
             this.notify()
@@ -461,7 +483,9 @@ export class ReviewEngine {
                   : { done: true as const }
         if ("done" in result) {
             this.transitionTo(
-                this.draft.phase === "claims" ? "operators" : "done"
+                this.draft.phase === "claims"
+                    ? "operators"
+                    : this.resultsPhase()
             )
         } else if (result.insertRequeueNotice) {
             // Land "past the end" so computeSnapshot emits the skip-requeue-notice.
@@ -515,6 +539,18 @@ export class ReviewEngine {
             validityCheck: undefined,
         }
         this.lastResult = result
+        this.lastCoherence = reviewCoherence({
+            evaluation,
+            argEngine: this.argEngine,
+            draft: this.draft,
+        })
+        // The results step is the coherence gate, not a display of what was
+        // computed: while a resolvable contradiction stands the review holds at
+        // `blocked` and cannot be completed. Resolving it and re-evaluating
+        // returns it to `done`.
+        if (this.draft.phase === "done" || this.draft.phase === "blocked") {
+            this.draft.phase = this.resultsPhase()
+        }
         // Write the full state directly — avoids the load-then-save path in
         // saveResult, which requires a prior save (not guaranteed before eval).
         this.cancelPersist()
@@ -575,7 +611,7 @@ export class ReviewEngine {
     /** Jump the wizard to the results step. History is preserved, so Back returns to the prior step. */
     jumpToResults(): void {
         this.pushHistory()
-        this.draft.phase = "done"
+        this.draft.phase = this.resultsPhase()
         this.draft.currentStepIndex = 0
         this.draft.updatedAt = new Date()
         this.notify()
@@ -659,8 +695,11 @@ export class ReviewEngine {
                           : 0,
                 canGoBack: this.history.length > 0,
             },
-            canRunEvaluation: this.draft.phase === "done",
+            canRunEvaluation:
+                this.draft.phase === "done" || this.draft.phase === "blocked",
             droppedStaleCount: this.droppedStaleCount,
+            assessment: composeAssessment(this.lastResult?.evaluation),
+            coherence: this.lastCoherence,
         }
     }
 
