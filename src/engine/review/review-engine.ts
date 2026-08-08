@@ -98,6 +98,13 @@ export class ReviewEngine {
     private saveTimer: ReturnType<typeof setTimeout> | undefined
     private droppedStaleCount = 0
     private lastCoherence: TReviewCoherence | undefined
+    /**
+     * A review restored at `blocked` was blocked by an evaluation that ran in
+     * some earlier session. Nothing has re-checked it here, and the absence of
+     * a coherence finding is not a finding of coherence — so the gate stays
+     * shut until `runEvaluation` says otherwise.
+     */
+    private blockedBeforeThisSession = false
     /** When true, the next advanceStep jumps straight to the results step and clears the flag. Set by goToClaimForEdit / goToPremiseForEdit. */
     private editingReturnToResults = false
     /** In readonly mode, all assignment-mutation methods no-op. Navigation and runEvaluation still work. */
@@ -121,6 +128,7 @@ export class ReviewEngine {
         this.claimQueue = buildClaimQueue(this.argEngine)
         this.operatorQueue = buildOperatorQueue(this.argEngine)
         this.draft = args.initialDraft ?? this.freshDraft()
+        this.blockedBeforeThisSession = this.draft.phase === "blocked"
         this.lastResult = args.initialResult
         this.mode = args.mode ?? "editable"
         this.dropStaleAssignments()
@@ -190,6 +198,11 @@ export class ReviewEngine {
         await this.store.clear(this.key)
         this.draft = this.freshDraft()
         this.lastResult = undefined
+        // A fresh review inherits nothing, least of all the previous review's
+        // block: without this the empty draft lands on `blocked` at its results
+        // step over a collision that no longer has any assignment behind it.
+        this.lastCoherence = undefined
+        this.blockedBeforeThisSession = false
         this.skippedOperatorKeys.clear()
         this.history = []
         this.notify()
@@ -254,6 +267,10 @@ export class ReviewEngine {
         if (state) {
             this.draft = state.draft
             this.lastResult = state.lastResult
+            // The incoming draft is not the one this session evaluated, so the
+            // coherence finding it produced says nothing about this one.
+            this.lastCoherence = undefined
+            this.blockedBeforeThisSession = this.draft.phase === "blocked"
             this.dropStaleAssignments()
         }
         this.notify()
@@ -448,7 +465,13 @@ export class ReviewEngine {
      * every change, since resolving one collision can expose another.
      */
     private resultsPhase(): TReviewDraft["phase"] {
-        return this.lastCoherence?.blocksCompletion ? "blocked" : "done"
+        if (this.lastCoherence) {
+            return this.lastCoherence.blocksCompletion ? "blocked" : "done"
+        }
+        // Nothing evaluated in this session. Fail closed: a review restored at
+        // `blocked` stays there until an evaluation clears it, so a page reload
+        // cannot walk a reader past the gate.
+        return this.blockedBeforeThisSession ? "blocked" : "done"
     }
 
     private transitionTo(phase: TReviewDraft["phase"]): void {
@@ -545,6 +568,7 @@ export class ReviewEngine {
             validityCheck: undefined,
         }
         this.lastResult = result
+        this.blockedBeforeThisSession = false
         this.lastCoherence = reviewCoherence({
             evaluation,
             argEngine: this.argEngine,

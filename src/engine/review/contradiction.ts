@@ -421,7 +421,12 @@ export function detectContradictions(params: {
             .filter((o) => o.decision === "accepted")
             .map((o) => o.premiseId)
     )
+    // The conclusion premise is a candidate like any other: `buildOperatorQueue`
+    // offers it whenever it carries a decidable operator, so the reader can be
+    // invited to accept the very step that collides with their own values. It
+    // lives on its own field rather than in either list.
     const candidates = [
+        ...(evaluation.conclusion ? [evaluation.conclusion] : []),
         ...(evaluation.supportingPremises ?? []),
         ...(evaluation.constraintPremises ?? []),
     ]
@@ -464,6 +469,16 @@ export interface TReviewCoherence {
     /** Only a conflict the reader has a resolution for stops them finishing. */
     blocksCompletion: boolean
     contradictions: TContradiction[]
+    /**
+     * Every variable the reader's values and granted steps force both ways,
+     * straight off the evaluation. Not derivable from {@link contradictions}:
+     * the forward rule transfers only the told-true component, so a contested
+     * variable can yield an uncontested `true` downstream and leave every
+     * aggregate — conclusion, admissibility, satisfiability, struck premises —
+     * reading clean, with no contested premise root for any premise-level test
+     * to find. Non-empty means show the conflict whatever else the result says.
+     */
+    contestedVariableIds: string[]
     /** Shown at the start of the review when the premises cannot all hold. */
     notice?: string
 }
@@ -477,6 +492,7 @@ export function reviewCoherence(params: {
     draft: TReviewDraft
 }): TReviewCoherence {
     const contradictions = detectContradictions(params)
+    const contestedVariableIds = params.evaluation?.contestedVariableIds ?? []
     if (params.evaluation?.premiseSetSatisfiable === false) {
         // Nothing the reader assigns can satisfy this set, so they are told and
         // never blocked. Core has already switched derivation off.
@@ -484,15 +500,22 @@ export function reviewCoherence(params: {
             state: "premises-contradict",
             blocksCompletion: false,
             contradictions,
+            contestedVariableIds,
             notice: CONTRADICTORY_PREMISE_SET_NOTICE,
         }
     }
-    if (contradictions.length > 0) {
+    if (contradictions.length > 0 || contestedVariableIds.length > 0) {
         return {
             state: "reader-resolvable",
             blocksCompletion: true,
             contradictions,
+            contestedVariableIds,
         }
     }
-    return { state: "coherent", blocksCompletion: false, contradictions }
+    return {
+        state: "coherent",
+        blocksCompletion: false,
+        contradictions,
+        contestedVariableIds,
+    }
 }

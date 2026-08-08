@@ -184,10 +184,18 @@ function composeConclusion(
         evaluation.conclusionAttribution?.reachedWithoutAssertion ?? false
     const statements: string[] = []
     if (assertedByReader) statements.push(CONCLUSION_ASSERTED_STATEMENT)
-    if (reachedWithoutAssertion) {
-        statements.push(CONCLUSION_REACHED_STATEMENT)
-    } else if (assertedByReader) {
-        statements.push(CONCLUSION_ONLY_ASSERTED_STATEMENT)
+    // Both remaining statements are claims about a value that *holds*, and
+    // core defines `reachedWithoutAssertion` as "the conclusion premise root
+    // still comes back **true**" — so it is necessarily false beside False,
+    // Unknown or Contested, and the `else` would otherwise fire on every one
+    // of them, telling a reader their False conclusion holds because they
+    // assigned it.
+    if (value === "true") {
+        if (reachedWithoutAssertion) {
+            statements.push(CONCLUSION_REACHED_STATEMENT)
+        } else if (assertedByReader) {
+            statements.push(CONCLUSION_ONLY_ASSERTED_STATEMENT)
+        }
     }
     return {
         value,
@@ -210,7 +218,16 @@ function reasonFor(
     if (evaluation.premisesHoldConclusionFalse === true) {
         return "premises-hold-conclusion-does-not-follow"
     }
-    if (evaluation.conclusionAttribution?.assertedByReader === true) {
+    // Only when the conclusion actually comes out true. `assertedByReader`
+    // means the reader supplied a value for *some* claim the conclusion
+    // premise references — not that they supplied the conclusion's value — so
+    // on its own it fires beside a False or Contested conclusion, where this
+    // reason's own explanation ("the conclusion holds, but only because you
+    // assigned it") states the opposite of what is on screen.
+    if (
+        evaluation.conclusionAttribution?.assertedByReader === true &&
+        conclusionValueFor(evaluation.conclusionTrue) === "true"
+    ) {
         return "conclusion-came-from-you"
     }
     if (struck.struckPremiseIds.length > 0) return "reasoning-rejected"

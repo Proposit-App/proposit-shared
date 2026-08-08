@@ -8,6 +8,7 @@ import type {
 import {
     ClaimReasonCodeSchema,
     OperatorReasonCodeSchema,
+    ReviewDraftSchema,
     ReviewStateSchema,
 } from "../../schemas/review.js"
 import { Value } from "typebox/value"
@@ -108,6 +109,22 @@ export function migrateReviewState(raw: unknown): {
     return { state: raw, migrated }
 }
 
+/**
+ * Salvage just the draft from a payload the full state schema rejected — the
+ * mirror of a core evaluation result is much likelier to drift than the draft
+ * beside it, and the draft is the only part a reader cannot redo.
+ */
+function decodeDraftOnly(raw: string): TReviewState | undefined {
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        const { state } = migrateReviewState(parsed)
+        const draft = (state as { draft?: unknown }).draft
+        return { draft: Value.Decode(ReviewDraftSchema, draft) }
+    } catch {
+        return undefined
+    }
+}
+
 const STORAGE_PREFIX = "proposit.review"
 
 export class LocalStorageReviewStore implements TReviewStore {
@@ -126,21 +143,37 @@ export class LocalStorageReviewStore implements TReviewStore {
             throw new ReviewStorageUnavailableError()
         }
         if (!raw) return undefined
+        let state: TReviewState
+        let didMigrate: boolean
         try {
             const parsed: unknown = JSON.parse(raw)
-            const { state: migrated, migrated: didMigrate } =
-                migrateReviewState(parsed)
+            const migration = migrateReviewState(parsed)
+            didMigrate = migration.migrated
             // Decode, not Parse: EncodableDate rehydrates ISO strings into Date
             // instances in the decode pass, which Parse does not run.
-            const state = Value.Decode(ReviewStateSchema, migrated)
-            if (didMigrate) await this.save(key, state)
-            return state
+            state = Value.Decode(ReviewStateSchema, migration.state)
         } catch (err) {
-            // Corrupted blob: drop it and let caller re-initialize.
+            // The result mirror is a cache of something recomputable; the draft
+            // is the reader's own work and cannot be got back. `lastResult` is
+            // optional, so a state carrying only the draft is valid — try that
+            // before concluding the blob is corrupt.
+            const draftOnly = decodeDraftOnly(raw)
+            if (draftOnly) {
+                console.warn(
+                    "review-store: dropping an undecodable result, keeping the draft",
+                    err
+                )
+                return draftOnly
+            }
             console.warn("review-store: dropping corrupted review state", err)
             await this.clear(key)
             return undefined
         }
+        // Outside the try on purpose: a write that fails here (quota, private
+        // mode) says nothing about the blob we just decoded, and treating it as
+        // corruption would delete a review that is perfectly good.
+        if (didMigrate) await this.save(key, state).catch(() => undefined)
+        return state
     }
 
     save(key: TReviewKey, state: TReviewState): Promise<void> {

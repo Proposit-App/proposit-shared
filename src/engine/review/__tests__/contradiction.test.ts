@@ -12,6 +12,7 @@ import {
     buildEngineWithDerivationChain,
     buildEngineWithRestrictionConflict,
     buildEngineWithUnsatisfiablePremises,
+    buildEngineWithTwoPremises,
 } from "./fixtures.js"
 
 const NOW = new Date("2026-04-14T00:00:00Z")
@@ -321,5 +322,61 @@ describe("reviewCoherence — a review with nothing wrong", () => {
         const coherence = coherenceOf(argEngine, d)
         expect(coherence.state).toBe("coherent")
         expect(coherence.contradictions).toEqual([])
+    })
+})
+
+describe("reviewCoherence — a collision inside the conclusion premise", () => {
+    // The operator queue offers the conclusion premise whenever it carries a
+    // decidable operator, so the reader can be invited to accept the very step
+    // that collides with their own values. The byte-identical collision inside
+    // a supporting premise blocks the review.
+    const d = draft({ cA: true, cB: false }, { pConclusion: "accepted" })
+
+    it("blocks the review and names the conclusion premise", () => {
+        const argEngine = buildEngineWithTwoPremises()
+        const coherence = coherenceOf(argEngine, d)
+        expect(coherence.contradictions.map((c) => c.premiseId)).toContain(
+            "pConclusion"
+        )
+        expect(coherence.state).toBe("reader-resolvable")
+        expect(coherence.blocksCompletion).toBe(true)
+    })
+
+    it("carries the alert's material, not just the block", () => {
+        const argEngine = buildEngineWithTwoPremises()
+        const found = coherenceOf(argEngine, d).contradictions.find(
+            (c) => c.premiseId === "pConclusion"
+        )!
+        expect(found.provenance.length).toBeGreaterThan(0)
+        expect(found.exits.some((e) => e.kind === "change-assignment")).toBe(
+            true
+        )
+        expect(found.exits.some((e) => e.kind === "reject-premise")).toBe(true)
+    })
+})
+
+describe("reviewCoherence — a collision every aggregate reads clean on", () => {
+    it("shows a contested variable the premise-level tests cannot see", () => {
+        const argEngine = buildEngineWithTwoPremises()
+        const d = draft({ cA: true, cB: false }, { pConclusion: "accepted" })
+        const evaluation = evaluateArgumentForReview(d, argEngine)
+        expect(evaluation.contestedVariableIds?.length).toBeGreaterThan(0)
+        const coherence = reviewCoherence({ evaluation, argEngine, draft: d })
+        // The forward rule transfers only the told-true component, so a
+        // contested variable can leave every aggregate reading clean. The
+        // result carries the ids regardless, and the gate reads them.
+        expect(coherence.contestedVariableIds).toEqual(
+            evaluation.contestedVariableIds
+        )
+        expect(coherence.blocksCompletion).toBe(true)
+    })
+
+    it("reports no contested variables for a review with nothing wrong", () => {
+        const argEngine = buildEngineWithDerivationChain()
+        const d = draft(
+            { cP: true, cR: null, cQ: null },
+            { pFirstStep: "accepted", pSecondStep: "accepted" }
+        )
+        expect(coherenceOf(argEngine, d).contestedVariableIds).toEqual([])
     })
 })

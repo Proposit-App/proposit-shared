@@ -15,7 +15,10 @@ import {
     conclusionAssessmentLine,
 } from "../assessment.js"
 import { evaluateArgumentForReview } from "../evaluation.js"
-import { buildEngineWithRedundantSupport } from "./fixtures.js"
+import {
+    buildEngineWithRedundantSupport,
+    buildEngineWithTwoPremises,
+} from "./fixtures.js"
 import type { TReviewDraft } from "../../../schemas/review.js"
 
 function evaluation(
@@ -102,6 +105,30 @@ describe("composeAssessment — conclusion axis", () => {
         expect(composeAssessment(evaluation())!.conclusion.statements).toEqual(
             []
         )
+    })
+
+    it("claims nothing about holding when the conclusion does not come out true", () => {
+        // Core defines `reachedWithoutAssertion` as "the root still comes back
+        // *true*", so it is necessarily false for every other value. Both
+        // statements are claims about a value that holds, and neither means
+        // anything beside False, Unknown or Contested.
+        for (const conclusionTrue of [false, null, CONTESTED] as const) {
+            const a = composeAssessment(
+                evaluation({
+                    conclusionTrue,
+                    conclusionAttribution: {
+                        assertedByReader: true,
+                        reachedWithoutAssertion: false,
+                    },
+                })
+            )!
+            expect(a.conclusion.statements).toEqual([
+                CONCLUSION_ASSERTED_STATEMENT,
+            ])
+            expect(conclusionAssessmentLine(a.conclusion)).not.toContain(
+                "It holds"
+            )
+        }
     })
 })
 
@@ -374,6 +401,33 @@ describe("composeAssessment — against real evaluations", () => {
             CONCLUSION_ONLY_ASSERTED_STATEMENT,
         ])
         expect(a.argument.outcome).toBe("does-not-reach")
+        expect(a.argument.reason).toBe("conclusion-came-from-you")
+    })
+
+    it("says nothing holds, and blames nothing on the reader, for a false conclusion", () => {
+        // The reader's own values make the conclusion premise come out false.
+        // Both defects met here: the conclusion line claimed the value "holds
+        // only because you assigned it", and the argument axis reached for
+        // `conclusion-came-from-you`, whose explanation opens by asserting the
+        // conclusion holds.
+        const argEngine = buildEngineWithTwoPremises()
+        const d = draft({ cA: true, cB: false }, {})
+        const a = composeAssessment(evaluateArgumentForReview(d, argEngine))!
+        expect(a.conclusion.value).toBe("false")
+        expect(a.conclusion.statements).not.toContain(
+            CONCLUSION_ONLY_ASSERTED_STATEMENT
+        )
+        expect(a.conclusion.statements).not.toContain(
+            CONCLUSION_REACHED_STATEMENT
+        )
+        expect(a.argument.reason).not.toBe("conclusion-came-from-you")
+    })
+
+    it("keeps the attribution reason for a conclusion that does come out true", () => {
+        const argEngine = buildEngineWithRedundantSupport()
+        const d = draft({ cA: null, cB: null, cC: true }, {})
+        const a = composeAssessment(evaluateArgumentForReview(d, argEngine))!
+        expect(a.conclusion.value).toBe("true")
         expect(a.argument.reason).toBe("conclusion-came-from-you")
     })
 })

@@ -113,3 +113,68 @@ describe("the blocked review state", () => {
         expect(snap.assessment?.argument.outcome).toBe("premises-contradict")
     })
 })
+
+describe("the blocked gate across a reload", () => {
+    /** Rehydrate the blocked review the way a page load does: draft only. */
+    async function reloadedBlockedReview(): Promise<ReviewEngine> {
+        const store = memoryStore()
+        const first = new ReviewEngine({
+            argEngine: buildEngineWithRestrictionConflict(),
+            store,
+        })
+        first.start()
+        first.setClaimValue("cP", true)
+        for (const premiseId of ["pToA", "pToB", "pRestriction"]) {
+            first.setOperatorAssignment({
+                premiseId,
+                scope: "premise",
+                decision: "accepted",
+            })
+        }
+        first.jumpToResults()
+        await first.runEvaluation()
+        expect(first.getSnapshot().draft.phase).toBe("blocked")
+        const stored = await store.load(
+            {} as Parameters<TReviewStore["load"]>[0]
+        )
+        return new ReviewEngine({
+            argEngine: buildEngineWithRestrictionConflict(),
+            store,
+            initialDraft: stored!.draft,
+            initialResult: stored!.lastResult,
+        })
+    }
+
+    it("keeps the review blocked when nothing has been re-evaluated", async () => {
+        const re = await reloadedBlockedReview()
+        re.start()
+        // Edit a claim and come straight back: the return trip goes through
+        // the same gate, and no evaluation has run in this session.
+        re.goToClaimForEdit("cP")
+        re.advanceStep()
+        const snap = re.getSnapshot()
+        expect(snap.draft.phase).toBe("blocked")
+        expect(isReviewComplete(snap.draft)).toBe(false)
+    })
+
+    it("opens the gate again only once an evaluation clears the collision", async () => {
+        const re = await reloadedBlockedReview()
+        re.start()
+        re.setOperatorAssignment({
+            premiseId: "pRestriction",
+            scope: "premise",
+            decision: "rejected",
+        })
+        await re.runEvaluation()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+    })
+
+    it("does not carry a block into a brand-new review", async () => {
+        const re = buildBlockedReview()
+        await re.runEvaluation()
+        expect(re.getSnapshot().draft.phase).toBe("blocked")
+        await re.clear()
+        re.jumpToResults()
+        expect(re.getSnapshot().draft.phase).toBe("done")
+    })
+})

@@ -166,6 +166,50 @@ describe("CONCLUSION_EXPLAINERS", () => {
     })
 })
 
+describe("ARGUMENT_EXPLAINERS content", () => {
+    it("keeps the premises-hold entry's example off the collision shape", () => {
+        // An accepted step between a true premise and a false conclusion is
+        // the contested collision, not this outcome. Drawn that way the
+        // example teaches the reader to recognise the wrong thing — and it is
+        // structurally identical to the contested entry's own example.
+        const entry =
+            ARGUMENT_EXPLAINERS[
+                "does-not-reach:premises-hold-conclusion-does-not-follow"
+            ]
+        expect(
+            entry.example.items.some(
+                (item) =>
+                    item.kind === "operator" && item.decision === "accepted"
+            )
+        ).toBe(false)
+        const contested = CONCLUSION_EXPLAINERS.contested.example.items
+        expect(entry.example.items).not.toEqual(contested)
+    })
+
+    it("does not turn a reader-relative gap into a verdict on entailment", () => {
+        // `premisesHoldConclusionFalse` is one assignment's gap, not a
+        // countermodel — the stronger claim is what the validity check answers.
+        const entry =
+            ARGUMENT_EXPLAINERS[
+                "does-not-reach:premises-hold-conclusion-does-not-follow"
+            ]
+        expect(entry.definition).not.toMatch(
+            /counterexample|the argument's form|form does not carry/i
+        )
+        expect(entry.definition).toMatch(
+            /under (the |your )?values you|your values/i
+        )
+    })
+
+    it("does not accuse an argument of asserting its conclusion", () => {
+        const entry =
+            ARGUMENT_EXPLAINERS["does-not-reach:conclusion-came-from-you"]
+        expect(entry.definition).not.toMatch(
+            /asserts its conclusion|rather than supporting it/i
+        )
+    })
+})
+
 describe("worked-example framing", () => {
     it.each([
         ["heading", WORKED_EXAMPLE_HEADING],

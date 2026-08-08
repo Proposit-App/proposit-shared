@@ -19,7 +19,7 @@ importers:
         specifier: ^9.39.4
         version: 9.39.4
       '@proposit/proposit-core':
-        specifier: file:/Users/brian/Projects/Proposit-App/proposit-core/proposit-proposit-core-4.0.0-contested-value-belnap-closure.tgz
+        specifier: file:../proposit-core/proposit-proposit-core-4.0.0-contested-value-belnap-closure.tgz
         version: file:../proposit-core/proposit-proposit-core-4.0.0-contested-value-belnap-closure.tgz
       '@types/node':
         specifier: ^25.5.2
@@ -358,7 +358,7 @@ packages:
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
   '@proposit/proposit-core@file:../proposit-core/proposit-proposit-core-4.0.0-contested-value-belnap-closure.tgz':
-    resolution: {integrity: sha512-z1KxOXBNprUz3dthi++dRte0mugG86FUiTuALpW17hAhAfEuIXrz5amIqG2/AKsieFKw3RPotrhKbhN3eiXjjA==, tarball: file:../proposit-core/proposit-proposit-core-4.0.0-contested-value-belnap-closure.tgz}
+    resolution: {integrity: sha512-bCuTz7l3v40wSR1EvDWxS38qP65Td4HzmG90b4wuU2H1RAcaWgH+tHcNz7Sp6JqjbTYK+asYwobAyvKEdessEQ==, tarball: file:../proposit-core/proposit-proposit-core-4.0.0-contested-value-belnap-closure.tgz}
     version: 4.0.0
     engines: {node: '>=22.3.0'}
     hasBin: true

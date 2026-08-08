@@ -203,3 +203,60 @@ describe("LocalStorageReviewStore", () => {
         expect(forA.decision).toBe("rejected")
     })
 })
+
+describe("LocalStorageReviewStore — what survives a bad read", () => {
+    const key = {
+        argumentId: "00000000-0000-0000-0000-000000000011",
+        argumentVersion: 1,
+    }
+
+    beforeEach(() => localStorage.clear())
+
+    it("keeps the draft when only the result mirror fails to decode", async () => {
+        const store = new LocalStorageReviewStore()
+        await store.save(key, makeState())
+        const raw = JSON.parse(localStorage.getItem(store.keyFor(key))!) as {
+            lastResult?: unknown
+        }
+        // A result shape this build's mirror does not admit — a review written
+        // by a newer version, say. The draft beside it is the reader's own
+        // irreplaceable work and is not what failed.
+        raw.lastResult = { schemaVersion: 1, nonsense: true }
+        localStorage.setItem(store.keyFor(key), JSON.stringify(raw))
+        const loaded = await store.load(key)
+        expect(loaded?.draft.reviewId).toBe(
+            "00000000-0000-0000-0000-000000000010"
+        )
+        expect(loaded?.lastResult).toBeUndefined()
+    })
+
+    it("does not delete a review that decoded, when re-saving it fails", async () => {
+        const store = new LocalStorageReviewStore()
+        // A retired reason code, so the load path migrates and then re-saves.
+        await store.save(key, makeState())
+        const raw = JSON.parse(localStorage.getItem(store.keyFor(key))!) as {
+            draft: { claimAssignments: Record<string, unknown> }
+        }
+        raw.draft.claimAssignments["00000000-0000-0000-0000-000000000012"] = {
+            assignmentId: "00000000-0000-0000-0000-000000000012",
+            claimId: "00000000-0000-0000-0000-000000000012",
+            value: true,
+            reasonCode: "a-code-this-build-retired",
+            skipped: false,
+            decidedAt: "2026-04-14T00:00:00.000Z",
+        }
+        localStorage.setItem(store.keyFor(key), JSON.stringify(raw))
+        const stored = localStorage.getItem(store.keyFor(key))!
+        const setItem = vi
+            .spyOn(Storage.prototype, "setItem")
+            .mockImplementation(() => {
+                throw new Error("QuotaExceededError")
+            })
+        try {
+            await store.load(key).catch(() => undefined)
+        } finally {
+            setItem.mockRestore()
+        }
+        expect(localStorage.getItem(store.keyFor(key))).toBe(stored)
+    })
+})

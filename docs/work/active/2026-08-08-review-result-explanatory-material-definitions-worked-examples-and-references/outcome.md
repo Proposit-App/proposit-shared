@@ -115,3 +115,57 @@ over a perfectly consistent one.
 root (the 0.61.2 tarball was removed — a stray `.tgz` makes a later
 `pnpm publish` fail with EUSAGE). Still riding the unpublished core-4.0.0 window;
 nothing published, nothing pushed.
+
+## Follow-up: v0.63.0 — what the review of v0.62.0 found
+
+Five defects that reach a reader, two that lose their data.
+
+Three of the five are the same shape: a field read for something adjacent to
+what it means. `reachedWithoutAssertion` is defined by core as "the root still
+comes back **true**", so the `else` branch beside it fired on every False,
+Unknown and Contested conclusion — "It holds only because you assigned it",
+printed under the word False. `assertedByReader` means the reader supplied a
+value for *some* claim the conclusion premise references, not the conclusion's
+own value, so `conclusion-came-from-you` fired the same way, under a definition
+that opens by asserting the conclusion holds. Both are now gated on the
+conclusion actually coming out true.
+
+The fourth is a gap in coverage rather than a misreading: `detectContradictions`
+scanned supporting and constraint premises, and the conclusion premise lives on
+its own field. The operator queue offers that premise, so the reader could be
+invited to accept the one step the detector could not see — making the sole
+unblocked route to a contested conclusion the one with no alert, no provenance
+and no exits.
+
+The fifth is the gate itself. `resultsPhase()` read a field only
+`runEvaluation` sets, so a rehydrated `blocked` draft started `undefined` and
+every route to the results step opened. Absence of a coherence finding was being
+read as a finding of coherence; it now fails closed, and `clear()` no longer
+lets a fresh review inherit the previous one's block.
+
+Two explainer entries were teaching the wrong thing. The
+`premises-hold-conclusion-does-not-follow` example drew an accepted step between
+a true premise and a false conclusion — which under the confluent closure is the
+contested collision, structurally identical to the contested entry's own
+example. Its definition described the finding as a verdict on entailment, which
+is the stronger claim the validity check answers, not this one. And
+`conclusion-came-from-you` said the argument "asserts its conclusion rather than
+supporting it", which allocates fault and is contradicted by its own example.
+
+The two data-loss paths were both in `LocalStorageReviewStore.load`: a failed
+re-save after migration was caught by the corrupted-blob branch and deleted a
+review that had decoded perfectly, and any decode failure in the optional result
+mirror took the draft with it.
+
+Core's `contestedVariableIds` is adopted as the gate's backstop. It is not
+derivable from the contradictions list — the forward rule transfers only the
+told-true component, so a contested variable can leave every aggregate reading
+clean with no contested premise root for any premise-level test to find.
+
+## Publish state
+
+`proposit-shared-0.63.0-explain-review-result-explainer.tgz` built in the package
+root (the 0.62.0 tarball was removed). The core devDependency is a relative
+tarball path again rather than an absolute one under a developer's home
+directory. Still riding the unpublished core-4.0.0 window; nothing published,
+nothing pushed.

@@ -391,7 +391,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:conclusion-came-from-you": {
         definition:
-            "The conclusion holds, but only because you assigned it. Withhold that one input and nothing in the argument gets there — so as written, the argument asserts its conclusion rather than supporting it. This is worth knowing precisely when you agree with the conclusion, because agreement is the easiest way to miss that no work was done.",
+            "The conclusion holds, but only because you assigned it. Withhold that one input and nothing here gets to it — the reasons the argument offers are still waiting on claims you left open, so under your values it is your own answer carrying the conclusion. That says nothing about whether those reasons are good ones; settle what they rest on and this can change. It is worth knowing precisely when you agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
         example: {
             scenario:
                 "You already believed the new policy is fair. The argument offers one reason — that an independent panel drew it up — and you left that unsettled.",
@@ -499,10 +499,10 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:premises-hold-conclusion-does-not-follow": {
         definition:
-            "Every premise still standing holds under your values, and the conclusion still comes out false. That is the sharpest negative result a review produces, because it does not depend on anything you left open — it is a case where the argument's form does not carry its content. This is what a counterexample looks like from the inside.",
+            "Every premise still standing holds under your values, and the conclusion still comes out false. That is the sharpest negative result a review produces, because it does not depend on anything you left open — everything the argument rests on is settled, and it is settled in a way that leaves the conclusion false. It is a gap under the values you supplied, and only those: it does not settle whether the conclusion follows from these premises in general. That stronger question is what the separate validity check answers.",
         example: {
             scenario:
-                "'The ground is wet, so it must have rained' — but the sprinkler was on, and you have already said it did not rain.",
+                "An argument for rain, offering only that the ground is wet. You accept that the ground is wet, you have separately said it did not rain, and the argument grants no step from the one to the other.",
             items: [
                 {
                     kind: "claim",
@@ -512,14 +512,8 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: false,
                 },
                 {
-                    kind: "operator",
-                    depth: 0,
-                    label: "is true if",
-                    decision: "accepted",
-                },
-                {
                     kind: "claim",
-                    depth: 1,
+                    depth: 0,
                     title: "The ground is wet",
                     value: true,
                 },
@@ -527,14 +521,8 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
             result: "Doesn't reach its conclusion",
         },
         furtherReading: [
-            {
-                label: "Formal Fallacy — Wikipedia",
-                url: "https://en.wikipedia.org/wiki/Formal_fallacy",
-            },
-            {
-                label: "Affirming the Consequent — Wikipedia",
-                url: "https://en.wikipedia.org/wiki/Affirming_the_consequent",
-            },
+            LOGICAL_CONSEQUENCE_REFERENCE,
+            VALIDITY_SOUNDNESS_REFERENCE,
             {
                 label: "Counterexample — Wikipedia",
                 url: "https://en.wikipedia.org/wiki/Counterexample",
