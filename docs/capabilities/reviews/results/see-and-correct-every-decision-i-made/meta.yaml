@@ -3,4 +3,4 @@ name: See and correct every decision I made
 Status: Supported
 Feature: argument-review/review-results
 Subject:
-- review
+    - review

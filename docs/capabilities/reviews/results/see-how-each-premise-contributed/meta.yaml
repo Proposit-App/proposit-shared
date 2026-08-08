@@ -3,4 +3,4 @@ name: See how each premise contributed
 Status: Missing
 Feature: argument-review/review-results
 Subject:
-- review
+    - review
