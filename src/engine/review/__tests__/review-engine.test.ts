@@ -7,7 +7,9 @@ import {
     ReviewStorageQuotaError,
     ReviewStorageUnavailableError,
 } from "../../review/review-store.js"
+import { buildOperatorQueue } from "../../review/step-queue.js"
 import {
+    buildEngineWithClaimSharedAcrossPremises,
     buildEngineWithTwoPremises,
     completeClaimPhase,
     completeFullPhases,
@@ -296,6 +298,99 @@ describe("ReviewEngine — operator phase", () => {
                 (o) => o.premiseId === "pConclusion"
             )
         expect(op?.reasonCode).toBe("counterexamples-exist")
+    })
+
+    it("the operator step carries the operator the queue resolved, and a decision made from it records it", async () => {
+        const argEngine = buildEngineWithTwoPremises()
+        const re = new ReviewEngine({
+            argEngine,
+            store: new LocalStorageReviewStore(),
+        })
+        re.start()
+        await completeClaimPhase(re)
+        const queue = buildOperatorQueue(argEngine)
+        const step = re.getSnapshot().currentStep
+        if (step?.kind !== "operator")
+            throw new Error("expected an operator step")
+        const entry = queue[re.getSnapshot().draft.currentStepIndex]
+        expect(entry.premiseId).toBe(step.premiseId)
+        expect(entry.expressionId).toBeTruthy()
+        expect(step.expressionId).toBe(entry.expressionId)
+
+        re.setOperatorAssignment({
+            premiseId: step.premiseId,
+            scope: step.scope,
+            expressionId: step.expressionId,
+            decision: "accepted",
+        })
+        const op = re
+            .getSnapshot()
+            .draft.operatorAssignments.find(
+                (o) => o.premiseId === step.premiseId
+            )
+        expect(op?.expressionId).toBe(entry.expressionId)
+    })
+
+    it("deciding a premise in the wizard and again from a contradiction leaves one assignment", async () => {
+        const argEngine = buildEngineWithClaimSharedAcrossPremises()
+        const re = new ReviewEngine({
+            argEngine,
+            store: new LocalStorageReviewStore(),
+        })
+        re.start()
+        // cShared true with cOther false makes the accepted pSupportShared —
+        // implies(cShared, cOther) — come out false under the reader's own values.
+        const values: Record<string, boolean> = {
+            cShared: true,
+            cOther: false,
+            cConcl: true,
+        }
+        while (re.getSnapshot().draft.phase === "claims") {
+            const step = re.getSnapshot().currentStep
+            if (step?.kind !== "claim") break
+            re.setClaimValue(step.claimId, values[step.claimId] ?? true)
+            re.advanceStep()
+        }
+        let wizardExpressionId: string | undefined
+        while (re.getSnapshot().draft.phase === "operators") {
+            const step = re.getSnapshot().currentStep
+            if (step?.kind !== "operator") break
+            if (step.premiseId === "pSupportShared")
+                wizardExpressionId = step.expressionId
+            re.setOperatorAssignment({
+                premiseId: step.premiseId,
+                scope: step.scope,
+                expressionId: step.expressionId,
+                decision: "accepted",
+            })
+            re.advanceStep()
+        }
+        await re.runEvaluation()
+
+        const contradiction = re
+            .getSnapshot()
+            .coherence?.contradictions.find(
+                (c) => c.premiseId === "pSupportShared"
+            )
+        expect(contradiction).toBeDefined()
+        expect(wizardExpressionId).toBeTruthy()
+        expect(contradiction?.decisionExpressionId).toBe(wizardExpressionId)
+
+        // The alert's reject-this-premise exit records against the same premise.
+        re.setOperatorAssignment({
+            premiseId: "pSupportShared",
+            scope: "premise",
+            expressionId: contradiction?.decisionExpressionId,
+            decision: "rejected",
+        })
+        const ops = re
+            .getSnapshot()
+            .draft.operatorAssignments.filter(
+                (o) => o.premiseId === "pSupportShared"
+            )
+        expect(ops.length).toBe(1)
+        expect(ops[0].decision).toBe("rejected")
+        expect(ops[0].expressionId).toBe(wizardExpressionId)
     })
 })
 

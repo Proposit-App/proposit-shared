@@ -662,6 +662,10 @@ export class ReviewEngine {
                     kind: "operator",
                     premiseId: entry.premiseId,
                     scope: "premise",
+                    // Provenance for the decision: which operator the reader
+                    // was judging. Dropping it here would leave every decision
+                    // recorded without a target.
+                    expressionId: entry.expressionId,
                 }
             } else if (this.operatorSkippedRemain()) {
                 currentStep = {
