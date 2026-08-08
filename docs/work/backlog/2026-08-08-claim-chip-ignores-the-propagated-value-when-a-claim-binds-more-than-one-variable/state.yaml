@@ -1,0 +1,8 @@
+slug: 2026-08-08-claim-chip-ignores-the-propagated-value-when-a-claim-binds-more-than-one-variable
+title: Claim chip ignores the propagated value when a claim binds more than one variable
+created: '2026-08-08'
+resolution: null
+effort: low
+complexity: medium
+tags:
+- bug
