@@ -43,8 +43,31 @@ chips — those are the clients' slices of the epic. The five `Missing`
 capabilities under `docs/capabilities/reviews/results/` stay `Missing` until a
 client actually surfaces the material.
 
+## Follow-up: v0.61.1 — the example's framing copy
+
+An external design review found the worked example is drawn with primitives
+identical to the real argument, so past a small `EXAMPLE` label nothing tells a
+reader the illustration is not their own work. The web had fixed it locally
+(`proposit-server/src/components/client/review/assessment-explainer.tsx`);
+mobile had no equivalent sentence and labelled its result line `Result:`, which
+reads as *the reader's* result.
+
+That is the failure this module exists to prevent — one client able to say
+something the other cannot — so the three framing strings moved here:
+`WORKED_EXAMPLE_HEADING`, `WORKED_EXAMPLE_DISCLAIMER` (the web's wording
+verbatim) and `WORKED_EXAMPLE_RESULT_LABEL` (`"Result of this example:"`, the
+web's, because the bare form is the confusion being fixed). They are named and
+commented as chrome for a `TWorkedExample` rather than more of its content: a
+label a reader can mistake for their own result is a correctness problem, not a
+styling one.
+
+No definition, example or reference changed. Tests extended to pin all three
+non-empty and to pin that the disclaimer says plainly the example is not the
+reader's own work.
+
 ## Publish state
 
-`proposit-shared-0.61.0-explain-review-result-explainer.tgz` built in the
-package root. Rides the existing unpublished core-4.0.0 / shared-0.60.x window
+`proposit-shared-0.61.1-explain-review-result-explainer.tgz` built in the
+package root (the 0.61.0 tarball was removed — a stray `.tgz` makes a later
+`pnpm publish` fail with EUSAGE). Rides the existing unpublished core-4.0.0 / shared-0.60.x window
 per the epic spec — nothing published, nothing pushed.
