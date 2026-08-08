@@ -212,3 +212,45 @@ identity fixed, a miss is a caller bug worth surfacing.
    stored id, so the verdict is unaffected, but the UI's
    `find(o => o.scope === "premise" && o.premiseId === x)` can read the stale
    row. Aligning the DB key with `operatorAssignmentKey` is server-side work.
+
+## Follow-up — v0.60.2, the decision target now reaches the record
+
+Standing defect (1) above is fixed. `proposit-server` v0.46.1 shipped migration
+`20260808062909_align_review_operator_assignment_identity`, which makes a
+premise-scope decision unique on `(reviewId, premiseId, scope)` with
+`expressionId` excluded from identity — the SQL transcription of
+`operatorAssignmentKey`, and it de-duplicated the rows local data had already
+accumulated. That cleared (2), so emitting a real `expressionId` on every wizard
+decision is safe: it can no longer turn an occasional double-write into the norm.
+
+The drop was one line. `computeSnapshot` now builds the operator step with the
+queue entry's `expressionId`, so `currentStep.expressionId` is the premise's
+outermost decidable operator — the same id `buildOperatorQueue` resolved and the
+same id the contradiction alert reports as `decisionExpressionId`. The design's
+§3 promise that finer targeting can arrive later without a backfill migration is
+now true of decisions made on the main path, not only of the ones taken through
+the alert.
+
+No other drop site. The only construction of a `kind: "operator"` step is the
+one in `computeSnapshot`; `getOperatorQueue()` also narrows entries to
+`premiseId`, but its consumers use it for membership tests only
+(`apply-review-jump.ts`, `results-step.tsx`), never to record a decision, so it
+was left alone.
+
+Two regression tests in `__tests__/review-engine.test.ts`, both failing before
+the change:
+
+- the emitted operator step carries its queue entry's `expressionId`, and a
+  decision made from that step persists it;
+- a premise accepted in the wizard (now carrying a real `expressionId`) and then
+  rejected from the contradiction alert's exit leaves **one** assignment, whose
+  `expressionId` is the wizard's — the interaction the two defects made
+  interlock, now covered end to end through the real engine.
+
+`pnpm run check` green. Tarball
+`proposit-shared-0.60.2-main.tgz`, tag `v0.60.2`, merged to main locally, not
+pushed or published.
+
+Still open, server-side and routed separately: `createReview` discards the
+resolved operator id and seeds its rows with `expressionId: null`, so a review's
+initial rows carry no target even though the wizard's updates now do.
