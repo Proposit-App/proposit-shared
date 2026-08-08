@@ -1598,3 +1598,188 @@ export function buildEngineWithRedundantSupport(): PropositArgumentEngine {
     engine.setBehavior("assistive")
     return engine
 }
+
+/**
+ * `implies(A, Q)` with conclusion `Q`, plus a claim-bound variable for
+ * `cUnwired` that no expression references.
+ *
+ * With `referenced: true` a second supporting premise `implies(Unwired, Q)`
+ * wires that variable into the logic, so the same argument differs in exactly
+ * one respect — which is what makes the narrowing assertable rather than
+ * incidental.
+ */
+export function buildEngineWithUnreferencedClaimVariable(
+    options: { referenced?: boolean } = {}
+): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "A holds"),
+        makeClaim("cQ", "Q holds"),
+        makeClaim("cUnwired", "Nothing reads this claim"),
+    ]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+    engine.addVariable(makeVariable("vUnwired", "U", "cUnwired"))
+
+    const conditional = (
+        premiseId: string,
+        title: string,
+        leftVariableId: string
+    ): void => {
+        const { result: pm } = engine.createPremiseWithId(premiseId, {
+            type: "freeform",
+            extras: {
+                title,
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Root`,
+            parentId: null,
+            position: 0,
+            type: "operator",
+            operator: "implies",
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Left`,
+            parentId: `${premiseId}Root`,
+            position: 0,
+            type: "variable",
+            variableId: leftVariableId,
+        })
+        addExpr(pm, premiseId, {
+            id: `${premiseId}Right`,
+            parentId: `${premiseId}Root`,
+            position: 1,
+            type: "variable",
+            variableId: "vQ",
+        })
+    }
+    conditional("pSupport", "If A then Q", "vA")
+    if (options.referenced) {
+        conditional("pUnwiredSupport", "If Unwired then Q", "vUnwired")
+    }
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vQ",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}
+
+/**
+ * `implies(A, Q)` with conclusion `Q`, plus `cCited` — a claim whose only
+ * expression reference lives inside an engine-generated derivation premise
+ * (`implies(source_var, Cited)`), because no authored premise mentions it.
+ *
+ * This is the shape behind the reported queue-longer-than-the-text-tree count:
+ * the text tree skips derivation premises, so the claim is offered as a step
+ * for a proposition the reader never sees in the argument. It is still queued
+ * — see the note on `buildClaimQueue`.
+ */
+export function buildEngineWithDerivationOnlyClaim(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "A holds"),
+        makeClaim("cQ", "Q holds"),
+        makeClaim("cCited", "Reachable only through its own citation"),
+        makeCitationClaim("cSource", "The source backing cCited"),
+    ] as TClaim[]
+    const engine = new PropositArgumentEngine(
+        makeArgument(),
+        createClaimLookup(claims),
+        { checksumConfig: CHECKSUM_CONFIG, behavior: "permissive" }
+    )
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+
+    const supportId = "pSupport"
+    const { result: pSupport } = engine.createPremiseWithId(supportId, {
+        type: "freeform",
+        extras: {
+            title: "If A then Q",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pSupport, supportId, {
+        id: "eSupportRoot",
+        parentId: null,
+        position: 0,
+        type: "operator",
+        operator: "implies",
+    })
+    addExpr(pSupport, supportId, {
+        id: "eSupportLeft",
+        parentId: "eSupportRoot",
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+    })
+    addExpr(pSupport, supportId, {
+        id: "eSupportRight",
+        parentId: "eSupportRoot",
+        position: 1,
+        type: "variable",
+        variableId: "vQ",
+    })
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    addExpr(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vQ",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    mutateCreateDerivationPremise(engine, "pCitedDerivation", {
+        argumentId: ARGUMENT_ID,
+        argumentVersion: ARGUMENT_VERSION,
+        creatorId: CREATOR_ID,
+        createdOn: NOW,
+        derivedClaimId: "cCited",
+        consequentVariableId: "vCitedDeriv",
+        consequentExpressionId: "eCitedConsequent",
+    })
+    populateDerivationFromCitations(engine, "pCitedDerivation", ["cSource"])
+
+    engine.setBehavior("assistive")
+    return engine
+}

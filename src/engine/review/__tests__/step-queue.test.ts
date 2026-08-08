@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest"
+import { evaluateArgumentForReview } from "../../review/evaluation.js"
+import type { TReviewDraft } from "../../../schemas/review.js"
 import {
     buildClaimQueue,
     buildOperatorQueue,
@@ -9,6 +11,8 @@ import {
     buildEngineWithTwoPremises,
     buildEngineWithClaimSharedAcrossPremises,
     buildEngineWithCitationBackedDerivationPremise,
+    buildEngineWithDerivationOnlyClaim,
+    buildEngineWithUnreferencedClaimVariable,
 } from "./fixtures.js"
 
 describe("step-queue", () => {
@@ -153,5 +157,123 @@ describe("step-queue", () => {
                 decidedKeys: new Set(["a", "b"]),
             })
         ).toEqual({ done: true })
+    })
+})
+
+describe("claim-queue reachability", () => {
+    it("does not offer a claim whose variable no expression references", () => {
+        const engine = buildEngineWithUnreferencedClaimVariable()
+        // The variable exists and is bound to a normal claim, so nothing about
+        // its kind keeps it out — only that nothing reads it.
+        const unwired = engine
+            .getVariables()
+            .find((v) => "claimId" in v && v.claimId === "cUnwired")
+        expect(unwired).toBeDefined()
+        expect(engine.getProjectClaim("cUnwired")?.type).toBe("normal")
+        const referenced = new Set(
+            engine
+                .listPremises()
+                .flatMap((p) => p.getExpressions())
+                .filter((e) => e.type === "variable")
+                .map((e) => e.variableId)
+        )
+        expect(referenced.has(unwired!.id)).toBe(false)
+        expect(buildClaimQueue(engine)).not.toContain("cUnwired")
+    })
+
+    it("offers the same claim once one expression references its variable", () => {
+        // The only difference between the two arguments is that one premise
+        // reads the variable. Guards the narrowing against over-reach.
+        const engine = buildEngineWithUnreferencedClaimVariable({
+            referenced: true,
+        })
+        expect(buildClaimQueue(engine)).toContain("cUnwired")
+    })
+
+    it("queues exactly the authored claims an assignment can bear on", () => {
+        const engine = buildEngineWithUnreferencedClaimVariable()
+        expect(buildClaimQueue(engine)).toEqual(["cA", "cQ"])
+    })
+
+    it("still offers a claim reachable only through a derivation premise", () => {
+        // Recorded rather than fixed: the queue is one longer than the argument
+        // renders, but the step is not inert — the derivation premise holding
+        // that claim is counted among the surviving supporting premises, so
+        // dropping it would change the argument assessment. See the note on
+        // buildClaimQueue.
+        const engine = buildEngineWithDerivationOnlyClaim()
+        const queue = buildClaimQueue(engine)
+        expect(queue).toContain("cCited")
+        const authoredClaimIds = new Set(
+            engine
+                .listPremises()
+                .filter((p) => p.toPremiseData().type !== "derivation")
+                .flatMap((p) => p.getExpressions())
+                .filter((e) => e.type === "variable")
+                .map((e) => {
+                    const variable = engine.getVariable(e.variableId)
+                    return variable && "claimId" in variable
+                        ? variable.claimId
+                        : undefined
+                })
+        )
+        expect(authoredClaimIds.has("cCited")).toBe(false)
+        expect(queue.length).toBe(authoredClaimIds.size + 1)
+    })
+})
+
+describe("why a derivation-only claim is not narrowed away", () => {
+    const NOW = new Date("2026-04-14T00:00:00Z")
+
+    function draftWith(claims: Record<string, boolean | null>): TReviewDraft {
+        return {
+            schemaVersion: 1,
+            reviewId: "r",
+            argumentId: "a",
+            argumentVersion: 1,
+            createdAt: NOW,
+            updatedAt: NOW,
+            phase: "done",
+            currentStepIndex: 0,
+            claimAssignments: Object.fromEntries(
+                Object.entries(claims).map(([claimId, value]) => [
+                    claimId,
+                    {
+                        assignmentId: claimId,
+                        claimId,
+                        value,
+                        skipped: false,
+                        decidedAt: NOW,
+                    },
+                ])
+            ),
+            operatorAssignments: [
+                {
+                    assignmentId: "pSupport",
+                    premiseId: "pSupport",
+                    scope: "premise" as const,
+                    decision: "accepted" as const,
+                    decidedAt: NOW,
+                },
+            ],
+        }
+    }
+
+    it("the step is not inert: answering it moves the supporting aggregate", () => {
+        // The measurement behind the note on buildClaimQueue. The derivation
+        // premise holding this claim is counted among the surviving supporting
+        // premises, so removing the step would leave it unresolved and drag the
+        // aggregate to unknown for every reader who would have answered.
+        const engine = buildEngineWithDerivationOnlyClaim()
+        const answered = evaluateArgumentForReview(
+            draftWith({ cA: true, cQ: true, cCited: true }),
+            engine
+        )
+        const unanswered = evaluateArgumentForReview(
+            draftWith({ cA: true, cQ: true }),
+            engine
+        )
+        expect(answered.survivingSupportingPremisesTrue).toBe(true)
+        expect(unanswered.survivingSupportingPremisesTrue).toBe(null)
     })
 })

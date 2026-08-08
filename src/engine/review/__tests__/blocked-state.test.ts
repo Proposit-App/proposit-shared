@@ -20,6 +20,11 @@ const memoryStore = (): TReviewStore => {
             saved = undefined
             return Promise.resolve()
         },
+        upsertClaimAssignment: () => Promise.resolve(),
+        upsertOperatorAssignment: () => Promise.resolve(),
+        saveResult: () => Promise.resolve(),
+        keyFor: (key) =>
+            `${key.argumentId}:${key.argumentVersion}:${key.userId ?? ""}`,
     }
 }
 

@@ -47,9 +47,29 @@ export type TStepQueue =
  * premises below, and it is narrowing for the same reason: engine-generated
  * wiring is not something a reviewer can meaningfully accept or reject.
  *
+ * **Reachability is already expression-level.** Core's
+ * `collectArgumentReferencedClaims` walks each premise's expression *tree* from
+ * its root and records a claim only when it meets a variable expression bound to
+ * one, so a claim-bound variable that no expression references is invisible
+ * here — nothing extra is needed to keep it out, and a variable-level narrowing
+ * would be a no-op.
+ *
+ * **A claim reachable only through a derivation premise is still offered**, and
+ * that is the case behind a queue longer than the argument's rendered claim
+ * count: the text tree skips derivation premises, so the reader is asked about a
+ * proposition they cannot see anywhere in the argument. Dropping it here is not
+ * safe today. Such a claim sits inside `implies(source_var, Q)`, which is
+ * counted among the surviving supporting premises — measured on
+ * `buildEngineWithDerivationOnlyClaim`, answering the step `true` yields
+ * `survivingSupportingPremisesTrue: true` while leaving it unanswered yields
+ * `null`. Removing the step would therefore degrade the argument assessment for
+ * every reader who answered it. The narrowing belongs with whatever stops
+ * counting an unreferenced claim's wiring as a supporting premise.
+ *
  * Consequence for callers: the length of this queue is **not** the argument's
  * claim count and must not be labelled as one. Every source and every axiom the
- * argument cites is missing from it.
+ * argument cites is missing from it, and a claim reachable only through engine
+ * wiring is present in it.
  */
 export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
     const ctx = toEvaluationContext(argEngine)
