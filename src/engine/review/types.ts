@@ -1,7 +1,5 @@
-import type {
-    TCoreEvaluationGrade,
-    TCoreTrivalentValue,
-} from "@proposit/proposit-core"
+import type { TCoreTrivalentValue } from "@proposit/proposit-core"
+import type { TReviewAssessment } from "./assessment.js"
 
 /** Three-valued assignment pill, surfaced on claim nodes. */
 export type TAssignmentPill = "true" | "false" | "unknown" | "skipped"
@@ -13,14 +11,6 @@ export type TAssignmentPill = "true" | "false" | "unknown" | "skipped"
  */
 export type TAssignmentProvenance = "user" | "default"
 
-/** Verdict rendered on the conclusion premise node after evaluation. */
-export type TConclusionVerdict =
-    | "Valid and Sound"
-    | "Failing"
-    | "Logically Invalid"
-    | "Vacuous"
-    | "Indeterminate"
-
 /** Review-phase data merged into the graph when rendering with review overlay. */
 export interface TReviewOverlay {
     /** User's assignment per claimId. */
@@ -29,8 +19,6 @@ export interface TReviewOverlay {
     propagatedValues: Record<string, boolean | null>
     /** Operator accept/reject decision per expressionId. */
     operatorDecisions: Record<string, "accepted" | "rejected">
-    /** Verdict for the conclusion premise node. */
-    conclusionVerdict?: TConclusionVerdict
     /**
      * Provenance of each claim's effective value, per `claimId`. Populated by
      * the inline-review overlay (`buildInlineReviewOverlay`); left undefined by
@@ -44,6 +32,9 @@ export interface TReviewOverlay {
      * {@link propagatedValues}).
      */
     claimPropagatedValues?: Record<string, TCoreTrivalentValue>
-    /** Argument-level evaluation grade, shown at the conclusion premise. */
-    grade?: TCoreEvaluationGrade
+    /**
+     * The two axes composed from the evaluation, shown at the conclusion
+     * premise. Absent when there is nothing evaluated yet.
+     */
+    assessment?: TReviewAssessment
 }

@@ -272,50 +272,6 @@ describe("ReviewEngine — operator phase", () => {
         expect(ops.length).toBe(1)
         expect(ops[0].decision).toBe("rejected")
     })
-
-    it("expandPremiseToExpressions seeds per-expression entries from the premise-scope decision", async () => {
-        const re = new ReviewEngine({
-            argEngine: buildEngineWithTwoPremises(),
-            store: new LocalStorageReviewStore(),
-        })
-        re.start()
-        await completeClaimPhase(re)
-        re.setOperatorAssignment({
-            premiseId: "pConclusion",
-            scope: "premise",
-            decision: "accepted",
-        })
-        re.expandPremiseToExpressions("pConclusion")
-        const exprOps = re
-            .getSnapshot()
-            .draft.operatorAssignments.filter(
-                (o) => o.scope === "expression" && o.premiseId === "pConclusion"
-            )
-        expect(exprOps.length).toBeGreaterThanOrEqual(1)
-        expect(exprOps.every((o) => o.decision === "accepted")).toBe(true)
-    })
-
-    it("backOutToPremiseLevel removes all expression-scope entries for that premise", async () => {
-        const re = new ReviewEngine({
-            argEngine: buildEngineWithTwoPremises(),
-            store: new LocalStorageReviewStore(),
-        })
-        re.start()
-        await completeClaimPhase(re)
-        re.setOperatorAssignment({
-            premiseId: "pConclusion",
-            scope: "premise",
-            decision: "accepted",
-        })
-        re.expandPremiseToExpressions("pConclusion")
-        re.backOutToPremiseLevel("pConclusion")
-        const ops = re
-            .getSnapshot()
-            .draft.operatorAssignments.filter(
-                (o) => o.premiseId === "pConclusion"
-            )
-        expect(ops.every((o) => o.scope === "premise")).toBe(true)
-    })
 })
 
 describe("ReviewEngine — evaluation + edit", () => {
@@ -533,7 +489,6 @@ describe("ReviewEngine.mode (readonly)", () => {
         })
         re.skipOperator("pConclusion")
         re.resetSkipFlags()
-        re.backOutToPremiseLevel("pConclusion")
         re.proceedWithSkippedAsUnknown()
         await re.runValidityCheck()
         await re.reloadFromStore()
@@ -599,7 +554,11 @@ describe("ReviewEngine.mode (readonly)", () => {
         })
         const before = re.getSnapshot()
         const beforeCount = before.draft.operatorAssignments.length
-        re.backOutToPremiseLevel("pConclusion")
+        re.setOperatorAssignment({
+            premiseId: "pConclusion",
+            scope: "premise",
+            decision: "rejected",
+        })
         const after = re.getSnapshot()
         // Snapshot identity is preserved because notify() never ran.
         expect(after).toBe(before)

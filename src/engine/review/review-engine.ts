@@ -403,33 +403,6 @@ export class ReviewEngine {
         this.notify()
     }
 
-    expandPremiseToExpressions(premiseId: UUID): void {
-        const premise = this.argEngine.getPremise(premiseId)
-        if (!premise) return
-        const premiseLevel = this.draft.operatorAssignments.find(
-            (o) => o.scope === "premise" && o.premiseId === premiseId
-        )
-        const seed: "accepted" | "rejected" =
-            premiseLevel?.decision ?? "accepted"
-        for (const expr of premise.getDecidableOperatorExpressions()) {
-            this.setOperatorAssignment({
-                premiseId,
-                scope: "expression",
-                expressionId: expr.id,
-                decision: seed,
-            })
-        }
-    }
-
-    backOutToPremiseLevel(premiseId: UUID): void {
-        if (this.mode === "readonly") return
-        this.draft.operatorAssignments = this.draft.operatorAssignments.filter(
-            (o) => !(o.scope === "expression" && o.premiseId === premiseId)
-        )
-        this.draft.updatedAt = new Date()
-        this.notify()
-    }
-
     // ─── Navigation ────────────────────────────────────────────────────
     proceedWithSkippedAsUnknown(): void {
         if (this.mode === "readonly") return

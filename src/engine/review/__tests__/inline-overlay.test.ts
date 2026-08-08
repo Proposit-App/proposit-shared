@@ -8,13 +8,10 @@ import {
 import type { TAssignmentPill } from "../../review/types.js"
 import type { TTrivalentValue } from "../../../schemas/review.js"
 
-const VALID_GRADES = new Set([
-    "sound",
-    "vacuously-true",
-    "unsound",
-    "counterexample",
-    "inadmissible",
-    "indeterminate",
+const OUTCOMES = new Set([
+    "reaches-conclusion",
+    "does-not-reach",
+    "premises-contradict",
 ])
 
 describe("buildInlineReviewOverlay", () => {
@@ -112,7 +109,7 @@ describe("buildInlineReviewOverlay", () => {
         expect(base({ cA: false }, {})).toBe("false")
     })
 
-    it("surfaces per-claim propagated values and the argument grade", () => {
+    it("surfaces per-claim propagated values and the argument assessment", () => {
         const engine = buildEngineWithTwoPremises()
         const overlay = buildInlineReviewOverlay({
             argEngine: engine,
@@ -122,7 +119,7 @@ describe("buildInlineReviewOverlay", () => {
         // Propagated map is claim-keyed and carries the evaluated value.
         expect(overlay.claimPropagatedValues!.cA).toBe(true)
         expect(overlay.claimPropagatedValues!.cB).toBe(true)
-        expect(VALID_GRADES.has(overlay.grade!)).toBe(true)
+        expect(OUTCOMES.has(overlay.assessment!.argument.outcome)).toBe(true)
     })
 
     it("propagates unknown → true through an accepted inference while the chip value stays unknown", () => {
@@ -154,7 +151,8 @@ describe("buildInlineReviewOverlay", () => {
         expect(overlay.claimPropagatedValues!.cA).toBe(null)
         expect(overlay.claimPropagatedValues!.cB).toBe(null)
         expect(overlay.claimPropagatedValues!.cQ).toBe(null)
-        expect(overlay.grade).toBe("indeterminate")
+        expect(overlay.assessment!.argument.outcome).toBe("does-not-reach")
+        expect(overlay.assessment!.argument.reason).toBe("not-enough-settled")
     })
 
     it("still propagates through a conjunction once its conjuncts are known", () => {
@@ -180,6 +178,6 @@ describe("buildInlineReviewOverlay", () => {
         })
         expect(overlay.claimValues.cAxiom).toBe("true")
         expect(overlay.claimProvenance!.cAxiom).toBe("default")
-        expect(VALID_GRADES.has(overlay.grade!)).toBe(true)
+        expect(OUTCOMES.has(overlay.assessment!.argument.outcome)).toBe(true)
     })
 })

@@ -1,14 +1,12 @@
-import {
-    gradeEvaluation,
-    type TCoreOperatorAssignment,
-    type TCoreTrivalentValue,
-    type TCoreVariableAssignment,
+import type {
+    TCoreOperatorAssignment,
+    TCoreTrivalentValue,
+    TCoreVariableAssignment,
 } from "@proposit/proposit-core"
 import type { PropositArgumentEngine } from "../engine.js"
 import type {
     TAssignmentPill,
     TAssignmentProvenance,
-    TConclusionVerdict,
     TReviewOverlay,
 } from "../review/types.js"
 import type {
@@ -16,6 +14,7 @@ import type {
     TReviewResult,
     TTrivalentValue,
 } from "../../schemas/review.js"
+import { composeAssessment } from "./assessment.js"
 import { computePropagatedVariableValues } from "./evaluation.js"
 import { materialFingerprint } from "./fingerprint.js"
 
@@ -41,24 +40,6 @@ function trivalentForPill(pill: TAssignmentPill): TCoreTrivalentValue {
     if (pill === "true") return true
     if (pill === "false") return false
     return null // "unknown" and "skipped" both evaluate as unknown
-}
-
-export function verdictOf(
-    result: TReviewResult | undefined
-): TConclusionVerdict | undefined {
-    if (!result) return undefined
-    const e = result.evaluation
-    if (e.isCounterexample === true) return "Logically Invalid"
-    if (e.conclusionTrue === false) return "Failing"
-    // Soundness requires the supporting premises to be true. Unknown or absent
-    // is not true, so neither verdict below can be awarded on it.
-    if (e.allSupportingPremisesTrue !== true) return "Indeterminate"
-    const vacuous =
-        e.conclusion?.inferenceDiagnostic?.kind === "implies" &&
-        e.conclusion.inferenceDiagnostic.isVacuouslyTrue === true
-    if (vacuous && e.conclusionTrue === true) return "Vacuous"
-    if (e.conclusionTrue === true) return "Valid and Sound"
-    return "Indeterminate"
 }
 
 /**
@@ -107,7 +88,7 @@ export function buildReviewOverlay(params: {
         claimValues,
         propagatedValues,
         operatorDecisions,
-        conclusionVerdict: verdictOf(result),
+        assessment: composeAssessment(result?.evaluation),
     }
 }
 
@@ -126,8 +107,7 @@ export function buildReviewOverlay(params: {
  *
  * The merged assignment is fed to `evaluate()` with every *inference* operator
  * (`implies`/`iff`) accepted so transitive grounding (`unknown → true`)
- * propagates; the overlay carries the claim-keyed propagated values and the
- * argument grade the chip renders. `and`/`or` are deliberately left undecided —
+ * propagates; the overlay carries the claim-keyed propagated values. `and`/`or` are deliberately left undecided —
  * see the note at the assignment-building code below.
  *
  * Axiom-bound keys are stripped from the assignment (`evaluate()` throws
@@ -257,7 +237,7 @@ export function buildInlineReviewOverlay(params: {
         operatorDecisions: operatorAssignments,
         claimProvenance,
         claimPropagatedValues,
-        grade: gradeEvaluation(result).grade,
+        assessment: composeAssessment(result),
     }
 }
 
