@@ -1,1 +1,82 @@
 # Release notes — upcoming
+
+## A review now says two things, and can say both at once
+
+A review used to end in one word about the whole thing — sound, unsound,
+vacuously true, a counterexample, indeterminate. One word could not hold what a
+reader actually finds, because two different questions were sharing it: _is the
+conclusion true?_ and _did the author get there?_ An argument whose conclusion
+you already believed and whose reasoning did nothing has a true conclusion and a
+failed argument, and there was no way to say that.
+
+So a review now reports both, separately.
+
+The **conclusion assessment** is about the proposition: True, False or Unknown,
+with where that came from stated as its own plain sentences — "You assigned
+this." and "The argument reaches it on its own.", or "It holds only because you
+assigned it." Both can be true at once, and when they are, both are shown: a
+reader who agrees with an argument that also works should not have the argument
+credited with nothing.
+
+The **argument assessment** is about the author's work: _Reaches its
+conclusion_, _Doesn't reach its conclusion_, or _Its premises contradict each
+other_. When it doesn't reach, it says which of four things happened — the
+conclusion came from you, you rejected part of its reasoning, not enough was
+settled, or its premises hold and its conclusion doesn't follow.
+
+Rejected premises are counted beside the outcome rather than folded into it, so
+"Reaches its conclusion · 1 premise rejected" is now sayable. That is the honest
+reading of an argument with two paths to its conclusion where you refused one
+and granted the other. Nothing here uses proof language: every one of these
+findings is relative to one reader's answers, so _proved_ would overclaim.
+
+## One decision per premise, about the premise
+
+Deciding a premise now targets one operator — its outermost one that isn't a
+negation. Everything else inside the premise is left alone and works out
+normally from whatever you actually answered.
+
+This fixes values appearing that nobody supplied. Accepting "if A and B, then C"
+used to mark the _and_ accepted as well, and an accepted _and_ was read as an
+assertion that both halves hold — so A and B quietly became true in a review
+where you had said nothing about either. They now stay exactly as you left them.
+
+## Contradictions are caught, explained, and given a way out
+
+If you accept a premise and then answer in a way that makes that premise false,
+the review says so — naming the premise, what accepting it committed you to, and
+the claims involved by their titles rather than by letters.
+
+When one of the colliding values wasn't yours, it says where it came from: "'Q
+holds' became True when you accepted 'If P then Q', from P holds. You did not
+assign it." Without that, the alert points at a value you never set, and may
+send you to reject the wrong step.
+
+Two ways out are always offered. You can change the answers behind it — and it
+offers the ones you actually gave, not the derived value you are looking at. Or
+you can reject the premise as _counterexamples exist_, which is the honest
+record of "this step generally holds, but not here". That position is perfectly
+coherent; it is just something the logic cannot express directly, and the alert
+routes you to the thing that says what you meant rather than telling you that
+you made a mistake.
+
+Constraint premises read as **declined**, never denied or refuted. Declining one
+withholds it; it claims nothing is false, which is exactly why your answers stay
+as they are.
+
+## A review that contradicts itself can't be finished
+
+The results step is now a gate rather than a summary. While a contradiction you
+can resolve is standing, the review holds in a **blocked** state and cannot be
+completed. Fix it, and it re-checks — because resolving one collision sometimes
+uncovers another behind it.
+
+A blocked review has no assessment at all, the same as one still in progress. It
+is never published and never counted, so an incoherent review can never be
+mistaken for a genuine negative verdict.
+
+The other case is different, and treated differently. When an argument's own
+premises cannot all hold at once, no answer of yours could change that — so you
+are told at the start and never blocked. Your answers are still recorded, and
+you can finish. The rule decides whether a resolution exists, not whose fault
+anything is, and nothing says otherwise.

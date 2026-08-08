@@ -1,5 +1,8 @@
-At the conclusion of an argument I see an evaluation grade — for example sound,
-unsound, vacuously true, a counterexample, inadmissible, or indeterminate —
-computed from the current claim assignments with every inference treated as
-holding. As I change my reactions or in-review assignments the grade updates
-live, so I can see whether the argument currently holds together.
+At the conclusion of an argument I see two assessments rather than one verdict.
+The conclusion assessment tells me whether the conclusion comes out true, false
+or unknown, and states separately whether I assigned it and whether the argument
+reaches it on its own. The argument assessment tells me whether the argument
+reaches its conclusion, doesn't reach it — and why not — or has premises that
+contradict each other, with any premises I rejected counted beside it rather
+than folded into it. Both are computed from my current claim assignments and the
+steps I granted, and both update live as I change them.
