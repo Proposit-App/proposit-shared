@@ -1,0 +1,7 @@
+id: cap-6695f1
+name: Be told when an argument's premises contradict each other
+Status: Missing
+Planning doc: 2026-08-07-review-flow-semantics-for-striking-contradiction-and-the-blocked-state
+Feature: argument-evaluation
+Subject:
+    - review
