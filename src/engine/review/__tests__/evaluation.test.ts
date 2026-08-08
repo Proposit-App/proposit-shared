@@ -265,27 +265,27 @@ describe("evaluation", () => {
             cQ: true,
         })
         expect(result.ok).toBe(true)
-        expect(result.allSupportingPremisesTrue).toBe(true)
+        expect(result.survivingSupportingPremisesTrue).toBe(true)
         expect(result.conclusionTrue).toBe(true)
     })
 
-    it("leaves soundness unknown when a cited claim is rejected and the conclusion holds", () => {
+    it("leaves the surviving supporting premises unknown when a cited claim is rejected and the conclusion holds", () => {
         // `implies(unknown, false)` is unknown — the derivation premise can
         // only be true if the source is also false, and the source is no
-        // longer something the reviewer is asked about. Soundness is therefore
-        // undetermined rather than false.
+        // longer something the reviewer is asked about. The surviving
+        // supporting premises are therefore undetermined rather than false.
         //
         // This is the one combination in the shape that does not settle. It is
         // not reachable through the conclusion, which still decides, and it is
-        // not a rendering problem — whether rejecting a sourced claim ought to
-        // make an argument unsound is a question about evaluation semantics,
-        // not about which claims are queued.
+        // not a rendering problem — whether assigning a sourced claim false
+        // ought to drag the supporting aggregate down is a question about
+        // evaluation semantics, not about which claims are queued.
         const result = reviewConclusionThroughCitedClaim({
             cCited: false,
             cQ: true,
         })
         expect(result.ok).toBe(true)
-        expect(result.allSupportingPremisesTrue).toBe(null)
+        expect(result.survivingSupportingPremisesTrue).toBe(null)
         expect(result.conclusionTrue).toBe(true)
     })
 

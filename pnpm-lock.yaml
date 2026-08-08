@@ -19,8 +19,8 @@ importers:
         specifier: ^9.39.4
         version: 9.39.4
       '@proposit/proposit-core':
-        specifier: ^3.4.2
-        version: 3.4.2
+        specifier: file:/Users/brian/Projects/Proposit-App/proposit-core/proposit-proposit-core-4.0.0-feature-rejection-strikes-the-premise.tgz
+        version: file:../proposit-core/proposit-proposit-core-4.0.0-feature-rejection-strikes-the-premise.tgz
       '@types/node':
         specifier: ^25.5.2
         version: 25.6.0
@@ -357,8 +357,9 @@ packages:
   '@oxc-project/types@0.126.0':
     resolution: {integrity: sha512-oGfVtjAgwQVVpfBrbtk4e1XDyWHRFta6BS3GWVzrF8xYBT2VGQAk39yJS/wFSMrZqoiCU4oghT3Ch0HaHGIHcQ==}
 
-  '@proposit/proposit-core@3.4.2':
-    resolution: {integrity: sha512-WsPzF+dXvEbwECCIIu4LXh0G2rHKIPES1+MBAD/MmeKOHxb/OUtmPv21IrLJ0DKEdJF1PD9rNT8uBqke1FGtzg==}
+  '@proposit/proposit-core@file:../proposit-core/proposit-proposit-core-4.0.0-feature-rejection-strikes-the-premise.tgz':
+    resolution: {integrity: sha512-gOuII5JvfJiitJ1KIO8B8Ry3miNPlajXcYjP2GENoMMVSvL5ThudiKdac/cKDRQU6LQJmk9dK0qNEbZJTEIUjw==, tarball: file:../proposit-core/proposit-proposit-core-4.0.0-feature-rejection-strikes-the-premise.tgz}
+    version: 4.0.0
     engines: {node: '>=22.3.0'}
     hasBin: true
     peerDependencies:
@@ -1535,7 +1536,7 @@ snapshots:
 
   '@oxc-project/types@0.126.0': {}
 
-  '@proposit/proposit-core@3.4.2':
+  '@proposit/proposit-core@file:../proposit-core/proposit-proposit-core-4.0.0-feature-rejection-strikes-the-premise.tgz':
     dependencies:
       commander: 14.0.3
       typebox: 1.3.8

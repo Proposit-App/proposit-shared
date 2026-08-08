@@ -229,6 +229,30 @@ export const TCoreExpressionAssignmentSchema = Type.Object({
     ),
 })
 
+/** Was a value supplied by the reader, and does it hold once that is withheld. */
+export const ValueAttributionSchema = Type.Object({
+    assertedByReader: Type.Boolean(),
+    reachedWithoutAssertion: Type.Boolean(),
+})
+
+export const ValueOriginSchema = Type.Union([
+    Type.Literal("asserted"),
+    Type.Literal("derived"),
+    Type.Literal("unassigned"),
+])
+
+export const DerivationStepSchema = Type.Object({
+    expressionId: Type.String(),
+    premiseId: Type.String(),
+    fromVariableIds: Type.Array(Type.String()),
+})
+
+export const VariableProvenanceSchema = Type.Object({
+    value: TrivalentValueSchema,
+    origin: ValueOriginSchema,
+    derivedBy: Type.Optional(DerivationStepSchema),
+})
+
 export const TCoreArgumentEvaluationResultSchema = Type.Object({
     ok: Type.Boolean(),
     validation: Type.Optional(TCoreValidationResultSchema),
@@ -242,15 +266,32 @@ export const TCoreArgumentEvaluationResultSchema = Type.Object({
         Type.Array(TCorePremiseEvaluationResultSchema)
     ),
     isAdmissibleAssignment: Type.Optional(TrivalentValueSchema),
-    allSupportingPremisesTrue: Type.Optional(TrivalentValueSchema),
+    // Premises the reader struck by rejecting an operator inside them. They
+    // stay in `supportingPremises` / `constraintPremises` so a consumer can
+    // render them crossed out; they are excluded from every aggregate.
+    struckPremiseIds: Type.Optional(Type.Array(Type.String())),
+    survivingSupportingPremiseCount: Type.Optional(Type.Number()),
+    // Vacuously true when every supporting premise is struck — read together
+    // with `survivingSupportingPremiseCount`, never as "the argument worked".
+    survivingSupportingPremisesTrue: Type.Optional(TrivalentValueSchema),
     conclusionTrue: Type.Optional(TrivalentValueSchema),
-    isCounterexample: Type.Optional(TrivalentValueSchema),
-    preservesTruthUnderAssignment: Type.Optional(TrivalentValueSchema),
+    premisesHoldConclusionFalse: Type.Optional(TrivalentValueSchema),
+    conclusionAttribution: Type.Optional(ValueAttributionSchema),
+    claimAttribution: Type.Optional(
+        Type.Record(Type.String(), ValueAttributionSchema)
+    ),
+    // `null` means "not determined" — more free variables than the search
+    // ceiling. `false` means the surviving premises contradict each other and
+    // nothing is derived.
+    premiseSetSatisfiable: Type.Optional(TrivalentValueSchema),
     // Argument-wide propagated-variable map (proposit-core 0.9.0+).
     // Populated when evaluateArgument is called with includeDiagnostics: true.
     // Key set = referencedVariableIds (claim-bound and externally-bound).
     propagatedVariableValues: Type.Optional(
         Type.Record(Type.String(), TrivalentValueSchema)
+    ),
+    variableProvenance: Type.Optional(
+        Type.Record(Type.String(), VariableProvenanceSchema)
     ),
 })
 
