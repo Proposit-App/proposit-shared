@@ -15,6 +15,7 @@ import type {
     TTrivalentValue,
 } from "../../schemas/review.js"
 import { composeAssessment } from "./assessment.js"
+import { outermostDecidableOperator } from "./decision-target.js"
 import { computePropagatedVariableValues } from "./evaluation.js"
 import { materialFingerprint } from "./fingerprint.js"
 
@@ -67,15 +68,15 @@ export function buildReviewOverlay(params: {
 
     const operatorDecisions: Record<string, "accepted" | "rejected"> = {}
     if (draft) {
-        // Fan out premise-scope decisions via the engine's decidable operator expressions,
-        // then layer expression-scope overrides on top — matches evaluation's canonicalize.
+        // Paint a premise-scope decision on the one operator it was made about
+        // — the premise's outermost decidable operator — then layer
+        // expression-scope overrides on top. Matches what evaluation feeds the
+        // engine, so the graph never shows a decision the evaluator didn't see.
         for (const op of draft.operatorAssignments) {
             if (op.scope !== "premise") continue
             const p = argEngine.getPremise(op.premiseId)
-            if (!p) continue
-            for (const e of p.getDecidableOperatorExpressions()) {
-                operatorDecisions[e.id] = op.decision
-            }
+            const target = p && outermostDecidableOperator(p)
+            if (target) operatorDecisions[target.id] = op.decision
         }
         for (const op of draft.operatorAssignments) {
             if (op.scope === "expression" && op.expressionId) {

@@ -1016,3 +1016,154 @@ export async function completeFullPhases(re: ReviewEngineLike): Promise<void> {
         }
     }
 }
+
+/**
+ * Builds an engine carrying the two negation shapes the decision-target rule
+ * has to get right, as freeform premises:
+ *
+ *   - `pNegatedConjunction` — `¬(A ∧ B)`. The reviewer decides the `∧`, which
+ *     sits under the negation.
+ *   - `pNegatedAtom` — `¬Q`. No decidable operator at any depth, so there is
+ *     nothing to offer.
+ *
+ * A negated *conditional* is deliberately absent: the grammar puts inference
+ * operators at a premise root only, so `¬(A → B)` cannot be built.
+ *
+ * Both premises are constraint-rooted (a `not` root is not an inference), so
+ * neither enters the operator queue; the rule itself is asserted directly on
+ * the premises.
+ */
+export function buildEngineWithNegatedPremises(): PropositArgumentEngine {
+    const claims = [
+        makeClaim("cA", "Claim cA"),
+        makeClaim("cB", "Claim cB"),
+        makeClaim("cQ", "Conclusion claim cQ"),
+    ]
+    const claimLookup = createClaimLookup(claims)
+    const engine = new PropositArgumentEngine(makeArgument(), claimLookup, {
+        checksumConfig: CHECKSUM_CONFIG,
+        behavior: "permissive",
+    })
+    for (const c of claims) engine.setClaim(c)
+
+    engine.addVariable(makeVariable("vA", "A", "cA"))
+    engine.addVariable(makeVariable("vB", "B", "cB"))
+    engine.addVariable(makeVariable("vQ", "Q", "cQ"))
+    engine.addVariable(makeVariable("vQ2", "Q2", "cQ"))
+
+    const add = (
+        premise: { addExpression: (e: never) => unknown },
+        premiseId: string,
+        expr: {
+            id: string
+            parentId: string | null
+            position: number
+            type: "operator" | "variable"
+            operator?: "not" | "and"
+            variableId?: string
+        }
+    ): void => {
+        premise.addExpression({
+            id: expr.id,
+            argumentId: ARGUMENT_ID,
+            argumentVersion: ARGUMENT_VERSION,
+            parentId: expr.parentId,
+            premiseId,
+            position: expr.position,
+            type: expr.type,
+            variableId: expr.variableId ?? null,
+            operator: expr.operator ?? null,
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        } as never)
+    }
+
+    const negatedConjunctionId = "pNegatedConjunction"
+    const { result: pNegatedConjunction } = engine.createPremiseWithId(
+        negatedConjunctionId,
+        {
+            type: "freeform",
+            extras: {
+                title: "Not (A and B)",
+                role: "supporting",
+                createdOn: NOW,
+                creatorId: CREATOR_ID,
+            },
+        }
+    )
+    add(pNegatedConjunction, negatedConjunctionId, {
+        id: "eNotRoot",
+        parentId: null,
+        position: 0,
+        type: "operator",
+        operator: "not",
+    })
+    add(pNegatedConjunction, negatedConjunctionId, {
+        id: "eInnerAnd",
+        parentId: "eNotRoot",
+        position: 0,
+        type: "operator",
+        operator: "and",
+    })
+    add(pNegatedConjunction, negatedConjunctionId, {
+        id: "eInnerLeft",
+        parentId: "eInnerAnd",
+        position: 0,
+        type: "variable",
+        variableId: "vA",
+    })
+    add(pNegatedConjunction, negatedConjunctionId, {
+        id: "eInnerRight",
+        parentId: "eInnerAnd",
+        position: 1,
+        type: "variable",
+        variableId: "vB",
+    })
+
+    const negatedAtomId = "pNegatedAtom"
+    const { result: pNegatedAtom } = engine.createPremiseWithId(negatedAtomId, {
+        type: "freeform",
+        extras: {
+            title: "Not Q",
+            role: "supporting",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    add(pNegatedAtom, negatedAtomId, {
+        id: "eNegatedAtomRoot",
+        parentId: null,
+        position: 0,
+        type: "operator",
+        operator: "not",
+    })
+    add(pNegatedAtom, negatedAtomId, {
+        id: "eNegatedAtomChild",
+        parentId: "eNegatedAtomRoot",
+        position: 0,
+        type: "variable",
+        variableId: "vQ2",
+    })
+
+    const conclusionId = "pConclusion"
+    const { result: pConclusion } = engine.createPremiseWithId(conclusionId, {
+        type: "freeform",
+        extras: {
+            title: "Conclusion — Q",
+            role: "conclusion",
+            createdOn: NOW,
+            creatorId: CREATOR_ID,
+        },
+    })
+    add(pConclusion, conclusionId, {
+        id: "eConclusionRoot",
+        parentId: null,
+        position: 0,
+        type: "variable",
+        variableId: "vQ",
+    })
+    engine.setConclusionPremise(conclusionId)
+
+    engine.setBehavior("assistive")
+    return engine
+}

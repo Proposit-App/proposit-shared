@@ -10,6 +10,7 @@ import {
     type TCoreOperatorAssignment,
 } from "@proposit/proposit-core"
 import type { ProjectEngine } from "../mutations/types.js"
+import { outermostDecidableOperator } from "./decision-target.js"
 import type { TReviewDraft } from "../../schemas/review.js"
 
 /**
@@ -57,9 +58,18 @@ export function toEvaluationContext(
 /**
  * Build a per-expression core assignment from the draft's mixed-scope entries.
  *
- * Delegates operator fan-out to proposit-core's `canonicalizeOperatorAssignments`
- * (available in 0.9.0+): premise-scope entries expand to every non-NOT operator
- * expression in the premise; expression-scope overrides layer on top.
+ * A premise-scope decision resolves to **one** expression: that premise's
+ * outermost decidable operator. It is deliberately *not* handed to
+ * `canonicalizeOperatorAssignments` as `premiseScope`, which would expand it
+ * across every non-`not` operator in the premise — accepting `(A ∧ B) → C`
+ * would then mark the `∧` accepted too, and an accepted conjunction forces each
+ * unknown conjunct true, inventing values for `A` and `B` that nobody supplied.
+ * Nested operators are left unassigned and evaluate normally from whatever
+ * their operands actually are.
+ *
+ * Core still validates the resulting override ids, so a decision recorded
+ * against something that is not a decidable operator throws rather than
+ * silently evaluating differently.
  */
 export function buildExpressionAssignment(
     draft: TReviewDraft,
@@ -83,20 +93,22 @@ export function buildExpressionAssignment(
         variables[v.id] = c ? (c.skipped ? null : c.value) : null
     }
 
-    const premiseScope: Record<string, TCoreOperatorAssignment> = {}
+    const ctx = toEvaluationContext(argEngine)
     const expressionOverrides: Record<string, TCoreOperatorAssignment> = {}
     for (const op of draft.operatorAssignments) {
         if (op.scope === "premise") {
-            premiseScope[op.premiseId] = op.decision
+            const premise = ctx.getPremise(op.premiseId)
+            const target = premise && outermostDecidableOperator(premise)
+            if (target) expressionOverrides[target.id] = op.decision
         } else if (op.scope === "expression" && op.expressionId) {
             expressionOverrides[op.expressionId] = op.decision
         }
     }
 
-    const operatorAssignments = canonicalizeOperatorAssignments(
-        toEvaluationContext(argEngine),
-        { premiseScope, expressionOverrides }
-    )
+    const operatorAssignments = canonicalizeOperatorAssignments(ctx, {
+        premiseScope: {},
+        expressionOverrides,
+    })
     return { variables, operatorAssignments }
 }
 
