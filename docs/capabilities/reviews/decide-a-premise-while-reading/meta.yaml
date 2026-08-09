@@ -1,0 +1,7 @@
+id: cap-0a6d8e
+name: Decide a premise while reading the argument
+Status: Missing
+Feature: argument-review
+Subject:
+    - review/operator-assignment
+    - reaction
