@@ -1,6 +1,5 @@
 slug: 2026-07-30-listsupportingpremises-filters-on-isinference-so-authored-constraint-premises-never-enter-the-operator-queue
-title: listSupportingPremises filters on isInference, so authored constraint premises
-  never enter the operator queue
+title: The operator queue's premise source disagrees with the design in three ways
 created: '2026-07-30'
 resolution: null
 priority: 20
