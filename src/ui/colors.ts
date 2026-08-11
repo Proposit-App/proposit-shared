@@ -1,17 +1,18 @@
 // Pure-data colour tokens for the Proposit design system — a quiet warm-neutral
-// canvas with a single loud citron action per screen (sage/clay/amber/slate
+// canvas with a single loud citron action per screen (sage/clay/orange/slate
 // status hues). Framework-free (no MUI/React/DOM/Node) so both consumers can
 // read it directly.
 //
 // FILLS VS TEXT: the accent/status tokens (`primary`, `warning`, …) are fill
 // colours — they are meant to sit *behind* their `*Foreground` ink, not to be
 // painted onto the page background. On the pale light-mode ground they are far
-// too bright to read as text (citron measures ~1.48:1, amber ~2.92:1, against a
+// too bright to read as text (citron measures ~1.48:1, orange ~3.75:1, against a
 // 4.5:1 AA floor). The `*AsText` tokens are the same hue pushed far enough from
 // the ground to clear AA on every background they can land on. In dark mode the
 // bright fills usually already clear it, so there the `*AsText` token is
-// generally the fill itself — `destructive` is the exception, its clay fill
-// measuring 4.32:1 on the muted ground. Read `primaryAsText` as "primary,
+// generally the fill itself — `destructive` and `warning` are the exceptions,
+// the clay fill measuring 4.32:1 on the muted ground and the orange one 4.36:1
+// on a selected card. Read `primaryAsText` as "primary,
 // rendered as text" — the inverse of `primaryForeground`, which is the ink that
 // sits on top of primary.
 
@@ -96,9 +97,12 @@ export const colors: { light: TColorPalette; dark: TColorPalette } = {
         success: "#5e7f38",
         successForeground: "#ffffff",
         successAsText: "#557232",
-        warning: "#b08a2c",
+        // Warning is an orange, not a mustard: it is the "short of" hue the
+        // review chips paint, and a yellow read as caution where the palette
+        // already spends yellow-green on the primary action.
+        warning: "#b9682a",
         warningForeground: "#ffffff",
-        warningAsText: "#826621",
+        warningAsText: "#8f5120",
         info: "#4e68a8",
         infoForeground: "#ffffff",
 
@@ -148,9 +152,13 @@ export const colors: { light: TColorPalette; dark: TColorPalette } = {
         success: "#82a857",
         successForeground: "#0d0e0b",
         successAsText: "#82a857",
-        warning: "#d9b84c",
+        warning: "#dd9750",
         warningForeground: "#0d0e0b",
-        warningAsText: "#d9b84c",
+        // Split from the fill, as `destructiveAsText` is: an orange sits lower
+        // in luminance than the mustard it replaced at the same lightness, and
+        // the fill measures 4.36:1 on the lightest ground it can be read on (a
+        // selected claim card), just under the body-text floor.
+        warningAsText: "#e8a869",
         info: "#6e86c4",
         infoForeground: "#0d0e0b",
 

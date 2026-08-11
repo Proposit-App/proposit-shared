@@ -57,7 +57,9 @@ describe("formatReviewShareText", () => {
             url: "https://example.com/r/1",
         })
         const [argumentLine, conclusionLine] = out.split("\n")
-        expect(argumentLine).toContain("Reaches its conclusion")
+        expect(argumentLine).toContain(
+            ARGUMENT_OUTCOME_LABELS["reaches-conclusion"]
+        )
         expect(conclusionLine).toContain("Conclusion: True")
         expect(conclusionLine).toContain(CONCLUSION_ASSERTED_STATEMENT)
     })

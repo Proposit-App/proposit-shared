@@ -166,7 +166,7 @@ describe("composeAssessment — argument axis", () => {
         expect(a.argument.outcome).toBe("reaches-conclusion")
         expect(a.argument.struck.labels).toEqual(["1 premise rejected"])
         expect(argumentAssessmentLine(a.argument)).toBe(
-            "Reaches its conclusion · 1 premise rejected"
+            "Reaches · 1 premise rejected"
         )
     })
 
@@ -329,7 +329,7 @@ describe("assessment lines", () => {
             "Conclusion: True Your answers contributed to this. It holds only because you assigned it."
         )
         expect(argumentAssessmentLine(a.argument)).toBe(
-            "Doesn't reach its conclusion — the conclusion came from you · 1 premise rejected"
+            "Falls short — the conclusion came from you · 1 premise rejected"
         )
     })
 })
