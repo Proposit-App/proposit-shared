@@ -66,6 +66,21 @@ export const REVIEW_DEFAULT_VALUE_ORIGIN = `D${VALUE_ORIGIN_BODY}`
  */
 export const REVIEW_DEFAULT_ASSIGNMENT_TOOLTIP = `Default — d${VALUE_ORIGIN_BODY}`
 
+/**
+ * What a reader says about a single claim. Keyed by the stance rather than by
+ * the value it stores (`true` / `false` / `null`), which cannot be a key and
+ * reads as a truth value rather than as a position.
+ *
+ * The words are not the claim's truth value: a reader who disagrees with a
+ * claim is reporting their own position on it, which the engine then treats as
+ * an assignment.
+ */
+export const REVIEW_STANCE_LABELS = {
+    agree: "Agree",
+    disagree: "Disagree",
+    unsure: "Unsure",
+} as const
+
 /** The tooltip carried by a claim's provenance mark, per provenance. */
 export const REVIEW_PROVENANCE_TOOLTIPS: Record<TAssignmentProvenance, string> =
     {
