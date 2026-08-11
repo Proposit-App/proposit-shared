@@ -34,7 +34,6 @@
 - All TypeScript work must follow the `brain-style` skill (TypeScript sub-skill) for naming and casing.
 - ESM import requirements: all relative imports in `src/` must end in `.js`. Directory imports must use the explicit index path (e.g. `./schemas/index.js`).
 - `lib: ["ES2022"]` is enforced — no `window`, `document`, `Buffer`, `process`, or other platform-specific globals in source. Dev/test code (not in `dist/`) may use Node via `@types/node`.
-- After a major set of changes, offer `pnpm version patch|minor|major`.
 - Pre-1.0 versioning policy: minor bumps may include breaking changes (per semver §4). Consumers should pin with caret (`^0.x.y`) knowing that any `0.x+1.0` could break them.
 
 ## Commands
