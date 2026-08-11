@@ -82,10 +82,28 @@ export type TArgumentOutcome =
     | "does-not-reach"
     | "premises-contradict"
 
+/**
+ * Every client renders these in a chip a few characters wide, so each one is a
+ * word or two — but the brevity is constrained, not free:
+ *
+ * - **Nothing grades the author's work.** "Acceptable" or "Valid" would, and
+ *   the second is a term of art this app answers separately (a validity check
+ *   is about form regardless of premise truth; every finding here is relative
+ *   to one reader's assignment).
+ * - **Nothing borrows the reader's accept/reject vocabulary.** A reader accepts
+ *   and rejects premise relations, and {@link TStruckBadges} reports rejections
+ *   beside the outcome — so a positive outcome worded as "Acceptable" produces
+ *   "Acceptable · 1 premise rejected", which contradicts itself over a state
+ *   this module deliberately allows.
+ * - **Falling short is not impossibility.** The commonest reason for
+ *   `does-not-reach` is that not enough was settled, which the reader can
+ *   change; "Unreachable" would report a gap in their input as a property of
+ *   the argument. `premises-contradict` is the outcome nothing can satisfy.
+ */
 export const ARGUMENT_OUTCOME_LABELS: Record<TArgumentOutcome, string> = {
-    "reaches-conclusion": "Reaches its conclusion",
-    "does-not-reach": "Doesn't reach its conclusion",
-    "premises-contradict": "Its premises contradict each other",
+    "reaches-conclusion": "Reaches",
+    "does-not-reach": "Falls short",
+    "premises-contradict": "Contradictory",
 }
 
 /** Why an argument didn't reach its conclusion. Shown with the negative outcome only. */
@@ -105,7 +123,7 @@ export const ARGUMENT_REASON_TEXT: Record<TArgumentReason, string> = {
 
 /**
  * Struck premises are their own badge, never a member of {@link TArgumentOutcome}.
- * That is what lets "Reaches its conclusion" and "1 premise rejected" appear
+ * That is what lets "Reaches" and "1 premise rejected" appear
  * together, which is the honest reading of an argument that survived a refusal.
  *
  * A restriction premise is *declined*, never denied or refuted: declining

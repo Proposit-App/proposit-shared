@@ -1,5 +1,6 @@
 import type { TCoreResolvedAssignment } from "@proposit/proposit-core"
 import {
+    ARGUMENT_OUTCOME_LABELS,
     CONCLUSION_ASSERTED_STATEMENT,
     CONCLUSION_ONLY_ASSERTED_STATEMENT,
     CONCLUSION_REACHED_STATEMENT,
@@ -330,7 +331,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: true,
                 },
             ],
-            result: "Reaches its conclusion",
+            result: ARGUMENT_OUTCOME_LABELS["reaches-conclusion"],
         },
         furtherReading: [
             VALIDITY_SOUNDNESS_REFERENCE,
@@ -381,7 +382,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: true,
                 },
             ],
-            result: "Its premises contradict each other",
+            result: ARGUMENT_OUTCOME_LABELS["premises-contradict"],
         },
         furtherReading: [
             {
@@ -425,7 +426,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: null,
                 },
             ],
-            result: "Doesn't reach its conclusion",
+            result: ARGUMENT_OUTCOME_LABELS["does-not-reach"],
         },
         furtherReading: [
             {
@@ -462,7 +463,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: true,
                 },
             ],
-            result: "Doesn't reach its conclusion",
+            result: ARGUMENT_OUTCOME_LABELS["does-not-reach"],
         },
         furtherReading: [
             {
@@ -499,7 +500,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: null,
                 },
             ],
-            result: "Doesn't reach its conclusion",
+            result: ARGUMENT_OUTCOME_LABELS["does-not-reach"],
         },
         furtherReading: [
             THREE_VALUED_LOGIC_REFERENCE,
@@ -527,7 +528,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
                     value: true,
                 },
             ],
-            result: "Doesn't reach its conclusion",
+            result: ARGUMENT_OUTCOME_LABELS["does-not-reach"],
         },
         furtherReading: [
             LOGICAL_CONSEQUENCE_REFERENCE,
