@@ -57,7 +57,7 @@ Sub-entry exports only — no flat root import. Representative sub-paths (`packa
 - `./consts`, `./errors`, `./checksum`, `./utils`
 - `./api-client` (factory: `createApiClient`, types `TApiClient`, `TApiClientConfig`)
 - `./engine/mutations`, `./engine/optimistic`, `./engine/*` (file-flavored sub-paths)
-- `./ui`, `./ui/assets` (design tokens + brand assets)
+- `./ui`, `./ui/assets` (design tokens + brand assets), `./ui/argument/review/*` (review copy + icon-name vocabulary)
 
 ## Key design rules
 
@@ -66,6 +66,8 @@ Sub-entry exports only — no flat root import. Representative sub-paths (`packa
 - **`@proposit/proposit-core` is a peerDependency.** Consumers (server, mobile) install it directly. This package lists it in `devDependencies` as well so local tests and builds can resolve it.
 - **TypeBox for schema validation.** Re-exported as-needed from `schemas/` sub-entry.
 - **Exports map declares `default` alongside `import`.** Every subpath in `package.json`'s `exports` declares `types`, `import`, AND `default` (pointing to the same `.js` file as `import`). Needed so non-`import`-aware resolvers (e.g. the Jest/CJS resolver the mobile app runs under, older bundlers) can locate dist files. When adding a new subpath, include all three conditions.
+- **A path under an existing wildcard is not a new subpath.** `"./ui/*"` and `"./engine/*"` span `/`, so `src/ui/argument/review/consts.ts` is already reachable as `@proposit/shared/ui/argument/review/consts` with no `exports` edit — don't add a redundant entry for it (the rule above applies only to a genuinely new prefix).
+- **UI modules split by path, not by section inside a file.** Anything under `src/ui/` beyond the design tokens lives at `src/ui/<feature-conceptual-path>/<purposeful-filename>.ts`, where the conceptual path mirrors the Feature registered in `docs/taxonomy/`. No barrel for those folders, and they are **not** added to `src/ui/index.ts`: that barrel is re-exported wholesale into the server's `@/ui`, so anything in it lands in every file that only wanted tokens.
 
 ## Grammar rule-code coordination protocol
 
