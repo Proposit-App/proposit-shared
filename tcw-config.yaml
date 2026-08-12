@@ -3,6 +3,7 @@ connected-projects:
   parent:
     proposit-app: ..
 work:
+  path: /Users/brian/Projects/proposit-orchestration/docs/proposit-shared/work
   tags:
   - bug
   - product
