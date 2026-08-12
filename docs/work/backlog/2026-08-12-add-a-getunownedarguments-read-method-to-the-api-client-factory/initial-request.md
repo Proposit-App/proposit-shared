@@ -1,3 +1,27 @@
+# Add a getUnownedArguments read method to the api-client factory
+
+Epic: [Close the remaining mobile gaps vs the web app](tcw://W/proposit-app/2026-08-12-close-the-remaining-mobile-gaps-vs-the-web-app)
+
+## Product changes
+
+TBD
+
+## Technical changes
+
+TBD
+
+## Meta changes
+
+TBD
+
+## Inbox contents
+
+### Inbox manifest
+
+- `2026-08-12-add-a-getunownedarguments-read-method-to-the-api-client-factory.md`
+
+### Inbox body
+
 ---
 from: proposit-app
 ---
