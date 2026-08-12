@@ -1,3 +1,17 @@
+# Promote the origin-authoring decision helpers into @proposit/shared
+
+Epic: [Close the remaining mobile gaps vs the web app](tcw://W/proposit-app/2026-08-12-close-the-remaining-mobile-gaps-vs-the-web-app)
+
+Escalated by `proposit-mobile`, routed by the orchestrator on 2026-08-12.
+
+## Inbox contents
+
+## Inbox manifest
+
+- `2026-08-12-promote-the-origin-authoring-decision-helpers-into-proposit-shared.md`
+
+## Inbox body
+
 ---
 from: proposit-app
 initiative: 2026-08-12-close-the-remaining-mobile-gaps-vs-the-web-app
