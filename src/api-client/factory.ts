@@ -69,6 +69,11 @@ import {
     getClaimReactionMapImpl,
 } from "./argument/claim-reactions.js"
 import {
+    createOperatorReactionImpl,
+    deleteOperatorReactionImpl,
+    getOperatorReactionMapImpl,
+} from "./argument/operator-reactions.js"
+import {
     getMyReviewImpl,
     createReviewRemoteImpl,
     getReviewByIdRemoteImpl,
@@ -181,6 +186,9 @@ const impls = {
     deleteClaimReaction: deleteClaimReactionImpl,
     getClaimReaction: getClaimReactionImpl,
     getClaimReactionMap: getClaimReactionMapImpl,
+    createOperatorReaction: createOperatorReactionImpl,
+    deleteOperatorReaction: deleteOperatorReactionImpl,
+    getOperatorReactionMap: getOperatorReactionMapImpl,
     getMyReview: getMyReviewImpl,
     createReviewRemote: createReviewRemoteImpl,
     getReviewByIdRemote: getReviewByIdRemoteImpl,

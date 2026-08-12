@@ -73,6 +73,11 @@
             "import": "./dist/schemas/api/mutation-conflict.js",
             "default": "./dist/schemas/api/mutation-conflict.js"
         },
+        "./schemas/api/operator-reaction": {
+            "types": "./dist/schemas/api/operator-reaction/index.d.ts",
+            "import": "./dist/schemas/api/operator-reaction/index.js",
+            "default": "./dist/schemas/api/operator-reaction/index.js"
+        },
         "./schemas/api/moderation": {
             "types": "./dist/schemas/api/moderation/index.d.ts",
             "import": "./dist/schemas/api/moderation/index.js",
