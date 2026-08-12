@@ -107,6 +107,7 @@ import { deleteUserImpl } from "./user/delete-user.js"
 import { getCurrentUserImpl } from "./user/get-current-user.js"
 import { getUserCitationsImpl } from "./user/citations.js"
 import { modifyCurrentUserImpl } from "./user/modify-current-user.js"
+import { searchUsernameImpl } from "./user/search-username.js"
 import { activateRegistrationInviteImpl } from "./user/activate-registration-invite.js"
 import { issueInvitationImpl } from "./user/issue-invitation.js"
 import {
@@ -211,6 +212,7 @@ const impls = {
     getUserCitations: getUserCitationsImpl,
     getCurrentUser: getCurrentUserImpl,
     modifyCurrentUser: modifyCurrentUserImpl,
+    searchUsername: searchUsernameImpl,
     activateRegistrationInvite: activateRegistrationInviteImpl,
     issueInvitation: issueInvitationImpl,
     deactivateAccount: deactivateAccountImpl,
