@@ -1,0 +1,1 @@
+While reading an argument, see what it is and how big it is without leaving the page: whether this version is published or still a draft, and how many premises and how many claims it contains. A version that moderation has hidden is marked as hidden, so you are never reading withdrawn content without knowing it.

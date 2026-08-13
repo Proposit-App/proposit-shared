@@ -1,0 +1,1 @@
+Open an older version of an argument and be told plainly that it is no longer the current one, with a way straight to the latest version — rather than reading superseded content believing it to be current.

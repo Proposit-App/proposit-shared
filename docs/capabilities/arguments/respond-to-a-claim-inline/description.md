@@ -1,0 +1,3 @@
+Answer a specific claim in an argument you are reading, without leaving it: open a composer on that claim, choose whether you are supporting it or countering it, and write your point. Supporting records a new premise concluding the claim; countering records one concluding the claim's negation. Either way the point you typed becomes the premise's title and the antecedent is left open for you to fill in, so the response starts as a stated position you can then argue for.
+
+Open to any signed-in, verified reader — you do not have to own or edit the argument. Distinct from rebuking a claim in your own draft while authoring it, and from forking the whole argument into a counterargument of your own: this one writes into the argument in front of you.

@@ -1,0 +1,3 @@
+See which way the readership is leaning on a claim or on a premise's step — that it is leaning toward holding, leaning toward falling, or that readers are genuinely split — and only once enough readers have decided for a lean to mean anything. Below that threshold the claim or premise reads clean, so a first reader is not anchored by one stranger.
+
+The lean is deliberately qualitative: an ordinary reader is never shown a count or a percentage. Raw per-stance tallies are reserved for the argument's owner. And the lean is context for your own decision rather than a verdict on it — other readers' decisions do not affect yours.
