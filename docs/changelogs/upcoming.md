@@ -1,3 +1,5 @@
 # Changelog — upcoming
 
-<changes starting-hash="0c6262a" ending-hash="HEAD">
+<changes starting-hash="HEAD" ending-hash="HEAD">
+
+</changes>
