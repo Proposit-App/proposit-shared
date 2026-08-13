@@ -1,3 +1,25 @@
+# Declare the seven undeclared cross-platform capabilities in the master
+
+## Product changes
+
+TBD
+
+## Technical changes
+
+TBD
+
+## Meta changes
+
+TBD
+
+## Inbox contents
+
+### Inbox manifest
+
+- `2026-08-12-declare-the-seven-undeclared-cross-platform-capabilities-in-the-master.md`
+
+### Inbox body
+
 ---
 from: proposit-app
 initiative: 2026-08-12-close-the-remaining-mobile-gaps-vs-the-web-app
