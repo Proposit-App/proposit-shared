@@ -9,6 +9,8 @@ import {
     forkArgumentImpl,
     getArgumentDiffImpl,
     getArgumentForksImpl,
+    getUnownedArgumentsImpl,
+    getUnownedArgumentImpl,
     claimUnownedArgumentImpl,
     getAllArgumentsImpl,
     createArgumentImpl,
@@ -67,6 +69,11 @@ import {
     getClaimReactionMapImpl,
 } from "./argument/claim-reactions.js"
 import {
+    createOperatorReactionImpl,
+    deleteOperatorReactionImpl,
+    getOperatorReactionMapImpl,
+} from "./argument/operator-reactions.js"
+import {
     getMyReviewImpl,
     createReviewRemoteImpl,
     getReviewByIdRemoteImpl,
@@ -105,6 +112,7 @@ import { deleteUserImpl } from "./user/delete-user.js"
 import { getCurrentUserImpl } from "./user/get-current-user.js"
 import { getUserCitationsImpl } from "./user/citations.js"
 import { modifyCurrentUserImpl } from "./user/modify-current-user.js"
+import { searchUsernameImpl } from "./user/search-username.js"
 import { activateRegistrationInviteImpl } from "./user/activate-registration-invite.js"
 import { issueInvitationImpl } from "./user/issue-invitation.js"
 import {
@@ -134,6 +142,8 @@ const impls = {
     forkArgument: forkArgumentImpl,
     getArgumentDiff: getArgumentDiffImpl,
     getArgumentForks: getArgumentForksImpl,
+    getUnownedArguments: getUnownedArgumentsImpl,
+    getUnownedArgument: getUnownedArgumentImpl,
     claimUnownedArgument: claimUnownedArgumentImpl,
     getArgumentParticipants: getArgumentParticipantsImpl,
     addArgumentEditor: addArgumentEditorImpl,
@@ -176,6 +186,9 @@ const impls = {
     deleteClaimReaction: deleteClaimReactionImpl,
     getClaimReaction: getClaimReactionImpl,
     getClaimReactionMap: getClaimReactionMapImpl,
+    createOperatorReaction: createOperatorReactionImpl,
+    deleteOperatorReaction: deleteOperatorReactionImpl,
+    getOperatorReactionMap: getOperatorReactionMapImpl,
     getMyReview: getMyReviewImpl,
     createReviewRemote: createReviewRemoteImpl,
     getReviewByIdRemote: getReviewByIdRemoteImpl,
@@ -207,6 +220,7 @@ const impls = {
     getUserCitations: getUserCitationsImpl,
     getCurrentUser: getCurrentUserImpl,
     modifyCurrentUser: modifyCurrentUserImpl,
+    searchUsername: searchUsernameImpl,
     activateRegistrationInvite: activateRegistrationInviteImpl,
     issueInvitation: issueInvitationImpl,
     deactivateAccount: deactivateAccountImpl,
