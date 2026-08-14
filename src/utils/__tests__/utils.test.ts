@@ -6,6 +6,7 @@ import { GrammarViolationsResponseSchema } from "../../schemas/api/grammar-viola
 import type { TGrammarViolationsResponse } from "../../schemas/api/grammar-violations.js"
 import { isMutationConflictError } from "../../api-client/mutation-conflict.js"
 import type { TMutationConflictResponse } from "../../schemas/api/mutation-conflict.js"
+import type { TContentPolicyViolationResponse } from "../../schemas/api/content-policy.js"
 
 // Test fixtures
 const SuccessSchema = Type.Object({
@@ -278,5 +279,59 @@ describe("stringToColor", () => {
     test("keeps the neutral placeholder for '?'", () => {
         expect(stringToColor("?").fill).toBe("#bdbdbd")
         expect(stringToColor("?").ink).toBe("#000000")
+    })
+})
+
+// The content-policy envelope shares 422 with the grammar envelope, so these
+// cover the pair rather than the new arm alone: detection has to stay driven by
+// shape, not by which branch the ladder happens to try first.
+describe("parseResponse — content-policy envelope on the shared 422", () => {
+    const policyBody: TContentPolicyViolationResponse = {
+        error: "CONTENT_POLICY_VIOLATION",
+        message: "That content can't be published.",
+    }
+
+    test("detects the envelope in the default (2-arg) form", async () => {
+        const resp = mockResponse(policyBody, { status: 422 })
+        const result = await parseResponse(resp, SuccessSchema)
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toEqual(policyBody)
+        }
+    })
+
+    test("still detects a grammar body on the same status", async () => {
+        const violationsBody: TGrammarViolationsResponse = {
+            error: "GRAMMAR_VIOLATIONS",
+            tier: "presentable",
+            violations: [],
+        }
+        const resp = mockResponse(violationsBody, { status: 422 })
+        const result = await parseResponse(resp, SuccessSchema)
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toEqual(violationsBody)
+        }
+    })
+
+    // The auto-detect is deliberately confined to the default form. A caller
+    // that supplied its own error schema keeps the narrower contract it asked
+    // for, and would otherwise be handed an envelope its types deny.
+    //
+    // Asserted by throwing rather than by comparing values: parsed through a
+    // permissive explicit schema the result is byte-identical to the detected
+    // envelope, so equality cannot tell the two paths apart. An explicit schema
+    // the body fails can — it throws, where the coded path would have returned.
+    test("does not auto-detect when the caller supplied an error schema", async () => {
+        const ExplicitError = Type.Object({
+            requiredByTheCaller: Type.String(),
+        })
+        const resp = mockResponse(policyBody, { status: 422 })
+
+        await expect(
+            parseResponse(resp, SuccessSchema, ExplicitError)
+        ).rejects.toThrow()
     })
 })
