@@ -3,8 +3,11 @@
 # First-time setup for proposit-shared. Idempotent — safe to re-run.
 #
 # This repo is thin: no env file, no services, no database, no git hooks. The
-# only post-install step is a built `dist/` (fixtures codegen + tsc), so that is
-# the whole body. Nothing here is macOS- or Linux-specific.
+# only post-install step is `pnpm run check` — typecheck, lint, tests, and the
+# build that writes `dist/` — so that is the whole body. It gates on the full
+# check rather than the build alone because the point of onboarding is to prove
+# the environment is sound, and a green build proves the smallest part of that.
+# Nothing here is macOS- or Linux-specific.
 
 set -euo pipefail
 
@@ -35,13 +38,13 @@ if [ ! -d node_modules ]; then
     pnpm install
 fi
 
-step "Generating fixtures and building dist/"
-pnpm run build
+step "Running the full gate (typecheck, lint, tests, and the build that writes dist/)"
+pnpm run check
 
 step "proposit-shared is ready"
 cat <<'EOF'
-Nothing left to do by hand: no env file, no services, no local credentials.
-Run `pnpm run check` for the full gate (typecheck, lint, test, build).
+Nothing left to do by hand: no env file, no services, no local credentials — and
+the full gate just ran green, so `dist/` is built and the suite is passing.
 
 One thing to know when iterating across the repo boundary — a consumer that
 resolves this package from disk (`file:../proposit-shared`) reads `dist/`, not
