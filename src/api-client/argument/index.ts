@@ -6,7 +6,9 @@ import {
     ArgumentSchema,
     ArgumentDiffSchema,
     ArgumentWithMetadataSchema,
+    UnownedArgumentSchema,
 } from "../../schemas/model.js"
+import { Nullable } from "../../schemas/common.js"
 import {
     FullArgumentSchema,
     GetForksOfArgumentResponseSchema,
@@ -155,6 +157,38 @@ export async function getArgumentForksImpl(
             { method: "GET" }
         ),
         GetForksOfArgumentResponseSchema
+    )
+}
+
+// The signed-in caller's claimable arguments. The route joins `unownedArguments`
+// to `arguments` and selects the argument columns, so this yields full arguments
+// rather than unowned-entry rows — and an empty array, not an error, when the
+// caller has nothing to claim.
+export async function getUnownedArgumentsImpl(config: TApiClientConfig) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(`${baseUrl}/api/v1/argument/unowned`, {
+            method: "GET",
+        }),
+        Type.Array(ArgumentSchema)
+    )
+}
+
+// The unowned-entry row for one argument version: which platform account the
+// import is waiting on, and who (if anyone) has been matched to it. Answers
+// `null` when the argument has no unowned entry, which is an ordinary miss.
+export async function getUnownedArgumentImpl(
+    config: TApiClientConfig,
+    argumentId: string,
+    version: number
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/unowned/${argumentId}/${version}`,
+            { method: "GET" }
+        ),
+        Nullable(UnownedArgumentSchema)
     )
 }
 
