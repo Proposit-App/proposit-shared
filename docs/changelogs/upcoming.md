@@ -14,3 +14,32 @@ installed checkout, less than the `pnpm install` it follows. The closing message
 no longer instructs the reader to repeat a step the script already ran.
 
 </changes>
+
+<changes starting-hash="a55442d" ending-hash="a55442d">
+
+## Removed
+
+**The two dark argument metrics in `@proposit/shared/engine/argument-metrics`.**
+Gone: `computeCitationStrength` and `TCitationStrengthMetric`,
+`detectEnthymemeWarnings` and `TEnthymemeWarning`, and the
+`computeArgumentMetrics` / `TArgumentMetrics` rollup that existed only to
+combine the two. All shipped in 0.33.0 and neither app ever imported one —
+confirmed by grep across `proposit-core`, `proposit-server`, and
+`proposit-mobile` before removal — so this is a breaking change to the export
+surface that no consumer has to answer. The rollup goes rather than shrinking:
+with both fields removed it returns an empty object.
+
+`detectEnthymemeWarnings` also had to go for a reason beyond disuse. It flagged
+a premise as enthymematic from structure alone (`P implies Q` with fewer than
+two antecedent conjuncts), while the platform's `enthymeme` marker is an
+authorial declaration — the registered vocabulary reads "declared, never
+derived". One word named two contradictory things in the same dependency tree,
+and the derived one was the impostor.
+
+**Kept in the module:** `getClaimProofState` and `TClaimProofState`, which the
+mobile app imports from `@proposit/shared/engine/argument-metrics`, and
+`consequentClaimIds`, which is separately exported and tested. Both private
+helpers (`unwrapFormulaLayer`, `childrenByPosition`) are still reached by
+`consequentClaimIds`.
+
+</changes>
