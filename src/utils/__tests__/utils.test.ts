@@ -325,7 +325,9 @@ describe("parseResponse — content-policy envelope on the shared 422", () => {
     // envelope, so equality cannot tell the two paths apart. An explicit schema
     // the body fails can — it throws, where the coded path would have returned.
     test("does not auto-detect when the caller supplied an error schema", async () => {
-        const ExplicitError = Type.Object({ requiredByTheCaller: Type.String() })
+        const ExplicitError = Type.Object({
+            requiredByTheCaller: Type.String(),
+        })
         const resp = mockResponse(policyBody, { status: 422 })
 
         await expect(
