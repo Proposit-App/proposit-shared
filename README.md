@@ -44,5 +44,5 @@ To iterate against unpublished changes, point the consumer at `file:../proposit-
 ## First-time setup
 
 ```bash
-./scripts/first-time-setup.sh   # checks prerequisites and builds dist/
+./scripts/first-time-setup.sh   # checks prerequisites, then runs the full gate
 ```
