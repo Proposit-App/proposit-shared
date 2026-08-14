@@ -6,6 +6,7 @@ import {
 import type { JsonObject, JsonValue } from "../schemas/common.js"
 import { BudgetExceededErrorBodySchema } from "../schemas/api/errors.js"
 import { GrammarViolationsResponseSchema } from "../schemas/api/grammar-violations.js"
+import { ContentPolicyViolationResponseSchema } from "../schemas/api/content-policy.js"
 import { MutationConflictResponseSchema } from "../schemas/api/mutation-conflict.js"
 import {
     ReviewCreateConflictResponse,
@@ -141,6 +142,7 @@ export async function parseResponse<T extends TSchema>(
     | ParsedError<typeof ReviewGetNotFoundResponse>
     | ParsedError<typeof ReviewCreateConflictResponse>
     | ParsedError<typeof BudgetExceededErrorBodySchema>
+    | ParsedError<typeof ContentPolicyViolationResponseSchema>
 >
 // Explicit-error-schema (3-arg) form: caller supplies the error schema. This
 // overload is unchanged from 0.10 — callers that opt in to a specific error
@@ -164,6 +166,7 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
     | ParsedError<typeof ReviewGetNotFoundResponse>
     | ParsedError<typeof ReviewCreateConflictResponse>
     | ParsedError<typeof BudgetExceededErrorBodySchema>
+    | ParsedError<typeof ContentPolicyViolationResponseSchema>
 > {
     const data = (await response.json()) as JsonValue
 
@@ -198,7 +201,11 @@ export async function parseResponse<T extends TSchema, E extends TSchema>(
             // The caller's monthly token budget is exhausted, on any
             // LLM-bearing entry route (import, build). Carries the usage
             // figures the client shows the user.
-            coded(402, BudgetExceededErrorBodySchema)
+            coded(402, BudgetExceededErrorBodySchema) ??
+            // The write was refused because its content violates the content
+            // policy. Shares 422 with the grammar envelope above; the two are
+            // separated by shape, not by order (see `content-policy.ts`).
+            coded(422, ContentPolicyViolationResponseSchema)
         if (detected) return detected
 
         const errSchema = errorSchema ?? ErrorResponseSchema
