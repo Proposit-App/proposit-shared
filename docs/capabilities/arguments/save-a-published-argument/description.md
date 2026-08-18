@@ -1,0 +1,1 @@
+Bookmark a published argument from the argument itself, and unbookmark it the same way. The control shows whether the argument is already saved. You can save anyone's published argument, including your own; a draft cannot be saved, because there is nothing published to come back to. Your saved arguments follow your account rather than the device you saved them on.
