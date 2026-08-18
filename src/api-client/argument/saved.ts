@@ -1,4 +1,5 @@
 import {
+    ArgumentSavedStateSchema,
     GetSavedArgumentsResponseSchema,
     SaveArgumentResponseSchema,
     UnsaveArgumentResponseSchema,
@@ -43,6 +44,23 @@ export async function unsaveArgumentImpl(
             { method: "DELETE" }
         ),
         UnsaveArgumentResponseSchema
+    )
+}
+
+// Whether the caller has this argument saved, and when. What a bookmark toggle
+// reads to draw itself. Answers rather than refuses for a signed-out reader, so
+// the control renders the same on a public screen as on a private one.
+export async function getArgumentSavedStateImpl(
+    config: TApiClientConfig,
+    argumentId: string
+) {
+    const baseUrl = resolveBaseUrl(config)
+    return await parseResponse(
+        await config.fetchImpl(
+            `${baseUrl}/api/v1/argument/${argumentId}/save`,
+            { method: "GET" }
+        ),
+        ArgumentSavedStateSchema
     )
 }
 

@@ -31,6 +31,7 @@ import {
 import {
     saveArgumentImpl,
     unsaveArgumentImpl,
+    getArgumentSavedStateImpl,
     getSavedArgumentsImpl,
 } from "./argument/saved.js"
 import {
@@ -173,6 +174,7 @@ const impls = {
     getEntireArgument: getEntireArgumentImpl,
     saveArgument: saveArgumentImpl,
     unsaveArgument: unsaveArgumentImpl,
+    getArgumentSavedState: getArgumentSavedStateImpl,
     getSavedArguments: getSavedArgumentsImpl,
     provisionArgument: provisionArgumentImpl,
     createExpressionWithOperator: createExpressionWithOperatorImpl,

@@ -59,6 +59,7 @@ describe("saved-argument api-client methods", () => {
         for (const name of [
             "saveArgument",
             "unsaveArgument",
+            "getArgumentSavedState",
             "getSavedArguments",
         ] as const) {
             expect(typeof client[name]).toBe("function")
@@ -120,6 +121,40 @@ describe("saved-argument api-client methods", () => {
         expect("errorMessage" in result.error).toBe(true)
         if (!("errorMessage" in result.error)) return
         expect(result.error.errorMessage).toContain("published")
+    })
+
+    it("reads the toggle state from the same route with GET", async () => {
+        const { client, fetchImpl } = buildClient({
+            argumentId: ARGUMENT_ID,
+            saved: true,
+            savedAt: "2026-08-10T12:00:00.000Z",
+        })
+
+        const result = await client.getArgumentSavedState(ARGUMENT_ID)
+
+        expect(fetchImpl.mock.calls[0]?.[0]).toBe(
+            `https://example.test/api/v1/argument/${ARGUMENT_ID}/save`
+        )
+        expect(fetchImpl.mock.calls[0]?.[1]?.method).toBe("GET")
+        expect(result.ok).toBe(true)
+        if (!result.ok) return
+        expect(result.value.saved).toBe(true)
+        expect(result.value.savedAt).toBeInstanceOf(Date)
+    })
+
+    it("reads an unsaved toggle state with a null timestamp", async () => {
+        const { client } = buildClient({
+            argumentId: ARGUMENT_ID,
+            saved: false,
+            savedAt: null,
+        })
+
+        const result = await client.getArgumentSavedState(ARGUMENT_ID)
+
+        expect(result.ok).toBe(true)
+        if (!result.ok) return
+        expect(result.value.saved).toBe(false)
+        expect(result.value.savedAt).toBeNull()
     })
 
     it("reads the saved list from its own route, not from the argument catalogue", async () => {

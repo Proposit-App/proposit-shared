@@ -1,5 +1,5 @@
 import { Type, type Static } from "typebox"
-import { EncodableDate, UUID } from "../../common.js"
+import { EncodableDate, Nullable, UUID } from "../../common.js"
 import { ArgumentWithMetadataSchema } from "../../model/arguments.js"
 
 // A user's personal collection of published arguments — their own or anyone
@@ -32,6 +32,17 @@ export const UnsaveArgumentResponseSchema = Type.Object({
 export type TUnsaveArgumentResponse = Static<
     typeof UnsaveArgumentResponseSchema
 >
+
+// What a bookmark toggle draws itself from before the reader touches it.
+// `saved: false` is also the answer for an argument that does not exist and for
+// a signed-out reader — all three are the same absence from a collection, and
+// none is a failure worth refusing a control whose only job is to show a state.
+export const ArgumentSavedStateSchema = Type.Object({
+    argumentId: UUID,
+    saved: Type.Boolean(),
+    savedAt: Nullable(EncodableDate),
+})
+export type TArgumentSavedState = Static<typeof ArgumentSavedStateSchema>
 
 // One entry in the caller's saved list: the argument in the same shape the feed
 // already consumes, plus when it was saved. Carrying the argument whole means
