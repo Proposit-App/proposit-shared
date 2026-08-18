@@ -1,5 +1,26 @@
 # Changelog — upcoming
 
+## Fixed
+
+**`buildOperatorQueue` now offers constraint premises.** It sourced its
+premises from `listSupportingPremises()` plus the conclusion premise, and that
+list filters on `isInference()` — so a premise whose root expression is `and`,
+`or`, or `not` was dropped before either of the queue's own gates ran, and the
+reader was never asked to decide it. The queue now walks the engine's full
+premise sequence, supporting then conclusion then everything else, which is the
+sequence `collectArgumentReferencedClaims` already walks for the claim queue.
+
+Everything downstream was already built for these premises and could not reach
+them: the evaluator strikes a rejected constraint and reports it as a declined
+one, `detectContradictions` lists `constraintPremises` as candidates but gates
+on the premise having been accepted, and both consuming apps already render
+"Granted"/"Declined" off `isConstraint()`. The contradiction alert's "Decline
+this constraint" exit was unreachable in practice for exactly this reason.
+
+Both gates keep their meaning. `type === "derivation"` is now the only thing
+excluding a naked-Q derivation premise — its bare-variable root used to keep it
+out of the supporting list, and it now arrives among the constraints instead.
+
 ## Changed
 
 **`scripts/first-time-setup.sh` gates on `pnpm run check`, not `pnpm run
@@ -10,7 +31,6 @@ existed while telling the reader to run `check` by hand afterwards. `check` ends
 in `build`, so `dist/` is still written; it costs about 37 seconds more on an
 installed checkout, less than the `pnpm install` it follows. The closing message
 no longer instructs the reader to repeat a step the script already ran.
-
 
 ## Removed
 
@@ -36,4 +56,3 @@ mobile app imports from `@proposit/shared/engine/argument-metrics`, and
 `consequentClaimIds`, which is separately exported and tested. Both private
 helpers (`unwrapFormulaLayer`, `childrenByPosition`) are still reached by
 `consequentClaimIds`.
-
