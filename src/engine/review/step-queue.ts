@@ -94,8 +94,19 @@ export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
 }
 
 /**
- * The premises a reviewer is asked to render an operator verdict on, in
- * proof order (supporting first, conclusion last).
+ * The premises a reviewer is asked to render an operator verdict on, in the
+ * engine's own premise sequence: supporting first, then the conclusion, then
+ * every premise that is neither — the constraints. That is the sequence
+ * `collectArgumentReferencedClaims` already walks, so both queues agree on
+ * order.
+ *
+ * A constraint premise is one whose root expression is not an implication, so
+ * `listSupportingPremises()` — which filters on `isInference()` — leaves it
+ * out, and sourcing from that list alone would drop it before either gate
+ * below ran. It is decidable all the same: the evaluator strikes a rejected
+ * one out of the reckoning and reports it as a declined constraint, and the
+ * contradiction alert offers "decline this constraint" as an exit. Omitting it
+ * here left those paths disagreeing about what a reader may decide.
  *
  * Two gates, and both are narrowing:
  *
@@ -105,7 +116,9 @@ export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
  *    which is an inference with a decidable operator and would otherwise pass
  *    every other gate and be rendered as a numbered premise. A reviewer cannot
  *    meaningfully accept or reject wiring the engine generated on their behalf.
- *    (Naked-Q derivation premises self-exclude via gate 2 only incidentally.)
+ *    This gate is also what keeps a naked-Q derivation premise out: its root
+ *    is a bare variable, so it reaches this loop among the constraints rather
+ *    than through the supporting list.
  * 2. A premise with no outermost decidable operator is excluded, because there
  *    is nothing on it to decide. This routinely drops the conclusion premise:
  *    the common authored shape asserts a single claim as a bare variable and
@@ -125,12 +138,21 @@ export function buildOperatorQueue(
     argEngine: ProjectEngine
 ): TOperatorQueueEntry[] {
     const out: TOperatorQueueEntry[] = []
-    const conclusionPremiseId = argEngine.getConclusionPremise()?.getId()
+    const conclusion = argEngine.getConclusionPremise()
+    const conclusionPremiseId = conclusion?.getId()
+    const supporting = argEngine.listSupportingPremises()
+    const supportingIds = new Set(supporting.map((p) => p.getId()))
+    const constraints = argEngine
+        .listPremises()
+        .filter(
+            (p) =>
+                p.getId() !== conclusionPremiseId &&
+                !supportingIds.has(p.getId())
+        )
     const premises = [
-        ...argEngine.listSupportingPremises(),
-        ...(argEngine.getConclusionPremise()
-            ? [argEngine.getConclusionPremise()!]
-            : []),
+        ...supporting,
+        ...(conclusion ? [conclusion] : []),
+        ...constraints,
     ]
     for (const p of premises) {
         if (p.toPremiseData().type === "derivation") continue

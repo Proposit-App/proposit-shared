@@ -1,5 +1,26 @@
 # Release notes — upcoming
 
+## The review's premise queue now includes constraint premises
+
+`buildOperatorQueue` in `@proposit/shared/engine/review/step-queue` returns more
+entries than it used to. A premise whose root expression is not an implication —
+`A ∧ B`, `A ∨ B`, `¬(A ∧ B)` — is a constraint, and it was being filtered out
+before it could be offered, because the queue sourced from
+`listSupportingPremises()` and that method keeps only inference-rooted premises.
+
+Nothing about the returned type changed, and neither app needs a code change:
+both already branch on the engine's `isConstraint()` to render "Granted" /
+"Declined" instead of "Accepted" / "Rejected", and both read the queue
+generically. What changes is that a review of an argument containing a
+constraint premise now has a step for it, and the contradiction alert's
+"Decline this constraint" exit becomes reachable — it could not fire before,
+because it requires the premise to have been accepted and the premise was never
+offered.
+
+Order is now supporting premises, then the conclusion premise, then the
+constraints. That is the sequence core's `collectArgumentReferencedClaims`
+already walks, so the operator queue and the claim queue agree.
+
 ## Two argument metrics nobody imported are gone
 
 `@proposit/shared/engine/argument-metrics` no longer exports

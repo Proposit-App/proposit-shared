@@ -13,6 +13,7 @@ import {
     buildEngineWithCitationBackedDerivationPremise,
     buildEngineWithDerivationOnlyClaim,
     buildEngineWithUnreferencedClaimVariable,
+    buildEngineWithRestrictionConflict,
 } from "./fixtures.js"
 
 describe("step-queue", () => {
@@ -133,6 +134,37 @@ describe("step-queue", () => {
         expect(
             buildOperatorQueue(engine).map((e) => e.premiseId)
         ).not.toContain("pConclusion")
+    })
+
+    it("buildOperatorQueue offers a constraint premise", () => {
+        // A premise whose root is not an implication is a constraint, and the
+        // engine treats it as decidable like any other: rejecting one strikes
+        // it out of the reckoning and is reported as a declined constraint.
+        const engine = buildEngineWithRestrictionConflict()
+        const restriction = engine.getPremise("pRestriction")!
+        expect(restriction.isInference()).toBe(false)
+        expect(
+            engine.listSupportingPremises().map((p) => p.getId())
+        ).not.toContain("pRestriction")
+
+        const entry = buildOperatorQueue(engine).find(
+            (e) => e.premiseId === "pRestriction"
+        )
+        expect(entry).toBeDefined()
+        expect(entry!.expressionId).toBe("eAnd")
+        expect(entry!.rejectable).toBe(true)
+    })
+
+    it("buildOperatorQueue orders constraint premises after the conclusion", () => {
+        // Core's own premise sequence — supporting, conclusion, then whatever
+        // is neither — is what the claim queue already walks. pConclusion is
+        // absent here because it is a bare variable with nothing to decide.
+        const engine = buildEngineWithRestrictionConflict()
+        expect(buildOperatorQueue(engine).map((e) => e.premiseId)).toEqual([
+            "pToA",
+            "pToB",
+            "pRestriction",
+        ])
     })
 
     it("advanceQueue moves forward when not at end", () => {
