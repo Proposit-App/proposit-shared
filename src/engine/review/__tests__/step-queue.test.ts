@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest"
 import { evaluateArgumentForReview } from "../../review/evaluation.js"
-import type { TReviewDraft } from "../../../schemas/review.js"
+import type { TClaimAssignment, TReviewDraft } from "../../../schemas/review.js"
 import {
     buildClaimQueue,
     buildOperatorQueue,
     advanceQueue,
+    unsettledAnswerableClaimIds,
     type TStepQueue,
 } from "../../review/step-queue.js"
 import {
@@ -319,5 +320,48 @@ describe("why a derivation-only claim is not narrowed away", () => {
         )
         expect(answered.survivingSupportingPremisesTrue).toBe(true)
         expect(unanswered.survivingSupportingPremisesTrue).toBe(null)
+    })
+})
+
+describe("unsettledAnswerableClaimIds", () => {
+    const NOW = new Date("2026-08-19T00:00:00Z")
+    const assignment = (
+        claimId: string,
+        value: boolean | null,
+        skipped: boolean
+    ): TClaimAssignment => ({
+        assignmentId: claimId,
+        claimId,
+        value,
+        skipped,
+        decidedAt: NOW,
+    })
+
+    it("keeps every claim the reader can still decide and drops the ones they decided", () => {
+        const queue = ["cDefinite", "cSkipped", "cUnknown", "cUntouched"]
+        const assignments = {
+            cDefinite: assignment("cDefinite", true, false),
+            cSkipped: assignment("cSkipped", null, true),
+            cUnknown: assignment("cUnknown", null, false),
+            // Answered, but never put to this reader — the queue is what
+            // bounds the finding, not the assignment map.
+            cOffQueue: assignment("cOffQueue", null, false),
+        }
+        expect(unsettledAnswerableClaimIds(queue, assignments)).toEqual([
+            "cSkipped",
+            "cUnknown",
+            "cUntouched",
+        ])
+    })
+
+    it("reports nothing outstanding once every queued claim has a definite value", () => {
+        // The positive finding the whole discriminator exists to produce: an
+        // empty array is not the same as no answer at all.
+        expect(
+            unsettledAnswerableClaimIds(["cA", "cB"], {
+                cA: assignment("cA", true, false),
+                cB: assignment("cB", false, false),
+            })
+        ).toEqual([])
     })
 })

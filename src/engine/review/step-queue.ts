@@ -1,5 +1,6 @@
 import type { ProjectEngine } from "../mutations/types.js"
 import type { UUID } from "../../schemas/common.js"
+import type { TClaimAssignment } from "../../schemas/review.js"
 import { collectArgumentReferencedClaims } from "@proposit/proposit-core"
 import { outermostDecidableOperator } from "./decision-target.js"
 import { toEvaluationContext } from "./evaluation.js"
@@ -187,4 +188,31 @@ export function advanceQueue(params: {
     )
     if (remaining < 0) return { done: true }
     return { nextIndex: remaining, insertRequeueNotice: true }
+}
+
+/**
+ * The queued claims the reader has not given a definite value.
+ *
+ * This is the discriminator `composeAssessment` takes as
+ * `unsettledAnswerableClaimIds`, and an empty result is a positive finding —
+ * nothing is outstanding — rather than the absence of one. Callers that cannot
+ * tell must pass no options at all rather than an empty array.
+ *
+ * A skip and an explicit unknown both count as outstanding: either can still be
+ * changed to `true` or `false`, so both leave the reader something to do. Only
+ * a definite value settles a claim.
+ *
+ * The queue bounds the answer, not the assignment map. `buildClaimQueue` is the
+ * set of claims a reader is actually asked about, so anything answered outside
+ * it is not evidence about this reader, and anything in it without an
+ * assignment is a claim they never reached.
+ */
+export function unsettledAnswerableClaimIds(
+    claimQueue: readonly UUID[],
+    claimAssignments: Record<UUID, TClaimAssignment>
+): UUID[] {
+    return claimQueue.filter((claimId) => {
+        const assignment = claimAssignments[claimId]
+        return !assignment || assignment.skipped || assignment.value == null
+    })
 }

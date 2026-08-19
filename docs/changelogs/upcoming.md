@@ -30,12 +30,18 @@ telling a reader with claims outstanding that nothing is left is the worse of
 the two errors. An explicit unknown and a skip both count as outstanding: either
 can still be changed to a definite value.
 
-Three call sites supply the set. `ReviewEngine.getState()` filters its claim
-queue against `draft.claimAssignments`. `buildReviewOverlay` does the same
-against `buildClaimQueue(argEngine)`, and passes nothing when there is no draft
-to read. `buildInlineReviewOverlay` filters the same queue against the effective
-values it already computes, where a contested value counts as decided rather
-than outstanding.
+`unsettledAnswerableClaimIds(claimQueue, claimAssignments)` is exported from
+`engine/review/step-queue` and owns the predicate. `ReviewEngine.getState()`
+passes the queue it already built; `buildReviewOverlay` passes
+`buildClaimQueue(argEngine)`, and passes no options at all when there is no
+draft to read. A consumer that composes its own assessment calls the same
+function rather than re-deriving what "unsettled" means — the rule is written
+down once.
+
+`buildInlineReviewOverlay` deliberately does not use it. That path has no draft
+and reads its own `effectiveValues`, where a contested value counts as decided
+rather than outstanding; folding the two together would answer a different
+question.
 
 ## Changed
 

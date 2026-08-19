@@ -21,7 +21,7 @@ import { composeAssessment } from "./assessment.js"
 import { outermostDecidableOperator } from "./decision-target.js"
 import { computePropagatedVariableValues } from "./evaluation.js"
 import { materialFingerprint } from "./fingerprint.js"
-import { buildClaimQueue } from "./step-queue.js"
+import { buildClaimQueue, unsettledAnswerableClaimIds } from "./step-queue.js"
 
 function pillForAssignment(
     value: boolean | null,
@@ -99,12 +99,10 @@ export function buildReviewOverlay(params: {
             result?.evaluation,
             draft
                 ? {
-                      unsettledAnswerableClaimIds: buildClaimQueue(
-                          argEngine
-                      ).filter((claimId) => {
-                          const a = draft.claimAssignments[claimId]
-                          return !a || a.skipped || a.value == null
-                      }),
+                      unsettledAnswerableClaimIds: unsettledAnswerableClaimIds(
+                          buildClaimQueue(argEngine),
+                          draft.claimAssignments
+                      ),
                   }
                 : undefined
         ),

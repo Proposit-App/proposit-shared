@@ -51,9 +51,48 @@ this release fixes. Supply the set from your own record of what the reader was
 asked and what they answered; an explicit unknown and a skipped claim both count
 as outstanding.
 
-The three call sites inside this package already do so: `ReviewEngine.getState()`,
-`buildReviewOverlay` (which passes nothing when there is no draft to read), and
-`buildInlineReviewOverlay`.
+## `unsettledAnswerableClaimIds` — build the set with this, not by hand
+
+`@proposit/shared/engine/review/step-queue` exports the predicate, so a consumer
+that composes its own assessment does not hand-copy it:
+
+```ts
+import {
+    buildClaimQueue,
+    unsettledAnswerableClaimIds,
+} from "@proposit/shared/engine/review/step-queue"
+import { composeAssessment } from "@proposit/shared/engine/review/assessment"
+
+composeAssessment(evaluation, {
+    unsettledAnswerableClaimIds: unsettledAnswerableClaimIds(
+        buildClaimQueue(engine),
+        draft.claimAssignments
+    ),
+})
+```
+
+```ts
+unsettledAnswerableClaimIds(
+    claimQueue: readonly UUID[],
+    claimAssignments: Record<UUID, TClaimAssignment>
+): UUID[]
+```
+
+The queue bounds the answer: `buildClaimQueue` is the set of claims a reader is
+actually asked about, so an assignment outside it is not evidence about this
+reader, and a queued claim with no assignment is one they never reached. A skip
+and an explicit unknown both come back as outstanding.
+
+**Any surface that composes its own assessment needs this call, not just the
+ones that render the chip.** Passing the options at the render site does
+nothing if the `composeAssessment` upstream of it was called bare — the reason
+is fixed by then. Check every `composeAssessment` call, not every render.
+
+The call sites inside this package already do so: `ReviewEngine.getState()` and
+`buildReviewOverlay` (which passes nothing when there is no draft to read).
+`buildInlineReviewOverlay` is deliberately not one of them — it has no draft,
+and its own predicate treats a contested value as decided rather than
+outstanding, which is a different question.
 
 ## Six user-visible strings changed
 
