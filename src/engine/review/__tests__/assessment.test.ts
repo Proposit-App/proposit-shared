@@ -126,7 +126,7 @@ describe("composeAssessment — conclusion axis", () => {
                 CONCLUSION_ASSERTED_STATEMENT,
             ])
             expect(conclusionAssessmentLine(a.conclusion)).not.toContain(
-                "It holds"
+                CONCLUSION_ONLY_ASSERTED_STATEMENT
             )
         }
     })
@@ -389,7 +389,7 @@ describe("assessment lines", () => {
             })
         )!
         expect(conclusionAssessmentLine(a.conclusion)).toBe(
-            "Conclusion: True Your answers contributed to this. It holds only because you assigned it."
+            "Conclusion: True Your answers contributed to this. The conclusion holds only because you assigned it."
         )
         expect(argumentAssessmentLine(a.argument)).toBe(
             "Falls short — the conclusion came from you · 1 premise rejected"

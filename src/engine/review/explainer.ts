@@ -401,7 +401,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:conclusion-came-from-you": {
         definition:
-            "The conclusion holds, but only because you assigned it. Withhold that one input and nothing here gets to it — the reasons the argument offers are still waiting on claims you left open, so under your values it is your own answer carrying the conclusion. That says nothing about whether those reasons are good ones; settle what they rest on and this can change. It is worth knowing precisely when you agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
+            "The conclusion holds here because you settled it yourself. The argument's own reasons are still waiting on claims you left open, so nothing the argument offers is carrying the conclusion — your answer is. That is a statement about how far this argument got, not about whether the conclusion is true. Settle what those reasons rest on and this can change. Watch for this finding when you already agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
         example: {
             scenario:
                 "You already believed the new policy is fair. The argument offers one reason — that an independent panel drew it up — and you left that unsettled.",
@@ -438,7 +438,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:conclusion-came-from-you-nothing-left-to-settle": {
         definition:
-            "The conclusion holds because you answered it yourself. You have answered every claim this argument put to you, and its own reasons still do not carry the conclusion — so your answer is what holds it up here. That is a statement about how far this argument got, not about whether the conclusion is true.",
+            "The conclusion holds here because you answered it yourself. You have given a definite answer to every claim this argument asks about, and its reasons still do not carry the conclusion — either they rest on the same answers the conclusion rests on, so setting your own answer aside leaves them nothing to work from, or what they rest on did not come out the way the argument needed. So your answer is what holds the conclusion up here, and this argument is waiting on nothing further from you. That is a statement about how far this argument got, not about whether the conclusion is true. Watch for this finding when you already agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
         example: {
             scenario:
                 "You said the shop is open. The argument offers one reason — that the sign is lit — and you said the sign is not lit.",
@@ -475,7 +475,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:reasoning-rejected": {
         definition:
-            "You rejected a step the argument needed, so it is out of the set the conclusion was worked out from. Rejecting a step says its reasoning does not carry; it says nothing about whether what that step concludes is true, and nothing here treats it as though you had called it false. The claim is simply no longer supported from here. Rejecting one step often leaves an argument short of its conclusion without settling anything against it.",
+            "You rejected a step the argument needed, so that step is out of the set the conclusion was worked out from. Rejecting a step says its reasoning does not carry; it says nothing about whether the claim that step concludes is true, and nothing here treats you as having called that claim false. The claim is simply no longer supported from here. Rejecting one step often leaves an argument short of its conclusion without settling anything against it.",
         example: {
             scenario:
                 "A step from 'the ground is wet' to 'it rained', rejected because a sprinkler would do just as well.",
@@ -546,7 +546,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:premises-hold-conclusion-does-not-follow": {
         definition:
-            "Every premise still standing holds under your values, and the conclusion still comes out false. That is the sharpest negative result a review produces, because it does not depend on anything you left open — everything the argument rests on is settled, and it is settled in a way that leaves the conclusion false. It is a gap under the values you supplied, and only those: it does not settle whether the conclusion follows from these premises in general. That stronger question is what the separate validity check answers.",
+            "Every premise still standing holds under your values, and the conclusion still comes out false. That is the sharpest negative result a review produces, because it does not depend on anything you left open — everything the argument rests on is settled, and settled in a way that leaves the conclusion false. This finding is a gap under the values you supplied, and only those: nothing here settles whether the conclusion follows from these premises in general. That stronger question is what the separate validity check answers.",
         example: {
             scenario:
                 "An argument for rain, offering only that the ground is wet. You accept that the ground is wet, you have separately said it did not rain, and the argument grants no step from the one to the other.",

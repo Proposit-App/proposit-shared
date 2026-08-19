@@ -227,6 +227,53 @@ describe("ARGUMENT_EXPLAINERS content", () => {
     })
 })
 
+describe("assessment copy", () => {
+    const definitions = ALL_EXPLAINERS.map(([, entry]) => entry.definition)
+
+    it("never says a conclusion was proved", () => {
+        // Every finding is relative to one reader's assignment and may rest on
+        // steps granted for inductive reasons. Word-bounded so "approval" and
+        // friends are left alone.
+        const proofWords = /\b(prove|proof|proven)\b/i
+        const offenders = [
+            ...definitions,
+            ...Object.values(ARGUMENT_REASON_TEXT),
+            ...Object.values(ARGUMENT_OUTCOME_LABELS),
+            CONCLUSION_ONLY_ASSERTED_STATEMENT,
+        ].filter((text) => proofWords.test(text))
+        expect(offenders).toEqual([])
+    })
+
+    it("keeps grading and the reader's own accept/reject words out of the outcome labels", () => {
+        // Scoped to the labels alone. A definition may legitimately say the
+        // reader rejected a step, and one does.
+        expect(
+            Object.values(ARGUMENT_OUTCOME_LABELS).filter((label) =>
+                /\b(valid|acceptable|accept|reject)/i.test(label)
+            )
+        ).toEqual([])
+    })
+
+    it("names no cause the reader could act on where there is nothing outstanding", () => {
+        const { definition } =
+            ARGUMENT_EXPLAINERS[
+                "does-not-reach:conclusion-came-from-you-nothing-left-to-settle"
+            ]
+        expect(definition).not.toContain("left open")
+        // Covers "settle", "settling" and every inflection: this reader has
+        // already answered everything, so any of them prescribes a remedy
+        // they have performed.
+        expect(definition).not.toMatch(/settl/i)
+    })
+
+    it("drops the two wordings a reader could not resolve", () => {
+        for (const definition of definitions) {
+            expect(definition).not.toContain("withhold that one input")
+            expect(definition).not.toContain("nothing here gets to it")
+        }
+    })
+})
+
 describe("worked-example framing", () => {
     it.each([
         ["heading", WORKED_EXAMPLE_HEADING],

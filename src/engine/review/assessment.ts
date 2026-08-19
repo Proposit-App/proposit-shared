@@ -56,8 +56,11 @@ export const CONCLUSION_VALUE_LABELS: Record<TConclusionValue, string> = {
 export const CONCLUSION_ASSERTED_STATEMENT = "Your answers contributed to this."
 export const CONCLUSION_REACHED_STATEMENT =
     "The argument reaches it on its own."
+// Names the conclusion rather than opening on a bare "It". These statements
+// are rendered one after another, so a leading pronoun would have to be
+// resolved against whichever statement happened to precede it.
 export const CONCLUSION_ONLY_ASSERTED_STATEMENT =
-    "It holds only because you assigned it."
+    "The conclusion holds only because you assigned it."
 
 export interface TConclusionAssessment {
     value: TConclusionValue
