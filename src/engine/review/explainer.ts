@@ -401,7 +401,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:conclusion-came-from-you": {
         definition:
-            "The conclusion holds here because you settled it yourself. The argument's own reasons are still waiting on claims you left open, so nothing the argument offers is carrying the conclusion — your answer is. That is a statement about how far this argument got, not about whether the conclusion is true. Settle what those reasons rest on and this can change. Watch for this finding when you already agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
+            "The conclusion holds here because of answers you supplied, and the argument's own reasons are still waiting on claims you left open, so nothing it offers is carrying the conclusion — your answers are. That is a statement about how far this argument got, not about whether the conclusion is true. Settle what those reasons rest on and this can change. Watch for this finding when you already agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
         example: {
             scenario:
                 "You already believed the new policy is fair. The argument offers one reason — that an independent panel drew it up — and you left that unsettled.",
@@ -438,7 +438,7 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
     },
     "does-not-reach:conclusion-came-from-you-nothing-left-to-settle": {
         definition:
-            "The conclusion holds here because you answered it yourself. You have given a definite answer to every claim this argument asks about, and its reasons still do not carry the conclusion — either they rest on the same answers the conclusion rests on, so setting your own answer aside leaves them nothing to work from, or what they rest on did not come out the way the argument needed. So your answer is what holds the conclusion up here, and this argument is waiting on nothing further from you. That is a statement about how far this argument got, not about whether the conclusion is true. Watch for this finding when you already agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
+            "The conclusion holds here because of answers you supplied, but this argument's reasons do not carry it on their own. You have given a definite answer to every claim the argument asks about, so nothing further is waiting on you. That is a statement about how far this argument got, not about whether the conclusion is true. Watch for this finding when you already agree with the conclusion, because agreement is the easiest way to miss that the agreement is doing the work.",
         example: {
             scenario:
                 "You said the shop is open. The argument offers one reason — that the sign is lit — and you said the sign is not lit.",
