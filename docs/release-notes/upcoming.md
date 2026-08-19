@@ -107,6 +107,13 @@ Three wordings a reader could not resolve are gone — "withhold that one input"
 never said which input, "nothing here gets to it" was unclear on both halves,
 and dense chains of "it" left referents to guess.
 
+Both attribution explanations also stop claiming the reader answered the
+conclusion itself. `assertedByReader` is set when the reader supplied a value
+for any claim the conclusion premise references, so "because you answered it
+yourself" was false for a reader who answered only an antecedent. Both entries
+now open "because of answers you supplied". If you assert on this copy, that is
+the phrase to expect.
+
 ## Repinning
 
 Nothing to change in either app. `TArgumentReason` gaining a member is breaking

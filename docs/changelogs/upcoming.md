@@ -15,7 +15,12 @@ every claim and accepted every premise was told the argument's reasons were
 its own `ARGUMENT_REASON_TEXT` entry and its own
 `does-not-reach:conclusion-came-from-you-nothing-left-to-settle` explainer. The
 new explanation states what the assessment established and stops there — it
-names no cause the reader could act on, because there is none.
+names no cause the reader could act on, because there is none. It also does not
+name _which_ mechanism left the argument short. Two produce this finding — the
+reasons resting on the same answers the conclusion rests on, or resting on
+something that came out against the argument — and the reason taxonomy does not
+distinguish them, so enumerating both would have asked the reader to work out
+which applied to them.
 
 The discriminator cannot be read off the evaluation. A persisted claim binds two
 variables — an authored one plus an engine-synthesized derivation one — and the
@@ -42,6 +47,17 @@ down once.
 and reads its own `effectiveValues`, where a contested value counts as decided
 rather than outstanding; folding the two together would answer a different
 question.
+
+**Neither attribution explanation claims the reader answered the conclusion
+itself any more.** Both `does-not-reach:conclusion-came-from-you` and
+`does-not-reach:conclusion-came-from-you-nothing-left-to-settle` opened on
+"because you answered/settled it yourself". `conclusionAttribution.assertedByReader`
+does not establish that: it is set when the reader supplied a value for **any**
+claim the conclusion premise references, so on a conclusion like `A → C` it
+fires for a reader who answered only `A` — and the sentence then asserted an
+answer nobody gave. Both now open "because of answers you supplied", which holds
+in every case the reason fires. This is the same over-claim the split itself was
+fixing, in the replacement copy.
 
 ## Changed
 
