@@ -436,6 +436,43 @@ export const ARGUMENT_EXPLAINERS: Record<TArgumentExplainerKey, TExplainer> = {
             DEDUCTIVE_INDUCTIVE_REFERENCE,
         ],
     },
+    "does-not-reach:conclusion-came-from-you-nothing-left-to-settle": {
+        definition:
+            "The conclusion holds because you answered it yourself. You have answered every claim this argument put to you, and its own reasons still do not carry the conclusion — so your answer is what holds it up here. That is a statement about how far this argument got, not about whether the conclusion is true.",
+        example: {
+            scenario:
+                "You said the shop is open. The argument offers one reason — that the sign is lit — and you said the sign is not lit.",
+            items: [
+                {
+                    kind: "claim",
+                    depth: 0,
+                    isConclusion: true,
+                    title: "The shop is open",
+                    value: true,
+                },
+                {
+                    kind: "operator",
+                    depth: 0,
+                    label: "is true if",
+                    decision: "accepted",
+                },
+                {
+                    kind: "claim",
+                    depth: 1,
+                    title: "The sign is lit",
+                    value: false,
+                },
+            ],
+            result: ARGUMENT_OUTCOME_LABELS["does-not-reach"],
+        },
+        furtherReading: [
+            {
+                label: "Argument — Wikipedia",
+                url: "https://en.wikipedia.org/wiki/Argument",
+            },
+            DEDUCTIVE_INDUCTIVE_REFERENCE,
+        ],
+    },
     "does-not-reach:reasoning-rejected": {
         definition:
             "You rejected a step the argument needed, so it is out of the set the conclusion was worked out from. Rejecting a step says its reasoning does not carry; it says nothing about whether what that step concludes is true, and nothing here treats it as though you had called it false. The claim is simply no longer supported from here. Rejecting one step often leaves an argument short of its conclusion without settling anything against it.",

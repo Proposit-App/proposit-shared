@@ -820,9 +820,26 @@ export class ReviewEngine {
             canRunEvaluation:
                 this.draft.phase === "done" || this.draft.phase === "blocked",
             droppedStaleCount: this.droppedStaleCount,
-            assessment: composeAssessment(this.lastResult?.evaluation),
+            assessment: composeAssessment(this.lastResult?.evaluation, {
+                unsettledAnswerableClaimIds: this.unsettledClaimIds(),
+            }),
             coherence: this.freshCoherence(),
         }
+    }
+
+    /**
+     * The claims the reader was actually asked about and has not given a
+     * definite value. The queue is the answerable set by construction — it
+     * holds exactly the claims the wizard puts to a reader — so anything in it
+     * without a `true`/`false` assignment is outstanding. A skip and an
+     * explicit unknown both count: either can still be changed to a definite
+     * value, so both leave the reader something to do.
+     */
+    private unsettledClaimIds(): UUID[] {
+        return this.claimQueue.filter((claimId) => {
+            const a = this.draft.claimAssignments[claimId]
+            return !a || a.skipped || a.value == null
+        })
     }
 
     // ─── Key helpers ───────────────────────────────────────────────────

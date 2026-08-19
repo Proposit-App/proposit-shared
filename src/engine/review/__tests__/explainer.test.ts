@@ -76,7 +76,7 @@ describe("argumentExplainerKey", () => {
         )
     })
 
-    it("covers the six argument keys and no more", () => {
+    it("covers one key per reason plus the two reasonless outcomes, and no more", () => {
         expect(Object.keys(ARGUMENT_EXPLAINERS)).toHaveLength(
             2 + REASONS.length
         )
