@@ -86,13 +86,3 @@ The dep range plus core's exhaustive union types make TypeScript the enforcement
 ## Naming conventions
 
 Defined in the `brain-style` skill. Enforced by ESLint (`@typescript-eslint/naming-convention` and `check-file/filename-naming-convention`).
-
-## Documentation Sync
-
-Before reporting any code change complete, invoke the `tcw:documentation-sync` skill to evaluate the entries below. When writing an implementation plan, include explicit documentation-update tasks for every entry whose trigger is expected to fire.
-
-- `docs/changelogs/upcoming.md` [Any-Code-Change]
-- `docs/release-notes/upcoming.md` [Public-API] — Written for the developers of the two consuming apps; this package has no end users. Fires when the published surface moves: a new or changed export, schema, error envelope, or api-client method. An internal refactor, a test-only change, or a dep bump that leaves the surface intact does not fire. A breaking change carries a `## Repinning` note saying what a consumer must fix on upgrade.
-- `README.md` [Public-API] — Structural overview: what's in the package and what isn't, commands, how consumers depend on it, first-time setup. Fires on a new `exports` sub-path (the sub-path list is the map consumers read), a change to `package.json` `scripts`, or a change to the setup/consumption steps. A new export **inside an existing sub-path** does not fire — that is changelog material.
-- `AGENTS.md` [Routing] — Repo scope, the ownership lists, and the key design rules (`CLAUDE.md` is a symlink to this file). Fires only when a NEW ownership boundary, invariant, or cross-repo protocol appears — NOT when an API detail changes.
-- `docs/capabilities/**` [User-Capabilities] — This tree is the canonical **shared master** the consumer apps federate from (`tcw capabilities extends shared`), so a cross-platform capability is declared here first and its wording is coordinated at the root, never changed locally to suit one app. Fires when a change here alters what a user of the consuming apps can do — most often a status flip once a contract authored in this package is live in both apps. Drive it with the `tcw:tcw-capabilities` skill rather than editing the files by hand.
