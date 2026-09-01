@@ -29,6 +29,12 @@ import {
     changeEdgeOperatorImpl,
 } from "./argument/batch.js"
 import {
+    saveArgumentImpl,
+    unsaveArgumentImpl,
+    getArgumentSavedStateImpl,
+    getSavedArgumentsImpl,
+} from "./argument/saved.js"
+import {
     createClaimImpl,
     deleteClaimImpl,
     updateClaimImpl,
@@ -166,6 +172,10 @@ const impls = {
     deleteArgument: deleteArgumentImpl,
     purgeArgument: purgeArgumentImpl,
     getEntireArgument: getEntireArgumentImpl,
+    saveArgument: saveArgumentImpl,
+    unsaveArgument: unsaveArgumentImpl,
+    getArgumentSavedState: getArgumentSavedStateImpl,
+    getSavedArguments: getSavedArgumentsImpl,
     provisionArgument: provisionArgumentImpl,
     createExpressionWithOperator: createExpressionWithOperatorImpl,
     changeEdgeOperator: changeEdgeOperatorImpl,
