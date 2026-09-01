@@ -21,6 +21,7 @@ import { composeAssessment } from "./assessment.js"
 import { outermostDecidableOperator } from "./decision-target.js"
 import { computePropagatedVariableValues } from "./evaluation.js"
 import { materialFingerprint } from "./fingerprint.js"
+import { buildClaimQueue, unsettledAnswerableClaimIds } from "./step-queue.js"
 
 function pillForAssignment(
     value: boolean | null,
@@ -92,7 +93,19 @@ export function buildReviewOverlay(params: {
         claimValues,
         propagatedValues,
         operatorDecisions,
-        assessment: composeAssessment(result?.evaluation),
+        // Without a draft there is no record of what the reader answered, so
+        // the outstanding set is unknown rather than empty.
+        assessment: composeAssessment(
+            result?.evaluation,
+            draft
+                ? {
+                      unsettledAnswerableClaimIds: unsettledAnswerableClaimIds(
+                          buildClaimQueue(argEngine),
+                          draft.claimAssignments
+                      ),
+                  }
+                : undefined
+        ),
     }
 }
 
@@ -287,7 +300,15 @@ export function buildInlineReviewOverlay(params: {
         operatorDecisions: operatorAssignments,
         claimProvenance,
         claimPropagatedValues,
-        assessment: composeAssessment(result),
+        // The queue is the set of claims a reader is asked about; a claim
+        // whose effective value came out neither true nor false is one they
+        // could still decide. A contested value is not one of them — that
+        // claim was decided twice, not left undecided.
+        assessment: composeAssessment(result, {
+            unsettledAnswerableClaimIds: buildClaimQueue(argEngine).filter(
+                (claimId) => effectiveValues[claimId] == null
+            ),
+        }),
     }
 }
 

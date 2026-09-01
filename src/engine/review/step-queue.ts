@@ -1,5 +1,6 @@
 import type { ProjectEngine } from "../mutations/types.js"
 import type { UUID } from "../../schemas/common.js"
+import type { TClaimAssignment } from "../../schemas/review.js"
 import { collectArgumentReferencedClaims } from "@proposit/proposit-core"
 import { outermostDecidableOperator } from "./decision-target.js"
 import { toEvaluationContext } from "./evaluation.js"
@@ -94,8 +95,19 @@ export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
 }
 
 /**
- * The premises a reviewer is asked to render an operator verdict on, in
- * proof order (supporting first, conclusion last).
+ * The premises a reviewer is asked to render an operator verdict on, in the
+ * engine's own premise sequence: supporting first, then the conclusion, then
+ * every premise that is neither — the constraints. That is the sequence
+ * `collectArgumentReferencedClaims` already walks, so both queues agree on
+ * order.
+ *
+ * A constraint premise is one whose root expression is not an implication, so
+ * `listSupportingPremises()` — which filters on `isInference()` — leaves it
+ * out, and sourcing from that list alone would drop it before either gate
+ * below ran. It is decidable all the same: the evaluator strikes a rejected
+ * one out of the reckoning and reports it as a declined constraint, and the
+ * contradiction alert offers "decline this constraint" as an exit. Omitting it
+ * here left those paths disagreeing about what a reader may decide.
  *
  * Two gates, and both are narrowing:
  *
@@ -105,7 +117,9 @@ export function buildClaimQueue(argEngine: ProjectEngine): UUID[] {
  *    which is an inference with a decidable operator and would otherwise pass
  *    every other gate and be rendered as a numbered premise. A reviewer cannot
  *    meaningfully accept or reject wiring the engine generated on their behalf.
- *    (Naked-Q derivation premises self-exclude via gate 2 only incidentally.)
+ *    This gate is also what keeps a naked-Q derivation premise out: its root
+ *    is a bare variable, so it reaches this loop among the constraints rather
+ *    than through the supporting list.
  * 2. A premise with no outermost decidable operator is excluded, because there
  *    is nothing on it to decide. This routinely drops the conclusion premise:
  *    the common authored shape asserts a single claim as a bare variable and
@@ -125,12 +139,21 @@ export function buildOperatorQueue(
     argEngine: ProjectEngine
 ): TOperatorQueueEntry[] {
     const out: TOperatorQueueEntry[] = []
-    const conclusionPremiseId = argEngine.getConclusionPremise()?.getId()
+    const conclusion = argEngine.getConclusionPremise()
+    const conclusionPremiseId = conclusion?.getId()
+    const supporting = argEngine.listSupportingPremises()
+    const supportingIds = new Set(supporting.map((p) => p.getId()))
+    const constraints = argEngine
+        .listPremises()
+        .filter(
+            (p) =>
+                p.getId() !== conclusionPremiseId &&
+                !supportingIds.has(p.getId())
+        )
     const premises = [
-        ...argEngine.listSupportingPremises(),
-        ...(argEngine.getConclusionPremise()
-            ? [argEngine.getConclusionPremise()!]
-            : []),
+        ...supporting,
+        ...(conclusion ? [conclusion] : []),
+        ...constraints,
     ]
     for (const p of premises) {
         if (p.toPremiseData().type === "derivation") continue
@@ -165,4 +188,31 @@ export function advanceQueue(params: {
     )
     if (remaining < 0) return { done: true }
     return { nextIndex: remaining, insertRequeueNotice: true }
+}
+
+/**
+ * The queued claims the reader has not given a definite value.
+ *
+ * This is the discriminator `composeAssessment` takes as
+ * `unsettledAnswerableClaimIds`, and an empty result is a positive finding —
+ * nothing is outstanding — rather than the absence of one. Callers that cannot
+ * tell must pass no options at all rather than an empty array.
+ *
+ * A skip and an explicit unknown both count as outstanding: either can still be
+ * changed to `true` or `false`, so both leave the reader something to do. Only
+ * a definite value settles a claim.
+ *
+ * The queue bounds the answer, not the assignment map. `buildClaimQueue` is the
+ * set of claims a reader is actually asked about, so anything answered outside
+ * it is not evidence about this reader, and anything in it without an
+ * assignment is a claim they never reached.
+ */
+export function unsettledAnswerableClaimIds(
+    claimQueue: readonly UUID[],
+    claimAssignments: Record<UUID, TClaimAssignment>
+): UUID[] {
+    return claimQueue.filter((claimId) => {
+        const assignment = claimAssignments[claimId]
+        return !assignment || assignment.skipped || assignment.value == null
+    })
 }

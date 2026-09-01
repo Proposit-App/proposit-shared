@@ -56,8 +56,11 @@ export const CONCLUSION_VALUE_LABELS: Record<TConclusionValue, string> = {
 export const CONCLUSION_ASSERTED_STATEMENT = "Your answers contributed to this."
 export const CONCLUSION_REACHED_STATEMENT =
     "The argument reaches it on its own."
+// Names the conclusion rather than opening on a bare "It". These statements
+// are rendered one after another, so a leading pronoun would have to be
+// resolved against whichever statement happened to precede it.
 export const CONCLUSION_ONLY_ASSERTED_STATEMENT =
-    "It holds only because you assigned it."
+    "The conclusion holds only because you assigned it."
 
 export interface TConclusionAssessment {
     value: TConclusionValue
@@ -109,12 +112,15 @@ export const ARGUMENT_OUTCOME_LABELS: Record<TArgumentOutcome, string> = {
 /** Why an argument didn't reach its conclusion. Shown with the negative outcome only. */
 export type TArgumentReason =
     | "conclusion-came-from-you"
+    | "conclusion-came-from-you-nothing-left-to-settle"
     | "reasoning-rejected"
     | "not-enough-settled"
     | "premises-hold-conclusion-does-not-follow"
 
 export const ARGUMENT_REASON_TEXT: Record<TArgumentReason, string> = {
     "conclusion-came-from-you": "the conclusion came from you",
+    "conclusion-came-from-you-nothing-left-to-settle":
+        "the conclusion came from you, not its reasons",
     "reasoning-rejected": "you rejected part of its reasoning",
     "not-enough-settled": "not enough was settled",
     "premises-hold-conclusion-does-not-follow":
@@ -236,7 +242,8 @@ function composeConclusion(
 
 function reasonFor(
     evaluation: TCoreArgumentEvaluationResult,
-    struck: TStruckBadges
+    struck: TStruckBadges,
+    options: TAssessmentOptions | undefined
 ): TArgumentReason {
     // First match wins. The structural finding leads the attribution one
     // because it tells the reader something they could not have seen: their own
@@ -256,14 +263,23 @@ function reasonFor(
         evaluation.conclusionAttribution?.assertedByReader === true &&
         conclusionValueFor(evaluation.conclusionTrue) === "true"
     ) {
-        return "conclusion-came-from-you"
+        // Two materially different readers land here, and their advice is
+        // opposite: one still has claims to answer and can move the finding,
+        // the other has answered everything and cannot. Only an explicitly
+        // empty set is the second — absent means the caller could not tell,
+        // and telling a reader with claims outstanding that nothing is left
+        // would be the worse error of the two.
+        return options?.unsettledAnswerableClaimIds?.length === 0
+            ? "conclusion-came-from-you-nothing-left-to-settle"
+            : "conclusion-came-from-you"
     }
     if (struck.struckPremiseIds.length > 0) return "reasoning-rejected"
     return "not-enough-settled"
 }
 
 function composeArgument(
-    evaluation: TCoreArgumentEvaluationResult
+    evaluation: TCoreArgumentEvaluationResult,
+    options: TAssessmentOptions | undefined
 ): TArgumentAssessment {
     const struck = buildStruckBadges(evaluation)
     const withReason = (reason: TArgumentReason): TArgumentAssessment => ({
@@ -305,7 +321,26 @@ function composeArgument(
             struck,
         }
     }
-    return withReason(reasonFor(evaluation, struck))
+    return withReason(reasonFor(evaluation, struck, options))
+}
+
+/**
+ * Facts the caller holds that an evaluation cannot supply.
+ */
+export interface TAssessmentOptions {
+    /**
+     * Claims the reader could have answered and left unsettled. An empty array
+     * is the positive finding that nothing is outstanding; absent means the
+     * caller could not tell, which is not the same thing.
+     *
+     * It cannot be read off the evaluation. A persisted claim binds two
+     * variables — an authored one plus an engine-synthesized derivation one —
+     * and the second reports itself unassigned whenever the reader has not
+     * granted that derivation's step, even though no reader can ever answer
+     * it. Deriving the set from variable provenance would therefore report a
+     * reader who answered everything as one with claims outstanding.
+     */
+    unsettledAnswerableClaimIds?: readonly string[]
 }
 
 /**
@@ -317,12 +352,13 @@ function composeArgument(
  * absent case.
  */
 export function composeAssessment(
-    evaluation: TCoreArgumentEvaluationResult | undefined
+    evaluation: TCoreArgumentEvaluationResult | undefined,
+    options?: TAssessmentOptions
 ): TReviewAssessment | undefined {
     if (!evaluation?.ok) return undefined
     return {
         conclusion: composeConclusion(evaluation),
-        argument: composeArgument(evaluation),
+        argument: composeArgument(evaluation, options),
     }
 }
 

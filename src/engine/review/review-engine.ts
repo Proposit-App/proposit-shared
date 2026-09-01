@@ -18,6 +18,7 @@ import {
     buildClaimQueue,
     buildOperatorQueue,
     advanceQueue,
+    unsettledAnswerableClaimIds,
     type TOperatorQueueEntry,
 } from "./step-queue.js"
 import {
@@ -820,7 +821,13 @@ export class ReviewEngine {
             canRunEvaluation:
                 this.draft.phase === "done" || this.draft.phase === "blocked",
             droppedStaleCount: this.droppedStaleCount,
-            assessment: composeAssessment(this.lastResult?.evaluation),
+            // The queue is already built, so it is passed rather than rebuilt.
+            assessment: composeAssessment(this.lastResult?.evaluation, {
+                unsettledAnswerableClaimIds: unsettledAnswerableClaimIds(
+                    this.claimQueue,
+                    this.draft.claimAssignments
+                ),
+            }),
             coherence: this.freshCoherence(),
         }
     }

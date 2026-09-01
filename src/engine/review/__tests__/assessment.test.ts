@@ -126,7 +126,7 @@ describe("composeAssessment — conclusion axis", () => {
                 CONCLUSION_ASSERTED_STATEMENT,
             ])
             expect(conclusionAssessmentLine(a.conclusion)).not.toContain(
-                "It holds"
+                CONCLUSION_ONLY_ASSERTED_STATEMENT
             )
         }
     })
@@ -190,6 +190,69 @@ describe("composeAssessment — argument axis", () => {
             CONCLUSION_ASSERTED_STATEMENT,
             CONCLUSION_ONLY_ASSERTED_STATEMENT,
         ])
+    })
+
+    it("separates a reader with nothing outstanding from one with claims still unanswered", () => {
+        // Same evaluation either way — core cannot tell the two apart, because
+        // a persisted claim also binds an engine-synthesized variable the
+        // reader can never answer. The caller supplies the discriminator.
+        const facts = evaluation({
+            conclusionTrue: true,
+            struckPremiseIds: [],
+            premiseSetSatisfiable: true,
+            premisesHoldConclusionFalse: false,
+            survivingSupportingPremiseCount: 1,
+            conclusionAttribution: {
+                assertedByReader: true,
+                reachedWithoutAssertion: false,
+            },
+        })
+        expect(
+            composeAssessment(facts, { unsettledAnswerableClaimIds: [] })!
+                .argument.reason
+        ).toBe("conclusion-came-from-you-nothing-left-to-settle")
+    })
+
+    it("keeps the actionable reason while a claim the reader could answer is outstanding", () => {
+        const facts = evaluation({
+            conclusionTrue: true,
+            struckPremiseIds: [],
+            premiseSetSatisfiable: true,
+            premisesHoldConclusionFalse: false,
+            survivingSupportingPremiseCount: 1,
+            conclusionAttribution: {
+                assertedByReader: true,
+                reachedWithoutAssertion: false,
+            },
+        })
+        expect(
+            composeAssessment(facts, {
+                unsettledAnswerableClaimIds: ["some-claim-id"],
+            })!.argument.reason
+        ).toBe("conclusion-came-from-you")
+    })
+
+    it("never infers that nothing is outstanding from a caller that did not say", () => {
+        // Absent is "could not tell", which is not the same finding as an
+        // empty set. Guessing here would tell a reader who left claims open
+        // that there is nothing left for them to do.
+        const facts = evaluation({
+            conclusionTrue: true,
+            struckPremiseIds: [],
+            premiseSetSatisfiable: true,
+            premisesHoldConclusionFalse: false,
+            survivingSupportingPremiseCount: 1,
+            conclusionAttribution: {
+                assertedByReader: true,
+                reachedWithoutAssertion: false,
+            },
+        })
+        expect(composeAssessment(facts)!.argument.reason).toBe(
+            "conclusion-came-from-you"
+        )
+        expect(composeAssessment(facts, {})!.argument.reason).toBe(
+            "conclusion-came-from-you"
+        )
     })
 
     it("leads with the structural gap when the premises hold and the conclusion is false", () => {
@@ -326,7 +389,7 @@ describe("assessment lines", () => {
             })
         )!
         expect(conclusionAssessmentLine(a.conclusion)).toBe(
-            "Conclusion: True Your answers contributed to this. It holds only because you assigned it."
+            "Conclusion: True Your answers contributed to this. The conclusion holds only because you assigned it."
         )
         expect(argumentAssessmentLine(a.argument)).toBe(
             "Falls short — the conclusion came from you · 1 premise rejected"

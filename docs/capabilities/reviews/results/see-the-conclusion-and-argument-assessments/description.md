@@ -12,6 +12,11 @@ conclusion: it tells me that the argument reaches its conclusion, doesn't reach
 it, or has premises that contradict each other. When it doesn't reach it, I am
 told why — the conclusion came from me, I rejected part of its reasoning, not
 enough was settled, or its premises hold and its conclusion doesn't follow. The
+first of those is two findings rather than one, and I am told which of them I am
+looking at: either the argument's reasons are still waiting on claims I left
+open, so answering those claims can move the outcome, or I have answered
+everything the argument asks and its reasons still don't carry the conclusion,
+so nothing further is outstanding. The
 premises I rejected are counted beside the assessment in a badge of their own
 ("2 premises rejected", or "2 constraints declined" for constraints) rather than
 folded into the outcome, so an argument can reach its conclusion and still show
